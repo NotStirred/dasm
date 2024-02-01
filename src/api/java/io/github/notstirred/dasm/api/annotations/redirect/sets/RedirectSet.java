@@ -7,11 +7,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** <pre>{@code}</pre>
+/**
+ * <pre>{@code}</pre>
  * Marks that an {@code interface} should be used as a redirect set.
  * <p/>
  * The marked type must be an {@code interface} and must contain only {@code abstract class} definitions marked with {@link TypeRedirect}<br/>
- * By convention the marked type's name should end with `Set`
+ * By convention the marked type's name should end with `RedirectSet`, or `Set`
  * <p/>
  * <h2>Example</h2>
  * <pre>{@code
