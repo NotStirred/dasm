@@ -4,14 +4,12 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static io.github.notstirred.dasm.util.TypeUtil.classDescriptorToClassName;
 import static io.github.notstirred.dasm.util.TypeUtil.classToDescriptor;
 
 public class AnnotationUtil {
@@ -44,19 +42,13 @@ public class AnnotationUtil {
         Map<String, Object> annotationValues = new HashMap<>();
 
         // Insert specified arguments in the annotation
-        for (int i = 0; i < annotationNode.values.size(); i += 2) {
-            String name = (String) annotationNode.values.get(i);
-            Object value = annotationNode.values.get(i + 1);
+        if (annotationNode != null) {
+            for (int i = 0; i < annotationNode.values.size(); i += 2) {
+                String name = (String) annotationNode.values.get(i);
+                Object value = annotationNode.values.get(i + 1);
 
-            if (value instanceof AnnotationNode) {
-                AnnotationNode annotationValue = (AnnotationNode) value;
-                try {
-                    value = getAnnotationValues(annotationValue, Class.forName(classDescriptorToClassName(annotationValue.desc)));
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
+                annotationValues.put(name, value);
             }
-            annotationValues.put(name, value);
         }
 
         addMissingDefaultValues(annotation, annotationValues);
@@ -69,21 +61,7 @@ public class AnnotationUtil {
             Object defaultValue = declaredMethod.getDefaultValue();
             if (defaultValue != null && !annotationValues.containsKey(declaredMethod.getName())) {
                 if (declaredMethod.getReturnType().isAnnotation()) {
-                    Map<String, Object> values = new HashMap<>();
-                    for (java.lang.reflect.Method method : defaultValue.getClass().getInterfaces()[0].getDeclaredMethods()) {
-                        try {
-                            if (method.getReturnType().isAnnotation()) {
-                                @SuppressWarnings("unchecked") Map<String, Object> v = (Map<String, Object>) annotationValues.computeIfAbsent(method.getName(), n -> new HashMap<>());
-                                addMissingDefaultValues(method.getReturnType(), v);
-                            } else {
-                                Object v = method.invoke(defaultValue);
-                                values.put(method.getName(), matchAsmTypes(v));
-                            }
-                        } catch (IllegalAccessException | InvocationTargetException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                    annotationValues.put(declaredMethod.getName(), values);
+                    annotationValues.put(declaredMethod.getName(), null);
                 } else {
                     annotationValues.put(declaredMethod.getName(), matchAsmTypes(defaultValue));
                 }

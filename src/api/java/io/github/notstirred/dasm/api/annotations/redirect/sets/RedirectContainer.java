@@ -10,7 +10,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.CLASS)
 public @interface RedirectContainer {
-    Ref from();
-
-    Ref to();
+    Ref value();
 }

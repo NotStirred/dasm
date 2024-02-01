@@ -19,11 +19,8 @@ public class TypeRedirectImpl {
     public final Type srcType;
     public final Type dstType;
 
-    public static Optional<TypeRedirectImpl> parseTypeRedirect(ClassNode classNode, Validator validator)
+    public static Optional<TypeRedirectImpl> parseTypeRedirect(ClassNode classNode)
             throws RefImpl.RefAnnotationGivenInvalidArguments {
-        if (classNode.invisibleAnnotations == null) {
-            return Optional.empty();
-        }
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(classNode.invisibleAnnotations, TypeRedirect.class);
         if (annotation == null) {
             return Optional.empty();
@@ -31,8 +28,8 @@ public class TypeRedirectImpl {
 
         Map<String, Object> values = AnnotationUtil.getAnnotationValues(annotation, TypeRedirect.class);
 
-        @SuppressWarnings("unchecked") Type from = parseRefAnnotation((Map<String, Object>) values.get("from"), validator);
-        @SuppressWarnings("unchecked") Type to = parseRefAnnotation((Map<String, Object>) values.get("to"), validator);
+        Type from = parseRefAnnotation((AnnotationNode) values.get("from"));
+        Type to = parseRefAnnotation((AnnotationNode) values.get("to"));
 
         return Optional.of(new TypeRedirectImpl(from, to));
     }

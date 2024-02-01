@@ -4,7 +4,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** <pre>{@code}</pre>
+/**
+ * <pre>{@code}</pre>
  * A concrete reference to a class through {@link Ref#value()} <b><u>or</u></b> a String through {@link Ref#string()}.
  * <p/>
  * If both are specified, the {@link Ref#string()} is used.
