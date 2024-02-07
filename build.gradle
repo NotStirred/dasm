@@ -9,9 +9,28 @@ group 'io.github.notstirred'
 archivesBaseName = "dasm"
 version '2.0.0-SNAPSHOT'
 
-
 sourceSets {
     api
+}
+
+configurations {
+    implementation.extendsFrom(apiImplementation)
+}
+
+compileJava {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+compileApiJava {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+compileTestJava {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 java {
@@ -38,23 +57,27 @@ sourceSets.main {
     it.compileClasspath += sourceSets.api.output
     it.runtimeClasspath += sourceSets.api.output
 }
+sourceSets.test {
+    it.compileClasspath += sourceSets.api.output
+    it.runtimeClasspath += sourceSets.api.output
+}
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
+    apiImplementation 'org.ow2.asm:asm:9.6'
+    apiImplementation 'org.ow2.asm:asm-tree:9.6'
+    apiImplementation 'org.ow2.asm:asm-util:9.6'
+    apiImplementation 'org.ow2.asm:asm-commons:9.6'
+
     implementation 'com.google.code.gson:gson:2.9.0'
     implementation 'com.google.guava:guava:31.1-jre'
 
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'org.apache.logging.log4j:log4j-api:2.22.1'
     implementation 'org.apache.logging.log4j:log4j-core:2.22.1'
-
-    implementation 'org.ow2.asm:asm:9.3'
-    implementation 'org.ow2.asm:asm-tree:9.3'
-    implementation 'org.ow2.asm:asm-util:9.3'
-    implementation 'org.ow2.asm:asm-commons:9.3'
 
     implementation 'org.jetbrains:annotations:23.0.0'
 
@@ -66,6 +89,9 @@ dependencies {
 }
 
 test {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
     useJUnitPlatform()
 
     // Always run tests, even when nothing changed.
@@ -77,9 +103,9 @@ test {
     }
 }
 
-signing {
-    sign configurations.archives
-}
+//signing {
+//    sign configurations.archives
+//}
 
 publishing {
     publications {

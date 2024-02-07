@@ -1,7 +1,6 @@
 package io.github.notstirred.dasm.api.annotations.transform;
 
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
-import io.github.notstirred.dasm.api.annotations.transform.TransformFrom;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -13,5 +12,7 @@ import java.lang.annotation.Target;
 public @interface TransformFromClass {
     Ref value();
 
-    TransformFrom.ApplicationStage stage() default TransformFrom.ApplicationStage.PRE_APPLY;
+    Class<?> sets();
+
+    ApplicationStage stage() default ApplicationStage.PRE_APPLY;
 }

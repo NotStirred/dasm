@@ -11,6 +11,8 @@ import org.objectweb.asm.tree.AnnotationNode;
 import java.util.Map;
 import java.util.Optional;
 
+import static io.github.notstirred.dasm.util.TypeUtil.classNameToDescriptor;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RefImpl {
     public static Type parseRefAnnotation(AnnotationNode annotationNode) throws RefAnnotationGivenInvalidArguments {
@@ -22,7 +24,7 @@ public class RefImpl {
         if (values.containsKey("string")) {
             String string = (String) values.get("string");
             if (!string.isEmpty()) {
-                type = Type.getObjectType(string);
+                type = Type.getType(classNameToDescriptor(string));
             }
         }
         if (type == null || type.getClassName().equals(Ref.EmptyRef.class.getName())) {
@@ -32,7 +34,7 @@ public class RefImpl {
         return type;
     }
 
-    public static Optional<Type> parseRefAnnotationAcceptEmpty(AnnotationNode annotationNode) {
+    public static Optional<Type> parseOptionalRefAnnotation(AnnotationNode annotationNode) {
         Map<String, Object> values = AnnotationUtil.getAnnotationValues(annotationNode, Ref.class);
         Type type = null;
         if (values.containsKey("value")) {

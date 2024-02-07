@@ -1,6 +1,7 @@
-package io.github.notstirred.dasm.redirects;
+package io.github.notstirred.dasm.annotation.parse.redirects;
 
 import io.github.notstirred.dasm.annotation.AnnotationUtil;
+import io.github.notstirred.dasm.annotation.parse.MethodSigImpl;
 import io.github.notstirred.dasm.annotation.parse.RefImpl;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.MethodRedirect;
 import io.github.notstirred.dasm.data.ClassMethod;
@@ -11,23 +12,21 @@ import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseRefAnnotation;
-import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseRefAnnotationAcceptEmpty;
+import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseOptionalRefAnnotation;
 
 @Data
 public class MethodRedirectImpl {
-    public final ClassMethod srcMethod;
-    public final Type dstOwner;
-    public final String dstName;
+    private final ClassMethod srcMethod;
+    private final Type dstOwner;
+    private final String dstName;
+    private final boolean isDstOwnerInterface;
 
-    public static Optional<MethodRedirectImpl> parseMethodRedirect(Type methodOwner, MethodNode methodNode,
+    public static Optional<MethodRedirectImpl> parseMethodRedirect(Type methodOwner, boolean methodOwnerIsInterface, MethodNode methodNode,
                                                                    Type dstOwner)
-            throws RefImpl.RefAnnotationGivenInvalidArguments, MethodRedirectHasEmptySrcName {
+            throws RefImpl.RefAnnotationGivenInvalidArguments, MethodRedirectHasEmptySrcName, MethodSigImpl.InvalidMethodSignature {
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(methodNode.invisibleAnnotations, MethodRedirect.class);
         if (annotation == null) {
             return Optional.empty();
@@ -35,24 +34,15 @@ public class MethodRedirectImpl {
 
         Map<String, Object> values = AnnotationUtil.getAnnotationValues(annotation, MethodRedirect.class);
 
-        Type ret = parseRefAnnotation((AnnotationNode) values.get("ret"));
-        List<Type> args = new ArrayList<>();
-        //noinspection unchecked
-        for (AnnotationNode annotationNode : ((List<AnnotationNode>) values.get("args"))) {
-            args.add(parseRefAnnotation(annotationNode));
-        }
-        String name = (String) values.get("name");
+        Method srcMethod = MethodSigImpl.parse((AnnotationNode) values.get("value"));
 
-        if (name.isEmpty()) {
-            throw new MethodRedirectHasEmptySrcName(methodNode);
-        }
-
-        Type mappingsOwner = parseRefAnnotationAcceptEmpty((AnnotationNode) values.get("mappingsOwner")).orElse(null);
+        Type mappingsOwner = parseOptionalRefAnnotation((AnnotationNode) values.get("mappingsOwner")).orElse(methodOwner);
 
         return Optional.of(new MethodRedirectImpl(
-                new ClassMethod(methodOwner, mappingsOwner, new Method(name, Type.getMethodDescriptor(ret, args.toArray(new Type[0])))),
+                new ClassMethod(methodOwner, mappingsOwner, srcMethod),
                 dstOwner,
-                methodNode.name
+                methodNode.name,
+                methodOwnerIsInterface
         ));
     }
 

@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 @Target({/* No targets allowed */})
 @Retention(RetentionPolicy.CLASS)
 public @interface FieldSig {
-    Class<?> type();
+    Ref type();
     String name();
 }

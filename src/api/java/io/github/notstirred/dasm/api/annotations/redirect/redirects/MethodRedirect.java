@@ -1,6 +1,7 @@
 package io.github.notstirred.dasm.api.annotations.redirect.redirects;
 
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectContainer;
+import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 
 import java.lang.annotation.ElementType;
@@ -33,11 +34,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.CLASS)
 public @interface MethodRedirect {
-    Ref ret();
-
-    String name();
-
-    Ref[] args();
+    MethodSig value();
 
     /**
      * Only useful if the codebase is remapped and methods owners are moved

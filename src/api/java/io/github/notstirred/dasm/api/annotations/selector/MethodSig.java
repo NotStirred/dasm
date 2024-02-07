@@ -9,7 +9,9 @@ import java.lang.annotation.Target;
 public @interface MethodSig {
     @Deprecated String value() default "";
 
-    Class<?> ret() default void.class;
+    Ref ret() default @Ref(void.class);
+
     String name() default "";
-    Class<?>[] args() default {};
+
+    Ref[] args() default { };
 }

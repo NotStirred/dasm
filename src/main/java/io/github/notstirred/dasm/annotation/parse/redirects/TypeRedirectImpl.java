@@ -1,9 +1,8 @@
-package io.github.notstirred.dasm.redirects;
+package io.github.notstirred.dasm.annotation.parse.redirects;
 
 import io.github.notstirred.dasm.annotation.AnnotationUtil;
 import io.github.notstirred.dasm.annotation.parse.RefImpl;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
-import io.github.notstirred.dasm.util.Validator;
 import lombok.Data;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -16,8 +15,8 @@ import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseRefAnnotat
 
 @Data
 public class TypeRedirectImpl {
-    public final Type srcType;
-    public final Type dstType;
+    private final Type srcType;
+    private final Type dstType;
 
     public static Optional<TypeRedirectImpl> parseTypeRedirect(ClassNode classNode)
             throws RefImpl.RefAnnotationGivenInvalidArguments {

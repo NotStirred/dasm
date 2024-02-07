@@ -1,12 +1,13 @@
 package io.github.notstirred.dasm.annotation.parse;
 
+import io.github.notstirred.dasm.annotation.parse.redirects.*;
+import io.github.notstirred.dasm.annotation.parse.redirects.FieldRedirectImpl.FieldMissingFieldRedirectAnnotationException;
+import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl.MethodMissingMethodRedirectAnnotationException;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
 import io.github.notstirred.dasm.exception.DasmAnnotationException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
-import io.github.notstirred.dasm.redirects.*;
-import io.github.notstirred.dasm.redirects.FieldRedirectImpl.FieldMissingFieldRedirectAnnotationException;
-import io.github.notstirred.dasm.redirects.MethodRedirectImpl.MethodMissingMethodRedirectAnnotationException;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
@@ -16,14 +17,15 @@ import java.util.*;
 import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationIfPresent;
 import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
 
+@Getter
 public class RedirectSetImpl {
-    public final List<Type> superRedirectSets;
+    private final List<Type> superRedirectSets;
 
-    public final Set<FieldToMethodRedirectImpl> fieldToMethodRedirects;
-    public final Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects;
-    public final Set<FieldRedirectImpl> fieldRedirects;
-    public final Set<MethodRedirectImpl> methodRedirects;
-    public final Set<TypeRedirectImpl> typeRedirects;
+    private final Set<FieldToMethodRedirectImpl> fieldToMethodRedirects;
+    private final Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects;
+    private final Set<FieldRedirectImpl> fieldRedirects;
+    private final Set<MethodRedirectImpl> methodRedirects;
+    private final Set<TypeRedirectImpl> typeRedirects;
 
     public RedirectSetImpl(List<Type> superRedirectSets, Set<FieldToMethodRedirectImpl> fieldToMethodRedirects,
                            Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects, Set<FieldRedirectImpl> fieldRedirects,
@@ -155,13 +157,18 @@ public class RedirectSetImpl {
 
             Optional<MethodRedirectImpl> methodRedirect;
             try {
-                methodRedirect = MethodRedirectImpl.parseMethodRedirect(srcType, methodNode, dstType);
+                methodRedirect = MethodRedirectImpl.parseMethodRedirect(
+                        srcType,
+                        (innerClassNode.access & ACC_INTERFACE) != 0,
+                        methodNode,
+                        dstType
+                );
                 if (methodRedirect.isPresent()) {
                     methodRedirects.add(methodRedirect.get());
                 } else {
                     exceptions.add(new MethodMissingMethodRedirectAnnotationException(methodNode));
                 }
-            } catch (RefImpl.RefAnnotationGivenInvalidArguments | MethodRedirectImpl.MethodRedirectHasEmptySrcName e) {
+            } catch (RefImpl.RefAnnotationGivenInvalidArguments | MethodRedirectImpl.MethodRedirectHasEmptySrcName | MethodSigImpl.InvalidMethodSignature e) {
                 exceptions.add(e);
             }
         }

@@ -10,27 +10,15 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
 @Retention(RetentionPolicy.CLASS)
-public @interface TransformFrom {
+public @interface TransformFromMethod {
     MethodSig value();
 
     ApplicationStage stage() default ApplicationStage.PRE_APPLY;
 
-    boolean makeSyntheticAccessor() default false;
+    // FIXME: add synthetic accessors
+//    boolean makeSyntheticAccessor() default false;
 
     Ref copyFrom() default @Ref();
 
-    /**
-     * <h2>Do <u><b>NOT</b></u> confuse with {@link TransformFrom#addToRedirectSets}</h2>
-     */
     Class<?>[] useRedirectSets() default { };
-
-    /**
-     * <h2>Do <u><b>NOT</b></u> confuse with {@link TransformFrom#useRedirectSets}</h2>
-     */
-    Class<?>[] addToRedirectSets() default { };
-
-    enum ApplicationStage {
-        PRE_APPLY,
-        POST_APPLY
-    }
 }

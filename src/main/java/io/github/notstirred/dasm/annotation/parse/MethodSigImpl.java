@@ -1,35 +1,42 @@
 package io.github.notstirred.dasm.annotation.parse;
 
-import lombok.AccessLevel;
+import io.github.notstirred.dasm.annotation.AnnotationUtil;
+import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import lombok.NoArgsConstructor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
+import org.objectweb.asm.tree.AnnotationNode;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+import static lombok.AccessLevel.PRIVATE;
+
+@NoArgsConstructor(access = PRIVATE)
 public class MethodSigImpl {
-    public static Optional<Method> parse(Map<String, Object> annotation) throws InvalidMethodSignature {
-        if (annotation == null) {
-            return Optional.empty();
-        }
+    public static Method parse(AnnotationNode annotation) throws InvalidMethodSignature, RefImpl.RefAnnotationGivenInvalidArguments {
+        Map<String, Object> values = AnnotationUtil.getAnnotationValues(annotation, MethodSig.class);
 
-        String value = ((String) annotation.get("value"));
+        String value = ((String) values.get("value"));
         if (!value.isEmpty()) {
             int parametersStart = value.indexOf('(');
             if (parametersStart == -1) { // did not find
                 throw new InvalidMethodSignature(value);
             }
-            return Optional.of(new Method(value.substring(0, parametersStart), value.substring(parametersStart)));
+            return new Method(value.substring(0, parametersStart), value.substring(parametersStart));
         }
 
-        Type ret = (Type) annotation.get("ret");
-        @SuppressWarnings("unchecked") List<Type> args = (List<Type>) annotation.get("args");
-        String name = (String) annotation.get("value");
+        Type ret = RefImpl.parseRefAnnotation((AnnotationNode) values.get("ret"));
+        @SuppressWarnings("unchecked") List<AnnotationNode> argAnnotations = ((List<AnnotationNode>) values.get("args"));
+        List<Type> args = new ArrayList<>();
+        for (AnnotationNode argAnnotation : argAnnotations) {
+            args.add(RefImpl.parseRefAnnotation(argAnnotation));
+        }
 
-        return Optional.of(new Method(name, Type.getMethodDescriptor(ret, args.toArray(new Type[0]))));
+        String name = (String) values.get("name");
+
+        return new Method(name, Type.getMethodDescriptor(ret, args.toArray(new Type[0])));
     }
 
     public static class InvalidMethodSignature extends Exception {

@@ -7,7 +7,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** <pre>{@code}</pre>
+/**
+ * <pre>{@code}</pre>
  * Must be marked on any class within a redirect set {@code interface}.<br/>
  * Specifies that a type should be redirected to another type using {@link TypeRedirect#from()} and {@link TypeRedirect#to()}.
  * <p/>

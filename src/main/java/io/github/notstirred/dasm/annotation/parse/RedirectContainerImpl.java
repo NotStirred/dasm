@@ -15,7 +15,7 @@ import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseRefAnnotat
 
 @Data
 public class RedirectContainerImpl {
-    public final Type type;
+    private final Type type;
 
     public static Optional<RedirectContainerImpl> parseRedirectContainer(ClassNode classNode)
             throws RefImpl.RefAnnotationGivenInvalidArguments {
