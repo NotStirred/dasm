@@ -5,6 +5,6 @@ import org.objectweb.asm.Type;
 
 @Data
 public class Field {
-    public final Type type;
-    public final String name;
+    private final Type type;
+    private final String name;
 }
