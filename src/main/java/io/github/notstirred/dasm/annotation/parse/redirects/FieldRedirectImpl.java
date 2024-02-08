@@ -25,7 +25,7 @@ public class FieldRedirectImpl {
     private final String dstName;
 
     public static Optional<FieldRedirectImpl> parseFieldRedirect(Type fieldOwner, FieldNode fieldNode, Type dstOwner)
-            throws RefImpl.RefAnnotationGivenInvalidArguments, FieldRedirectHasEmptySrcName {
+            throws RefImpl.RefAnnotationGivenNoArguments, FieldRedirectHasEmptySrcName {
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(fieldNode.invisibleAnnotations, FieldRedirect.class);
         if (annotation == null) {
             return Optional.empty();
@@ -33,7 +33,7 @@ public class FieldRedirectImpl {
 
         Map<String, Object> values = getAnnotationValues(annotation, FieldRedirect.class);
 
-        Type srcType = parseRefAnnotation((AnnotationNode) values.get("type"));
+        Type srcType = parseRefAnnotation("type", values);
         String srcName = (String) values.get("name");
 
         if (srcName.isEmpty()) {
@@ -50,18 +50,14 @@ public class FieldRedirectImpl {
     }
 
     public static class FieldRedirectHasEmptySrcName extends DasmAnnotationException {
-        public final FieldNode fieldNode;
-
         public FieldRedirectHasEmptySrcName(FieldNode fieldNode) {
-            this.fieldNode = fieldNode;
+            super("@FieldRedirect for `" + fieldNode.name + "` has an empty name.");
         }
     }
 
     public static class FieldMissingFieldRedirectAnnotationException extends DasmAnnotationException {
-        public final FieldNode fieldNode;
-
         public FieldMissingFieldRedirectAnnotationException(FieldNode fieldNode) {
-            this.fieldNode = fieldNode;
+            super("Field `" + fieldNode.name + "` is missing a @FieldRedirect annotation.");
         }
     }
 }

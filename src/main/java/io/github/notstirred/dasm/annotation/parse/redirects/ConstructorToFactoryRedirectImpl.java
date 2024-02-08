@@ -5,5 +5,6 @@ import lombok.Data;
 
 @Data
 public class ConstructorToFactoryRedirectImpl {
-    private final ClassMethod srcMethod;
+    private final ClassMethod srcConstructor;
+    private final ClassMethod dstMethod;
 }

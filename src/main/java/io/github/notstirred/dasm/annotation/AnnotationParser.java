@@ -12,14 +12,15 @@ import io.github.notstirred.dasm.api.annotations.transform.ApplicationStage;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromClass;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.data.ClassMethod;
-import io.github.notstirred.dasm.exception.DasmAnnotationException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
+import io.github.notstirred.dasm.exception.wrapped.DasmClassExceptions;
+import io.github.notstirred.dasm.exception.wrapped.DasmMethodExceptions;
+import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
 import io.github.notstirred.dasm.transformer.ClassTransform;
 import io.github.notstirred.dasm.transformer.MethodTransform;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
 import io.github.notstirred.dasm.util.Either;
 import io.github.notstirred.dasm.util.TypeUtil;
-import lombok.RequiredArgsConstructor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -39,56 +40,42 @@ public class AnnotationParser {
         this.provider = provider;
     }
 
-    @RequiredArgsConstructor
-    public static class FindRedirectsException extends DasmAnnotationException {
-        public final String message;
-        public final ClassNode classNode;
-    }
+    public void findRedirectSets(ClassNode targetClass) throws DasmWrappedExceptions {
+        DasmClassExceptions classExceptions = new DasmClassExceptions("An exception occurred when finding used redirect sets in", targetClass);
 
-
-    @RequiredArgsConstructor
-    public static class BuildClassTargetException extends DasmAnnotationException {
-        public final String message;
-        public final ClassNode classNode;
-    }
-
-    public void findRedirectSets(ClassNode targetClass) throws FindRedirectsException {
-        FindRedirectsException suppressedExceptions = new FindRedirectsException("", targetClass);
-
-        findRedirectSetsForAnnotation(targetClass.invisibleAnnotations, Dasm.class, "value", suppressedExceptions);
-        findRedirectSetsForAnnotation(targetClass.invisibleAnnotations, TransformFromClass.class, "sets", suppressedExceptions);
+        findRedirectSetsForAnnotation(targetClass.invisibleAnnotations, Dasm.class, "value", classExceptions);
+        findRedirectSetsForAnnotation(targetClass.invisibleAnnotations, TransformFromClass.class, "sets", classExceptions);
 
         for (MethodNode methodNode : targetClass.methods) {
-            findRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddTransformToSets.class, "value", suppressedExceptions);
-            findRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddFieldToSets.class, "sets", suppressedExceptions);
-            findRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddMethodToSets.class, "sets", suppressedExceptions);
+            DasmMethodExceptions methodExceptions = classExceptions.addNested(new DasmMethodExceptions(methodNode));
+            findRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddTransformToSets.class, "value", methodExceptions);
+            findRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddFieldToSets.class, "sets", methodExceptions);
+            findRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddMethodToSets.class, "sets", methodExceptions);
         }
 
-        if (suppressedExceptions.getSuppressed().length > 0) {
-            throw suppressedExceptions;
-        }
+        classExceptions.throwIfHasWrapped();
     }
 
     public Optional<Either<ClassTransform, Collection<MethodTransform>>> buildClassTarget(ClassNode targetClass, String methodPrefix)
-            throws BuildClassTargetException {
+            throws DasmWrappedExceptions {
         Type targetType = Type.getType(TypeUtil.classNameToDescriptor(targetClass.name));
 
-        BuildClassTargetException suppressedExceptions = new BuildClassTargetException("", targetClass);
+        DasmClassExceptions classExceptions = new DasmClassExceptions("An exception occurred when looking for transforms in", targetClass);
 
         AnnotationNode transformFromClassNode = getAnnotationIfPresent(targetClass.invisibleAnnotations, TransformFromClass.class);
         if (transformFromClassNode != null) {
             Map<String, Object> values = getAnnotationValues(transformFromClassNode, TransformFromClass.class);
 
             try {
-                Type srcType = RefImpl.parseRefAnnotation((AnnotationNode) values.get("value"));
+                Type srcType = RefImpl.parseRefAnnotation("value", values);
                 ApplicationStage stage = (ApplicationStage) values.get("stage");
 
                 // FIXME: this should verify that there are no method transforms inside this class,
                 return Optional.of(Either.left(
                         new ClassTransform(srcType, targetType, new ArrayList<>(), stage)
                 ));
-            } catch (RefImpl.RefAnnotationGivenInvalidArguments e) {
-                suppressedExceptions.addSuppressed(e);
+            } catch (RefImpl.RefAnnotationGivenNoArguments e) {
+                classExceptions.addException(e);
             }
         }
 
@@ -107,12 +94,13 @@ public class AnnotationParser {
                     continue;
                 }
                 iterator.remove();
+                DasmMethodExceptions methodExceptions = classExceptions.addNested(new DasmMethodExceptions(method));
 
                 TransformFromMethodImpl transformFromMethod;
                 try {
                     transformFromMethod = TransformFromMethodImpl.parse(transformFromMethodAnnotation);
-                } catch (MethodSigImpl.InvalidMethodSignature | RefImpl.RefAnnotationGivenInvalidArguments e) {
-                    suppressedExceptions.addSuppressed(e);
+                } catch (MethodSigImpl.InvalidMethodSignature | RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.EmptySrcName e) {
+                    methodExceptions.addException(e);
                     continue;
                 }
 
@@ -138,40 +126,41 @@ public class AnnotationParser {
             return Optional.of(Either.right(methodTransforms));
         }
 
-        if (suppressedExceptions.getSuppressed().length > 0) {
-            throw suppressedExceptions;
-        }
+        classExceptions.throwIfHasWrapped();
 
         return Optional.empty();
     }
 
     private void findRedirectSetsForAnnotation(List<AnnotationNode> annotations, Class<?> annotationClass, String setsAnnotationField,
-                                               DasmAnnotationException suppressedExceptions) {
+                                               DasmWrappedExceptions exceptions) {
         AnnotationNode annotationNode = getAnnotationIfPresent(annotations, annotationClass);
         if (annotationNode != null) {
             Map<String, Object> values = getAnnotationValues(annotationNode, annotationClass);
             @SuppressWarnings("unchecked") List<Type> sets = (List<Type>) values.get(setsAnnotationField);
             for (Type redirectSetType : sets) {
-                try {
-                    findRedirectSetsForType(redirectSetType);
-                } catch (NoSuchTypeExists | RedirectSetImpl.RedirectSetParseException e) {
-                    suppressedExceptions.addSuppressed(e);
-                }
+                findRedirectSetsForType(redirectSetType, exceptions);
             }
         }
     }
 
-    private void findRedirectSetsForType(Type redirectSetType)
-            throws NoSuchTypeExists, RedirectSetImpl.RedirectSetParseException {
+    private void findRedirectSetsForType(Type redirectSetType, DasmWrappedExceptions exceptions) {
         RedirectSetImpl existingSet = this.redirectSetsByType.get(redirectSetType);
         if (existingSet == null) {
-            ClassNode redirectSetClass = this.provider.classNode(redirectSetType);
-            existingSet = RedirectSetImpl.parse(redirectSetClass, this.provider);
-            this.redirectSetsByType.put(redirectSetType, existingSet);
+            try {
+                ClassNode redirectSetClass = this.provider.classNode(redirectSetType);
+                existingSet = RedirectSetImpl.parse(redirectSetClass, this.provider);
+                this.redirectSetsByType.put(redirectSetType, existingSet);
+            } catch (NoSuchTypeExists e) {
+                exceptions.addException(e);
+                return;
+            } catch (DasmWrappedExceptions e) {
+                exceptions.addNested(e);
+                return;
+            }
         }
 
         for (Type superRedirectSet : existingSet.superRedirectSets()) {
-            findRedirectSetsForType(superRedirectSet);
+            findRedirectSetsForType(superRedirectSet, exceptions);
         }
     }
 }

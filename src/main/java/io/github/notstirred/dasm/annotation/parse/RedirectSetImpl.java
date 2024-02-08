@@ -4,11 +4,14 @@ import io.github.notstirred.dasm.annotation.parse.redirects.*;
 import io.github.notstirred.dasm.annotation.parse.redirects.FieldRedirectImpl.FieldMissingFieldRedirectAnnotationException;
 import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl.MethodMissingMethodRedirectAnnotationException;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.exception.DasmAnnotationException;
+import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
+import io.github.notstirred.dasm.exception.wrapped.DasmClassExceptions;
+import io.github.notstirred.dasm.exception.wrapped.DasmFieldExceptions;
+import io.github.notstirred.dasm.exception.wrapped.DasmMethodExceptions;
+import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
@@ -38,7 +41,7 @@ public class RedirectSetImpl {
         this.typeRedirects = Collections.unmodifiableSet(typeRedirects);
     }
 
-    public static RedirectSetImpl parse(ClassNode redirectSetClassNode, ClassNodeProvider provider) throws RedirectSetParseException {
+    public static RedirectSetImpl parse(ClassNode redirectSetClassNode, ClassNodeProvider provider) throws DasmWrappedExceptions {
         List<Type> superRedirectSets = new ArrayList<>();
 
         Set<FieldToMethodRedirectImpl> fieldToMethodRedirects = new HashSet<>();
@@ -47,15 +50,15 @@ public class RedirectSetImpl {
         Set<MethodRedirectImpl> methodRedirects = new HashSet<>();
         Set<TypeRedirectImpl> typeRedirects = new HashSet<>();
 
-        RedirectSetParseException suppressedExceptions = new RedirectSetParseException();
+        DasmClassExceptions redirectSetExceptions = new DasmClassExceptions("An exception occurred when parsing redirect set", redirectSetClassNode);
 
         AnnotationNode annotationNode = getAnnotationIfPresent(redirectSetClassNode.invisibleAnnotations, RedirectSet.class);
         if (annotationNode == null) {
-            suppressedExceptions.addSuppressed(new MissingRedirectSetAnnotationException(Type.getObjectType(redirectSetClassNode.name)));
+            redirectSetExceptions.addSuppressed(new MissingRedirectSetAnnotationException(Type.getObjectType(redirectSetClassNode.name)));
         }
 
         if ((redirectSetClassNode.access & ACC_INTERFACE) == 0) {
-            suppressedExceptions.addSuppressed(new NonInterfaceIsUsedAsRedirectSetException(Type.getObjectType(redirectSetClassNode.name)));
+            redirectSetExceptions.addSuppressed(new NonInterfaceIsUsedAsRedirectSetException(Type.getObjectType(redirectSetClassNode.name)));
         }
 
         // Add inherited redirect sets
@@ -73,32 +76,28 @@ public class RedirectSetImpl {
             try {
                 innerClassNode = provider.classNode(Type.getObjectType(innerClass.name));
             } catch (NoSuchTypeExists e) {
-                suppressedExceptions.addSuppressed(new RedirectSetInnerExceptions(redirectSetClassNode, Collections.singletonList(e)));
+                redirectSetExceptions.addException(e);
                 // The inner class doesn't exist, we can't begin parsing it.
                 continue;
             }
+            DasmClassExceptions innerClassExceptions = redirectSetExceptions.addNested(new DasmClassExceptions(
+                    "An exception occurred when parsing inner class of redirect set", innerClassNode));
 
-            List<Exception> innerExceptions = new ArrayList<>();
-            Optional<TypeRedirectImpl> typeRedirect = Optional.empty();
-            try {
-                typeRedirect = TypeRedirectImpl.parseTypeRedirect(innerClassNode);
-            } catch (RefImpl.RefAnnotationGivenInvalidArguments e) {
-                innerExceptions.add(e);
+            Optional<TypeRedirectImpl> typeRedirect = TypeRedirectImpl.parseTypeRedirect(innerClassNode, innerClassExceptions);
+            Optional<RedirectContainerImpl> redirectContainer = RedirectContainerImpl.parseRedirectContainer(innerClassNode, innerClassExceptions);
+
+            if (innerClassExceptions.hasWrapped()) {
+                continue; // If creating the typeRedirect/redirectContainer has errored, we should exit now otherwise more errors caused by this will show from below
             }
-            Optional<RedirectContainerImpl> redirectContainer = Optional.empty();
-            try {
-                redirectContainer = RedirectContainerImpl.parseRedirectContainer(innerClassNode);
-            } catch (RefImpl.RefAnnotationGivenInvalidArguments e) {
-                innerExceptions.add(e);
-            }
+
             if (!(typeRedirect.isPresent() | redirectContainer.isPresent())) {
                 // If the inner class has neither @TypeRedirect nor @RedirectContainer, report it.
-                innerExceptions.add(new MissingTypeRedirectAndRedirectContainerException(Type.getObjectType(innerClassNode.name)));
+                innerClassExceptions.addException(new MissingTypeRedirectAndRedirectContainerException(Type.getObjectType(innerClassNode.name)));
                 // We don't know what the src/dst owners are, we can't continue parsing this inner class.
                 continue;
             } else if (typeRedirect.isPresent() & redirectContainer.isPresent()) {
                 // If the inner class has both @TypeRedirect and @RedirectContainer, report it.
-                innerExceptions.add(new BothTypeRedirectAndRedirectContainerException(Type.getObjectType(innerClassNode.name)));
+                innerClassExceptions.addException(new BothTypeRedirectAndRedirectContainerException(Type.getObjectType(innerClassNode.name)));
                 // We don't know what the src/dst owners are, we can't continue parsing this inner class.
                 continue;
             }
@@ -117,43 +116,41 @@ public class RedirectSetImpl {
                 dstType[0] = container.type();
             });
 
-            parseFields(innerClassNode, srcType[0], dstType[0], fieldRedirects, innerExceptions);
+            parseFields(innerClassNode, srcType[0], dstType[0], fieldRedirects, innerClassExceptions);
 
-            parseMethods(innerClassNode, srcType[0], dstType[0], methodRedirects, innerExceptions);
-
-            if (!innerExceptions.isEmpty()) {
-                suppressedExceptions.addSuppressed(new RedirectSetInnerExceptions(innerClassNode, innerExceptions));
-            }
+            parseMethods(innerClassNode, srcType[0], dstType[0], methodRedirects, innerClassExceptions);
         }
 
-        if (suppressedExceptions.getSuppressed().length > 0) {
-            throw suppressedExceptions;
-        }
+        redirectSetExceptions.throwIfHasWrapped();
+
         return new RedirectSetImpl(superRedirectSets, fieldToMethodRedirects, constructorToFactoryRedirects, fieldRedirects, methodRedirects, typeRedirects);
     }
 
     private static void parseFields(ClassNode innerClassNode, Type srcType, Type dstType, Set<FieldRedirectImpl> fieldRedirects,
-                                    List<Exception> exceptions) {
+                                    DasmClassExceptions exceptions) {
         for (FieldNode fieldNode : innerClassNode.fields) {
+            DasmFieldExceptions fieldExceptions = exceptions.addNested(new DasmFieldExceptions(fieldNode));
             try {
                 Optional<FieldRedirectImpl> fieldRedirect = FieldRedirectImpl.parseFieldRedirect(srcType, fieldNode, dstType);
                 if (fieldRedirect.isPresent()) {
                     fieldRedirects.add(fieldRedirect.get());
                 } else {
-                    exceptions.add(new FieldMissingFieldRedirectAnnotationException(fieldNode));
+                    fieldExceptions.addException(new FieldMissingFieldRedirectAnnotationException(fieldNode));
                 }
-            } catch (RefImpl.RefAnnotationGivenInvalidArguments | FieldRedirectImpl.FieldRedirectHasEmptySrcName e) {
-                exceptions.add(e);
+            } catch (RefImpl.RefAnnotationGivenNoArguments | FieldRedirectImpl.FieldRedirectHasEmptySrcName e) {
+                fieldExceptions.addException(e);
             }
         }
     }
 
     private static void parseMethods(ClassNode innerClassNode, Type srcType, Type dstType, Set<MethodRedirectImpl> methodRedirects,
-                                     List<Exception> exceptions) {
+                                     DasmClassExceptions exceptions) {
         for (MethodNode methodNode : innerClassNode.methods) {
             if (methodNode.name.equals("<init>") && (methodNode.signature == null || methodNode.signature.equals("()V"))) {
                 continue; // Skip default empty constructor
             }
+
+            DasmMethodExceptions methodExceptions = exceptions.addNested(new DasmMethodExceptions(methodNode));
 
             Optional<MethodRedirectImpl> methodRedirect;
             try {
@@ -166,46 +163,37 @@ public class RedirectSetImpl {
                 if (methodRedirect.isPresent()) {
                     methodRedirects.add(methodRedirect.get());
                 } else {
-                    exceptions.add(new MethodMissingMethodRedirectAnnotationException(methodNode));
+                    methodExceptions.addException(new MethodMissingMethodRedirectAnnotationException(methodNode));
                 }
-            } catch (RefImpl.RefAnnotationGivenInvalidArguments | MethodRedirectImpl.MethodRedirectHasEmptySrcName | MethodSigImpl.InvalidMethodSignature e) {
-                exceptions.add(e);
+            } catch (RefImpl.RefAnnotationGivenNoArguments | MethodRedirectImpl.MethodRedirectHasEmptySrcName | MethodSigImpl.InvalidMethodSignature |
+                     MethodSigImpl.EmptySrcName e) {
+                methodExceptions.addException(e);
             }
         }
     }
 
-    public static class RedirectSetParseException extends DasmAnnotationException { }
-
-    /**
-     * Contains the suppressed exceptions while parsing a redirect set.
-     */
-    public static class RedirectSetInnerExceptions extends DasmAnnotationException {
-        public final ClassNode classNode;
-        public final List<Exception> causes;
-
-        public RedirectSetInnerExceptions(ClassNode classNode, List<Exception> causes) {
-            this.classNode = classNode;
-            this.causes = Collections.unmodifiableList(causes);
+    public static class BothTypeRedirectAndRedirectContainerException extends DasmException {
+        public BothTypeRedirectAndRedirectContainerException(Type type) {
+            super(type.getClassName() + " has both @TypeRedirect and @Redirect container");
         }
     }
 
-    @RequiredArgsConstructor
-    public static class BothTypeRedirectAndRedirectContainerException extends Exception {
-        public final Type type;
+    public static class MissingTypeRedirectAndRedirectContainerException extends DasmException {
+        public MissingTypeRedirectAndRedirectContainerException(Type redirectSetType) {
+            super(redirectSetType.getClassName() + " is missing one of @TypeRedirect or @RedirectContainer annotations");
+        }
     }
 
-    @RequiredArgsConstructor
-    public static class MissingTypeRedirectAndRedirectContainerException extends Exception {
-        public final Type type;
+    public static class MissingRedirectSetAnnotationException extends DasmException {
+
+        public MissingRedirectSetAnnotationException(Type redirectSetType) {
+            super(redirectSetType.getClassName() + " is missing @RedirectSet annotation");
+        }
     }
 
-    @RequiredArgsConstructor
-    public static class MissingRedirectSetAnnotationException extends Exception {
-        public final Type redirectSetType;
-    }
-
-    @RequiredArgsConstructor
-    public static class NonInterfaceIsUsedAsRedirectSetException extends Exception {
-        public final Type redirectSetType;
+    public static class NonInterfaceIsUsedAsRedirectSetException extends DasmException {
+        public NonInterfaceIsUsedAsRedirectSetException(Type redirectSetType) {
+            super("Non-interface " + redirectSetType.getClassName() + " is used as a redirect set");
+        }
     }
 }

@@ -2,6 +2,7 @@ package io.github.notstirred.dasm.test;
 
 import io.github.notstirred.dasm.annotation.AnnotationParser;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
+import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
 import io.github.notstirred.dasm.transformer.MethodTransform;
 import io.github.notstirred.dasm.transformer.Transformer;
 import io.github.notstirred.dasm.util.CachingClassProvider;
@@ -19,8 +20,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 public class TestHarness {
-    public static void verifyTransformValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass)
-            throws AnnotationParser.FindRedirectsException, AnnotationParser.BuildClassTargetException {
+    public static void verifyTransformValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) throws DasmWrappedExceptions {
         ClassNode actual = getClassNodeForClass(actualClass);
         ClassNode expected = getClassNodeForClass(expectedClass);
         ClassNode dasm = getClassNodeForClass(dasmClass);
@@ -42,7 +42,6 @@ public class TestHarness {
                 .ignoringFields("innerClasses.name")
                 .ignoringFields("innerClasses.innerName")
                 .ignoringFieldsMatchingRegexes(".*visited$")
-                .ignoringFields("methods.access") // TODO: remove once dasm doesn't modify method access
                 .ignoringFields("sourceFile")
                 .ignoringFieldsOfTypes(LineNumberNode.class)
                 .ignoringFieldsOfTypes(LabelNode.class)

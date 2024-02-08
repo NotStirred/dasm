@@ -20,7 +20,7 @@ public class TransformFromMethodImpl {
     private final Optional<List<Type>> overriddenRedirectSets;
 
     public static TransformFromMethodImpl parse(
-            AnnotationNode annotation) throws MethodSigImpl.InvalidMethodSignature, RefImpl.RefAnnotationGivenInvalidArguments {
+            AnnotationNode annotation) throws MethodSigImpl.InvalidMethodSignature, RefImpl.RefAnnotationGivenNoArguments, MethodSigImpl.EmptySrcName {
         Map<String, Object> values = AnnotationUtil.getAnnotationValues(annotation, TransformFromMethod.class);
 
         Method srcMethod = MethodSigImpl.parse((AnnotationNode) values.get("value"));

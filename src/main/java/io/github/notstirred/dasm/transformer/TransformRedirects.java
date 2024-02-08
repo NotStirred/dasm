@@ -46,7 +46,7 @@ public class TransformRedirects {
             }
 
             for (ConstructorToFactoryRedirectImpl constructorToFactoryRedirect : redirectSet.constructorToFactoryRedirects()) {
-                constructorToFactoryRedirects.put(constructorToFactoryRedirect.srcMethod(), constructorToFactoryRedirect);
+                constructorToFactoryRedirects.put(constructorToFactoryRedirect.srcConstructor(), constructorToFactoryRedirect);
             }
         }
     }

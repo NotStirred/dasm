@@ -1,4 +1,7 @@
 package io.github.notstirred.dasm.exception;
 
-public class DasmTransformException extends DasmException {
+public abstract class DasmTransformException extends DasmException {
+    public DasmTransformException(String message) {
+        super(message);
+    }
 }

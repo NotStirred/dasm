@@ -5,10 +5,11 @@ import io.github.notstirred.dasm.api.provider.MappingsProvider;
 import io.github.notstirred.dasm.data.ClassMethod;
 import io.github.notstirred.dasm.exception.DasmTransformException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
+import io.github.notstirred.dasm.exception.wrapped.DasmClassExceptions;
+import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
 import io.github.notstirred.dasm.util.TypeUtil;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -43,8 +44,8 @@ public class Transformer {
 
     }
 
-    public void transform(ClassNode targetClass, Collection<MethodTransform> transforms) {
-        DasmTransformException suppressedExceptions = new DasmTransformException();
+    public void transform(ClassNode targetClass, Collection<MethodTransform> transforms) throws DasmWrappedExceptions {
+        DasmClassExceptions dasmClassExceptions = new DasmClassExceptions("An exception occurred when transforming", targetClass);
 
         Type targetClassType = Type.getType(TypeUtil.classNameToDescriptor(targetClass.name));
         for (MethodTransform transform : transforms) {
@@ -57,7 +58,7 @@ public class Transformer {
                 try {
                     srcClass = this.classNodeProvider.classNode(methodSrcOwner);
                 } catch (NoSuchTypeExists e) {
-                    suppressedExceptions.addSuppressed(e);
+                    dasmClassExceptions.addException(e);
                     continue;
                 }
             }
@@ -71,10 +72,12 @@ public class Transformer {
                         transformRedirects, true
                 );
             } catch (SrcMethodNotFound e) {
-                suppressedExceptions.addSuppressed(e);
+                dasmClassExceptions.addException(e);
                 continue;
             }
         }
+
+        dasmClassExceptions.throwIfHasWrapped();
     }
 
     /**
@@ -187,10 +190,10 @@ public class Transformer {
         return methodNode;
     }
 
-    @RequiredArgsConstructor
     @Getter
     public static class SrcMethodNotFound extends DasmTransformException {
-        private final ClassMethod method;
-        private final Method remappedMethod;
+        public SrcMethodNotFound(ClassMethod method, Method remappedMethod) {
+            super("Could not find source method: `" + method.method().getName() + "` | remapped: `" + remappedMethod.getName() + "`");
+        }
     }
 }

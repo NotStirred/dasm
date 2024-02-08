@@ -1,13 +1,9 @@
 package io.github.notstirred.dasm.transformer.exception;
 
 import io.github.notstirred.dasm.exception.DasmTransformException;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
-@Getter
 public class FieldToMethodPutFieldWithoutSetterMethod extends DasmTransformException {
-    private final String owner;
-    private final String descriptor;
-    private final String name;
+    public FieldToMethodPutFieldWithoutSetterMethod(String owner, String name) {
+        super("Found a PUTFIELD for field `" + owner + "#" + name + "` with a @FieldToMethodRedirect, but no setter method was defined");
+    }
 }

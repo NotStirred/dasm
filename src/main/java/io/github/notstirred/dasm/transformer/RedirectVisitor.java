@@ -121,13 +121,13 @@ public class RedirectVisitor extends MethodVisitor {
             FieldToMethodRedirectInvalidStaticity.class })
     @Override public void visitFieldInsn(int opcode, String currentOwner, String name, String descriptor) {
         String key = currentOwner + "." + name;
-        FieldRedirectImpl redirectedField = fieldRedirects.get(key);
+        FieldRedirectImpl fieldRedirect = fieldRedirects.get(key);
         FieldToMethodRedirectImpl fieldToMethodRedirect = fieldToMethodRedirects.get(key);
-        if (redirectedField == null && fieldToMethodRedirect == null) {
+        if (fieldRedirect == null && fieldToMethodRedirect == null) {
             super.visitFieldInsn(opcode, currentOwner, name, descriptor);
             return;
-        } else if (redirectedField != null && fieldToMethodRedirect != null) {
-            throw new FieldRedirectingToFieldAndMethod(redirectedField, fieldToMethodRedirect);
+        } else if (fieldRedirect != null && fieldToMethodRedirect != null) {
+            throw new FieldRedirectingToFieldAndMethod(fieldRedirect, fieldToMethodRedirect);
         }
 
         if (fieldToMethodRedirect != null) {
@@ -135,27 +135,27 @@ public class RedirectVisitor extends MethodVisitor {
             return;
         }
 
-        doFieldRedirect(opcode, currentOwner, descriptor, redirectedField);
+        doFieldRedirect(opcode, currentOwner, descriptor, fieldRedirect);
     }
 
     @SneakyThrows({ MethodRedirectingToMethodAndFactory.class, RedirectChangesOwnerWithoutTypeRedirect.class,
             RedirectChangesOwnerWithIncompatibleTypeRedirect.class })
     @Override public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
         String key = owner + "." + name + descriptor;
-        MethodRedirectImpl redirectedMethod = methodRedirects.get(key);
+        MethodRedirectImpl methodRedirect = methodRedirects.get(key);
         ConstructorToFactoryRedirectImpl constructorToFactoryRedirect = constructorToFactoryRedirects.get(key);
-        if (redirectedMethod == null && constructorToFactoryRedirect == null) {
+        if (methodRedirect == null && constructorToFactoryRedirect == null) {
             super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
             return;
-        } else if (redirectedMethod != null && constructorToFactoryRedirect != null) {
-            throw new MethodRedirectingToMethodAndFactory();
+        } else if (methodRedirect != null && constructorToFactoryRedirect != null) {
+            throw new MethodRedirectingToMethodAndFactory(methodRedirect, constructorToFactoryRedirect);
         }
 
         if (constructorToFactoryRedirect != null) {
             throw new Error("Constructor to factory redirect not implemented!");
         }
 
-        doMethodRedirect(opcode, owner, descriptor, redirectedMethod);
+        doMethodRedirect(opcode, owner, descriptor, methodRedirect);
     }
 
     @Override
@@ -223,7 +223,7 @@ public class RedirectVisitor extends MethodVisitor {
         ClassMethod method = (opcode == GETFIELD || opcode == GETSTATIC) ?
                 fieldToMethodRedirect.getterDstMethod() :
                 fieldToMethodRedirect.setterDstMethod()
-                        .orElseThrow(() -> new FieldToMethodPutFieldWithoutSetterMethod(currentOwner, descriptor, name));
+                        .orElseThrow(() -> new FieldToMethodPutFieldWithoutSetterMethod(currentOwner, name));
 
         if (fieldToMethodRedirect.isStatic()) {
             // Static field to method redirects are allowed to change owner
@@ -242,10 +242,10 @@ public class RedirectVisitor extends MethodVisitor {
 
         // Non-static field to method redirects must have a corresponding type redirect if they change owner
         if (!fieldToMethodRedirectNewOwner.equals(currentOwner) && typeRedirectOwner == null) {
-            throw new RedirectChangesOwnerWithoutTypeRedirect();
+            throw new RedirectChangesOwnerWithoutTypeRedirect(fieldToMethodRedirect);
         }
         if (!fieldToMethodRedirectNewOwner.equals(typeRedirectOwner)) {
-            throw new RedirectChangesOwnerWithIncompatibleTypeRedirect();
+            throw new RedirectChangesOwnerWithIncompatibleTypeRedirect(fieldToMethodRedirect, currentOwner, typeRedirectOwner);
         }
 
         super.visitMethodInsn(
@@ -258,26 +258,26 @@ public class RedirectVisitor extends MethodVisitor {
     }
 
 
-    private void doFieldRedirect(int opcode, String currentOwner, String descriptor, FieldRedirectImpl redirectedField)
+    private void doFieldRedirect(int opcode, String currentOwner, String descriptor, FieldRedirectImpl fieldRedirect)
             throws RedirectChangesOwnerWithoutTypeRedirect, RedirectChangesOwnerWithIncompatibleTypeRedirect {
         // Static field redirects may change owner without a type redirect
         if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
-            super.visitFieldInsn(opcode, redirectedField.dstOwner().getInternalName(), redirectedField.dstName(), descriptor);
+            super.visitFieldInsn(opcode, fieldRedirect.dstOwner().getInternalName(), fieldRedirect.dstName(), descriptor);
             return;
         }
 
         String typeRedirectOwner = this.typeRedirects.get(currentOwner);
-        String fieldRedirectNewOwner = redirectedField.dstOwner().getInternalName();
+        String fieldRedirectNewOwner = fieldRedirect.dstOwner().getInternalName();
 
         // Non-static field redirects must have a corresponding type redirect if they change owner
         if (!fieldRedirectNewOwner.equals(currentOwner) && typeRedirectOwner == null) {
-            throw new RedirectChangesOwnerWithoutTypeRedirect();
+            throw new RedirectChangesOwnerWithoutTypeRedirect(fieldRedirect);
         }
         if (!fieldRedirectNewOwner.equals(typeRedirectOwner)) {
-            throw new RedirectChangesOwnerWithIncompatibleTypeRedirect();
+            throw new RedirectChangesOwnerWithIncompatibleTypeRedirect(fieldRedirect, currentOwner, typeRedirectOwner);
         }
 
-        super.visitFieldInsn(opcode, fieldRedirectNewOwner, redirectedField.dstName(), descriptor);
+        super.visitFieldInsn(opcode, fieldRedirectNewOwner, fieldRedirect.dstName(), descriptor);
     }
 
     private void doMethodRedirect(int opcode, String currentOwner, String descriptor, MethodRedirectImpl methodRedirect)
@@ -298,12 +298,12 @@ public class RedirectVisitor extends MethodVisitor {
         if (typeRedirectOwner == null) {
             // If there is no type redirect, the method redirect must not change owner
             if (!methodRedirectNewOwner.equals(currentOwner)) {
-                throw new RedirectChangesOwnerWithoutTypeRedirect();
+                throw new RedirectChangesOwnerWithoutTypeRedirect(methodRedirect);
             }
         } else {
             // If there is a type redirect, the method redirect must change owner to the same owner as the type redirect
             if (!methodRedirectNewOwner.equals(typeRedirectOwner)) {
-                throw new RedirectChangesOwnerWithIncompatibleTypeRedirect();
+                throw new RedirectChangesOwnerWithIncompatibleTypeRedirect(methodRedirect, currentOwner, methodRedirectNewOwner);
             }
         }
 

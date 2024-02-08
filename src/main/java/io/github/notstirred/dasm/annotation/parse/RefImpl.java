@@ -15,7 +15,26 @@ import static io.github.notstirred.dasm.util.TypeUtil.classNameToDescriptor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RefImpl {
-    public static Type parseRefAnnotation(AnnotationNode annotationNode) throws RefAnnotationGivenInvalidArguments {
+    public static Type parseRefAnnotation(String name, Map<String, Object> outerValues) throws RefAnnotationGivenNoArguments {
+        Map<String, Object> values = AnnotationUtil.getAnnotationValues((AnnotationNode) outerValues.get(name), Ref.class);
+        Type type = null;
+        if (values.containsKey("value")) {
+            type = (Type) values.get("value");
+        }
+        if (values.containsKey("string")) {
+            String string = (String) values.get("string");
+            if (!string.isEmpty()) {
+                type = Type.getType(classNameToDescriptor(string));
+            }
+        }
+        if (type == null || type.getClassName().equals(Ref.EmptyRef.class.getName())) {
+            // there is a ref annotation, but it was empty:
+            throw new RefAnnotationGivenNoArguments(name);
+        }
+        return type;
+    }
+
+    public static Type parseUnnamedRefAnnotation(AnnotationNode annotationNode) throws RefAnnotationGivenNoArguments {
         Map<String, Object> values = AnnotationUtil.getAnnotationValues(annotationNode, Ref.class);
         Type type = null;
         if (values.containsKey("value")) {
@@ -29,7 +48,7 @@ public class RefImpl {
         }
         if (type == null || type.getClassName().equals(Ref.EmptyRef.class.getName())) {
             // there is a ref annotation, but it was empty:
-            throw new RefAnnotationGivenInvalidArguments(annotationNode);
+            throw new RefAnnotationGivenNoArguments();
         }
         return type;
     }
@@ -53,11 +72,13 @@ public class RefImpl {
         return Optional.of(type);
     }
 
-    public static class RefAnnotationGivenInvalidArguments extends DasmAnnotationException {
-        public final AnnotationNode annotationNode;
+    public static class RefAnnotationGivenNoArguments extends DasmAnnotationException {
+        public RefAnnotationGivenNoArguments(String name) {
+            super("@Ref annotation `" + name + "` was given no arguments");
+        }
 
-        public RefAnnotationGivenInvalidArguments(AnnotationNode annotationNode) {
-            this.annotationNode = annotationNode;
+        public RefAnnotationGivenNoArguments() {
+            super("@Ref annotation was given no arguments");
         }
     }
 }

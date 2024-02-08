@@ -26,7 +26,7 @@ public class MethodRedirectImpl {
 
     public static Optional<MethodRedirectImpl> parseMethodRedirect(Type methodOwner, boolean methodOwnerIsInterface, MethodNode methodNode,
                                                                    Type dstOwner)
-            throws RefImpl.RefAnnotationGivenInvalidArguments, MethodRedirectHasEmptySrcName, MethodSigImpl.InvalidMethodSignature {
+            throws RefImpl.RefAnnotationGivenNoArguments, MethodRedirectHasEmptySrcName, MethodSigImpl.InvalidMethodSignature, MethodSigImpl.EmptySrcName {
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(methodNode.invisibleAnnotations, MethodRedirect.class);
         if (annotation == null) {
             return Optional.empty();
@@ -47,18 +47,14 @@ public class MethodRedirectImpl {
     }
 
     public static class MethodRedirectHasEmptySrcName extends DasmAnnotationException {
-        public final MethodNode methodNode;
-
         public MethodRedirectHasEmptySrcName(MethodNode methodNode) {
-            this.methodNode = methodNode;
+            super("@MethodRedirect for `" + methodNode.name + "` has an empty name.");
         }
     }
 
     public static class MethodMissingMethodRedirectAnnotationException extends DasmAnnotationException {
-        public final MethodNode methodNode;
-
         public MethodMissingMethodRedirectAnnotationException(MethodNode methodNode) {
-            this.methodNode = methodNode;
+            super("Method `" + methodNode.name + "` is missing a @MethodRedirect annotation.");
         }
     }
 }

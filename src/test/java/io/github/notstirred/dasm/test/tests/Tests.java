@@ -1,6 +1,6 @@
 package io.github.notstirred.dasm.test.tests;
 
-import io.github.notstirred.dasm.annotation.AnnotationParser;
+import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
 import io.github.notstirred.dasm.test.tests.t1.T1Dasm;
 import io.github.notstirred.dasm.test.tests.t1.T1Input;
 import io.github.notstirred.dasm.test.tests.t1.T1Output;
@@ -24,8 +24,7 @@ public class Tests {
      * Verify that constructors are properly redirected.
      * new Object() -> new String()
      */
-    @Test public void testTrivialConstructorRedirects()
-            throws AnnotationParser.FindRedirectsException, AnnotationParser.BuildClassTargetException {
+    @Test public void testTrivialConstructorRedirects() throws DasmWrappedExceptions {
         verifyTransformValid(T1Input.class, T1Output.class, T1Dasm.class);
     }
 
@@ -33,8 +32,7 @@ public class Tests {
      * Verify that type redirects implicitly do self method redirects.
      * Object#hashCode() -> String#hashCode()
      */
-    @Test public void testTrivialImplicitMethodRedirectsDueToTypeRedirects()
-            throws AnnotationParser.FindRedirectsException, AnnotationParser.BuildClassTargetException {
+    @Test public void testTrivialImplicitMethodRedirectsDueToTypeRedirects() throws DasmWrappedExceptions {
         verifyTransformValid(T2Input.class, T2Output.class, T2Dasm.class);
     }
 
@@ -42,8 +40,7 @@ public class Tests {
      * Verify that method redirects work
      * String#hashCode() -> String#length()
      */
-    @Test public void testTrivialMethodRedirect()
-            throws AnnotationParser.FindRedirectsException, AnnotationParser.BuildClassTargetException {
+    @Test public void testTrivialMethodRedirect() throws DasmWrappedExceptions {
         verifyTransformValid(T3Input.class, T3Output.class, T3Dasm.class);
     }
 
@@ -51,8 +48,7 @@ public class Tests {
      * Verify that type redirects work for method parameters and return types.
      * Object -> String
      */
-    @Test public void testTrivialTypeRedirect()
-            throws AnnotationParser.FindRedirectsException, AnnotationParser.BuildClassTargetException {
+    @Test public void testTrivialTypeRedirect() throws DasmWrappedExceptions {
         verifyTransformValid(T4Input.class, T4Output.class, T4Dasm.class);
     }
 }
