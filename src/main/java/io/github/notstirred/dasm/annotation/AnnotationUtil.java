@@ -42,7 +42,7 @@ public class AnnotationUtil {
         Map<String, Object> annotationValues = new HashMap<>();
 
         // Insert specified arguments in the annotation
-        if (annotationNode != null) {
+        if (annotationNode != null && annotationNode.values != null) {
             for (int i = 0; i < annotationNode.values.size(); i += 2) {
                 String name = (String) annotationNode.values.get(i);
                 Object value = annotationNode.values.get(i + 1);
