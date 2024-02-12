@@ -125,7 +125,7 @@ public class Transformer {
         }
 
         if (returnType.getSort() == Type.OBJECT) {
-            returnType = redirects.typeRedirects().get(returnType);
+            returnType = redirects.typeRedirects().getOrDefault(returnType, returnType);
         }
 
         return Type.getMethodDescriptor(returnType, parameterTypes);
