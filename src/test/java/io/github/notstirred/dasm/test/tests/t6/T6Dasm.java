@@ -23,12 +23,6 @@ public class T6Dasm {
     @TransformFromMethod(value = @MethodSig("method2()V"), useRedirectSets = OuterConstructorSet.class)
     public native void method2out2();
 
-    @TransformFromMethod(value = @MethodSig("method3()V"), useRedirectSets = InnerConstructorSet.class)
-    public native void method3out1();
-
-    @TransformFromMethod(value = @MethodSig("method3()V"), useRedirectSets = OuterConstructorSet.class)
-    public native void method3out2();
-
     @RedirectSet
     public interface T6Set {
         @TypeRedirect(from = @Ref(Object.class), to = @Ref(String.class))
@@ -69,5 +63,9 @@ public class T6Dasm {
 
     public static File fromParentWithChild(File parent, String s) {
         return new File(parent, s);
+    }
+
+    public static boolean alwaysTrue() {
+        return true;
     }
 }

@@ -1,6 +1,10 @@
 package io.github.notstirred.dasm.test.tests;
 
+import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddMethodToSets;
 import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
+import io.github.notstirred.dasm.test.tests.addtosets.TestAddToSetsDasm;
+import io.github.notstirred.dasm.test.tests.addtosets.TestAddToSetsInput;
+import io.github.notstirred.dasm.test.tests.addtosets.TestAddToSetsOutput;
 import io.github.notstirred.dasm.test.tests.t1.T1Dasm;
 import io.github.notstirred.dasm.test.tests.t1.T1Input;
 import io.github.notstirred.dasm.test.tests.t1.T1Output;
@@ -68,9 +72,15 @@ public class Tests {
 
     /**
      * Constructor to factory redirects with an additional different type redirect
-     * Object -> String
      */
     @Test public void testConstructorToFactoryRedirects() throws DasmWrappedExceptions {
         verifyTransformValid(T6Input.class, T6Output.class, T6Dasm.class);
+    }
+
+    /**
+     * A trivial test for a static {@link AddMethodToSets}
+     */
+    @Test public void testAddMethodToSets() throws DasmWrappedExceptions {
+        verifyTransformValid(TestAddToSetsInput.class, TestAddToSetsOutput.class, TestAddToSetsDasm.class);
     }
 }

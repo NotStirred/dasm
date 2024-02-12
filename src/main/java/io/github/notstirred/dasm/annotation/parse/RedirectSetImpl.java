@@ -33,12 +33,12 @@ public class RedirectSetImpl {
     public RedirectSetImpl(List<Type> superRedirectSets, Set<FieldToMethodRedirectImpl> fieldToMethodRedirects,
                            Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects, Set<FieldRedirectImpl> fieldRedirects,
                            Set<MethodRedirectImpl> methodRedirects, Set<TypeRedirectImpl> typeRedirects) {
-        this.superRedirectSets = Collections.unmodifiableList(superRedirectSets);
-        this.fieldToMethodRedirects = Collections.unmodifiableSet(fieldToMethodRedirects);
-        this.constructorToFactoryRedirects = Collections.unmodifiableSet(constructorToFactoryRedirects);
-        this.fieldRedirects = Collections.unmodifiableSet(fieldRedirects);
-        this.methodRedirects = Collections.unmodifiableSet(methodRedirects);
-        this.typeRedirects = Collections.unmodifiableSet(typeRedirects);
+        this.superRedirectSets = superRedirectSets;
+        this.fieldToMethodRedirects = fieldToMethodRedirects;
+        this.constructorToFactoryRedirects = constructorToFactoryRedirects;
+        this.fieldRedirects = fieldRedirects;
+        this.methodRedirects = methodRedirects;
+        this.typeRedirects = typeRedirects;
     }
 
     public static RedirectSetImpl parse(ClassNode redirectSetClassNode, ClassNodeProvider provider) throws DasmWrappedExceptions {

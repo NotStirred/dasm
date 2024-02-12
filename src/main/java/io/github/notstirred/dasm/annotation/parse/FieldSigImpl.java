@@ -1,23 +1,23 @@
 package io.github.notstirred.dasm.annotation.parse;
 
+import io.github.notstirred.dasm.annotation.AnnotationUtil;
+import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
 import io.github.notstirred.dasm.data.Field;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AnnotationNode;
 
 import java.util.Map;
-import java.util.Optional;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FieldSigImpl {
-    public static Optional<Field> parse(Map<String, Object> annotation) throws RefImpl.RefAnnotationGivenNoArguments {
-        if (annotation == null) {
-            return Optional.empty();
-        }
+    public static Field parse(AnnotationNode annotation) throws RefImpl.RefAnnotationGivenNoArguments {
+        Map<String, Object> values = AnnotationUtil.getAnnotationValues(annotation, FieldSig.class);
 
-        Type type = RefImpl.parseRefAnnotation("type", annotation);
-        String name = (String) annotation.get("name");
+        Type type = RefImpl.parseRefAnnotation("type", values);
+        String name = (String) values.get("name");
 
-        return Optional.of(new Field(type, name));
+        return new Field(type, name);
     }
 }

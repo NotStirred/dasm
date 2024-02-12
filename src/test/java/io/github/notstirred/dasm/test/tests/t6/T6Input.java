@@ -11,14 +11,4 @@ public class T6Input {
         File f = new File(new File("parent"), "child");
         System.out.println(f);
     }
-
-    public void method3() {
-        File f;
-        if (true) {
-            f = new File((File) null, "child");
-        } else {
-            f = new File("foo");
-        }
-        System.out.println(f);
-    }
 }
