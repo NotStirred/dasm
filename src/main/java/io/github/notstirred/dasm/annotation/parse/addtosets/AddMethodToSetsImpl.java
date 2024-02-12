@@ -20,7 +20,7 @@ import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseOptionalRe
 import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseRefAnnotation;
 
 public class AddMethodToSetsImpl {
-    public static Optional<Pair<List<Type>, MethodRedirectImpl>> parse(Type dstOwner, MethodNode methodNode)
+    public static Optional<Pair<List<Type>, MethodRedirectImpl>> parse(Type dstOwner, boolean isDstInterface, MethodNode methodNode)
             throws RefImpl.RefAnnotationGivenNoArguments, MethodSigImpl.InvalidMethodSignature, MethodSigImpl.EmptySrcName {
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(methodNode.invisibleAnnotations, AddMethodToSets.class);
         if (annotation == null) {
@@ -41,7 +41,7 @@ public class AddMethodToSetsImpl {
                 new ClassMethod(methodOwner, mappingsOwner, srcMethod),
                 dstOwner,
                 methodNode.name,
-                (boolean) values.get("ownerIsInterface")
+                isDstInterface
         )));
     }
 }

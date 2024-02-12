@@ -9,6 +9,4 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 public @interface AddTransformToSets {
     Class<?>[] value();
-
-    boolean isDstInterface();
 }

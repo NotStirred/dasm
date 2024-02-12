@@ -26,6 +26,7 @@ import io.github.notstirred.dasm.transformer.MethodTransform;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
 import io.github.notstirred.dasm.util.Either;
 import io.github.notstirred.dasm.util.TypeUtil;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -48,6 +49,7 @@ public class AnnotationParser {
 
     public void findRedirectSets(ClassNode targetClass) throws DasmWrappedExceptions {
         Type targetClassType = Type.getType(TypeUtil.classNameToDescriptor(targetClass.name));
+        boolean isTargetInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
 
         DasmClassExceptions classExceptions = new DasmClassExceptions("An exception occurred when finding used redirect sets in", targetClass);
 
@@ -75,7 +77,7 @@ public class AnnotationParser {
             findRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddMethodToSets.class, "sets", methodExceptions);
 
             try {
-                AddMethodToSetsImpl.parse(targetClassType, methodNode).ifPresent(setsRedirectPair -> {
+                AddMethodToSetsImpl.parse(targetClassType, isTargetInterface, methodNode).ifPresent(setsRedirectPair -> {
                     // All redirect sets for this method must already exist, so we can just use the map
                     setsRedirectPair.first().forEach(setType -> this.redirectSetsByType.get(setType).methodRedirects().add(setsRedirectPair.second()));
                 });
@@ -90,6 +92,7 @@ public class AnnotationParser {
     public Optional<Either<ClassTransform, Collection<MethodTransform>>> buildClassTarget(ClassNode targetClass, String methodPrefix)
             throws DasmWrappedExceptions {
         Type targetType = Type.getType(TypeUtil.classNameToDescriptor(targetClass.name));
+        boolean isTargetTypeInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
 
         DasmClassExceptions classExceptions = new DasmClassExceptions("An exception occurred when looking for transforms in", targetClass);
 
@@ -169,13 +172,12 @@ public class AnnotationParser {
                 if (addToSetsAnnotation != null) {
                     Map<String, Object> addToSets = getAnnotationValues(addToSetsAnnotation, AddTransformToSets.class);
                     List<Type> sets = (List<Type>) addToSets.get("value");
-                    boolean isDstInterface = (boolean) addToSets.get("isDstInterface");
 
                     sets.forEach(set -> this.redirectSetsByType.get(set).methodRedirects().add(new MethodRedirectImpl(
                             transform.srcMethod(),
                             targetType,
                             transform.dstMethodName(),
-                            isDstInterface
+                            isTargetTypeInterface
                     )));
                 }
 

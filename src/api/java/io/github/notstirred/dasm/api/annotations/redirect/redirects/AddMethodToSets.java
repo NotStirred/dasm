@@ -13,8 +13,6 @@ import java.lang.annotation.Target;
 public @interface AddMethodToSets {
     Ref owner();
 
-    boolean ownerIsInterface();
-
     MethodSig method();
 
     Class<?>[] sets();
