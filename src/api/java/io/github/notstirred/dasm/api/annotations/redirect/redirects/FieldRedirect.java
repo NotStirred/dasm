@@ -16,14 +16,13 @@ import java.lang.annotation.Target;
  * The type, name, and access of the field specify what to redirect to within the destination class.
  * <br/><br/>
  * The {@code final} keyword must be omitted to avoid having to define a constructor to set it.
- * <p/>
+ * <br/><br/>
  * <h2>Example:</h2>
  * The following field redirect specifies a redirect from {@code int existingFieldName} to {@code int newFieldName}
  * <pre>{@code
  *     @FieldRedirect(type = @Ref(int.class), name = "existingFieldName")
  *     private int newFieldName;
  * }</pre>
- * <p/>
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.CLASS)

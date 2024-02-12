@@ -9,7 +9,7 @@ import java.util.*;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 /**
- * This class <i><b>DOES NOT</b></i> support non-trivial NEW & INVOKESPECIAL calls (where the INVOKESPECIAL is in a branch, for example.)
+ * This class <i><b>DOES NOT</b></i> support non-trivial NEW and INVOKESPECIAL calls (where the INVOKESPECIAL is in a branch, for example.)
  */
 public class ConstructorToFactoryBufferingVisitor extends MethodVisitor {
     private final Deque<NewInsnData> newStack = new ArrayDeque<>();
