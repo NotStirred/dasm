@@ -48,6 +48,7 @@ public class AnnotationParser {
 
         for (MethodNode methodNode : targetClass.methods) {
             DasmMethodExceptions methodExceptions = classExceptions.addNested(new DasmMethodExceptions(methodNode));
+            findRedirectSetsForAnnotation(methodNode.invisibleAnnotations, TransformFromMethod.class, "useRedirectSets", methodExceptions);
             findRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddTransformToSets.class, "value", methodExceptions);
             findRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddFieldToSets.class, "sets", methodExceptions);
             findRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddMethodToSets.class, "sets", methodExceptions);
