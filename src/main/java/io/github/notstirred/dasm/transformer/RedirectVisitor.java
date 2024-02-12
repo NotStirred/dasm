@@ -159,7 +159,7 @@ public class RedirectVisitor extends MethodVisitor {
                     constructorToFactoryRedirect.dstOwner().getInternalName(),
                     constructorToFactoryRedirect.dstName(),
                     descriptor,
-                    isInterface
+                    constructorToFactoryRedirect.isDstOwnerInterface()
             );
         } else {
             doMethodRedirect(opcode, owner, descriptor, methodRedirect);
