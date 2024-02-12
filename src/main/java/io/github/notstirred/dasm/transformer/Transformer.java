@@ -104,7 +104,8 @@ public class Transformer {
         }
 
         // FIXME: line numbers
-        RedirectVisitor redirectVisitor = new RedirectVisitor(new MethodVisitor(ASM9, dstMethod) { }, redirects, this.mappingsProvider);
+        MethodVisitor redirectVisitor = new RedirectVisitor(new MethodVisitor(ASM9, dstMethod) { }, redirects, this.mappingsProvider);
+        redirectVisitor = new ConstructorToFactoryBufferingVisitor(redirectVisitor, redirects);
         originalMethod.accept(redirectVisitor);
 
         dstMethod.name = dstMethodName;

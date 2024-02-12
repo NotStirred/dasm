@@ -42,6 +42,7 @@ public class TestHarness {
                 .ignoringFields("name")
                 .ignoringFields("innerClasses.name")
                 .ignoringFields("innerClasses.innerName")
+                .ignoringFields("methods.maxStack") // constructorToMethod redirects don't adjust the max stack variable, so we just ignore it
                 .ignoringFieldsMatchingRegexes(".*visited$")
                 .ignoringFields("sourceFile")
                 .ignoringFieldsOfTypes(LineNumberNode.class)

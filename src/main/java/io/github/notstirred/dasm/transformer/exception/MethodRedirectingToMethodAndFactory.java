@@ -8,7 +8,7 @@ public class MethodRedirectingToMethodAndFactory extends DasmTransformException 
     public MethodRedirectingToMethodAndFactory(MethodRedirectImpl methodRedirect, ConstructorToFactoryRedirectImpl factoryRedirect) {
         super("MethodRedirect for `" + methodRedirect.srcMethod().method().getName() + "` redirects to another method `" +
                 methodRedirect.dstOwner() + "#" + methodRedirect.dstName() + "`, and a factory `" +
-                factoryRedirect.dstMethod().owner() + "#" + factoryRedirect.dstMethod().method().getName() + "`"
+                factoryRedirect.dstOwner() + "#" + factoryRedirect.dstName() + "`"
         );
     }
 }

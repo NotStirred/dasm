@@ -4,10 +4,11 @@ import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectContainer
 import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 
-import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.CLASS;
 
 /**
  * <pre>{@code}</pre>
@@ -31,8 +32,8 @@ import java.lang.annotation.Target;
  *     private native String newMethodName();
  * }</pre>
  */
-@Target(ElementType.METHOD)
-@Retention(RetentionPolicy.CLASS)
+@Target(METHOD)
+@Retention(CLASS)
 public @interface MethodRedirect {
     MethodSig value();
 

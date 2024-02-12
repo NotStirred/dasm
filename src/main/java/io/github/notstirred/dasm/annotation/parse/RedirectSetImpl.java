@@ -2,8 +2,8 @@ package io.github.notstirred.dasm.annotation.parse;
 
 import io.github.notstirred.dasm.annotation.parse.redirects.*;
 import io.github.notstirred.dasm.annotation.parse.redirects.FieldRedirectImpl.FieldMissingFieldRedirectAnnotationException;
-import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl.MethodMissingMethodRedirectAnnotationException;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
+import io.github.notstirred.dasm.exception.DasmAnnotationException;
 import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.exception.wrapped.DasmClassExceptions;
@@ -112,13 +112,13 @@ public class RedirectSetImpl {
             });
 
             redirectContainer.ifPresent(container -> {
-                srcType[0] = container.type();
-                dstType[0] = container.type();
+                srcType[0] = container.srcType();
+                dstType[0] = container.dstType();
             });
 
-            parseFields(innerClassNode, srcType[0], dstType[0], fieldRedirects, innerClassExceptions);
+            parseFields(innerClassNode, srcType[0], dstType[0], fieldRedirects, fieldToMethodRedirects, innerClassExceptions);
 
-            parseMethods(innerClassNode, srcType[0], dstType[0], methodRedirects, innerClassExceptions);
+            parseMethods(innerClassNode, srcType[0], dstType[0], methodRedirects, constructorToFactoryRedirects, innerClassExceptions);
         }
 
         redirectSetExceptions.throwIfHasWrapped();
@@ -127,7 +127,7 @@ public class RedirectSetImpl {
     }
 
     private static void parseFields(ClassNode innerClassNode, Type srcType, Type dstType, Set<FieldRedirectImpl> fieldRedirects,
-                                    DasmClassExceptions exceptions) {
+                                    Set<FieldToMethodRedirectImpl> fieldToMethodRedirects, DasmClassExceptions exceptions) {
         for (FieldNode fieldNode : innerClassNode.fields) {
             DasmFieldExceptions fieldExceptions = exceptions.addNested(new DasmFieldExceptions(fieldNode));
             try {
@@ -144,7 +144,7 @@ public class RedirectSetImpl {
     }
 
     private static void parseMethods(ClassNode innerClassNode, Type srcType, Type dstType, Set<MethodRedirectImpl> methodRedirects,
-                                     DasmClassExceptions exceptions) {
+                                     Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects, DasmClassExceptions exceptions) {
         for (MethodNode methodNode : innerClassNode.methods) {
             if (methodNode.name.equals("<init>") && (methodNode.signature == null || methodNode.signature.equals("()V"))) {
                 continue; // Skip default empty constructor
@@ -152,7 +152,8 @@ public class RedirectSetImpl {
 
             DasmMethodExceptions methodExceptions = exceptions.addNested(new DasmMethodExceptions(methodNode));
 
-            Optional<MethodRedirectImpl> methodRedirect;
+            Optional<MethodRedirectImpl> methodRedirect = Optional.empty();
+            Optional<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirect = Optional.empty();
             try {
                 methodRedirect = MethodRedirectImpl.parseMethodRedirect(
                         srcType,
@@ -160,15 +161,36 @@ public class RedirectSetImpl {
                         methodNode,
                         dstType
                 );
-                if (methodRedirect.isPresent()) {
-                    methodRedirects.add(methodRedirect.get());
-                } else {
-                    methodExceptions.addException(new MethodMissingMethodRedirectAnnotationException(methodNode));
-                }
-            } catch (RefImpl.RefAnnotationGivenNoArguments | MethodRedirectImpl.MethodRedirectHasEmptySrcName | MethodSigImpl.InvalidMethodSignature |
+            } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
                      MethodSigImpl.EmptySrcName e) {
                 methodExceptions.addException(e);
             }
+            try {
+                constructorToFactoryRedirect = ConstructorToFactoryRedirectImpl.parse(
+                        srcType,
+                        (innerClassNode.access & ACC_INTERFACE) != 0,
+                        methodNode,
+                        dstType
+                );
+            } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
+                     MethodSigImpl.EmptySrcName e) {
+                methodExceptions.addException(e);
+            }
+
+
+            if (methodRedirect.isPresent() && constructorToFactoryRedirect.isPresent()) {
+                // if both are present, add exception and return
+                methodExceptions.addException(new BothMethodRedirectAndConstructorToFactoryRedirect(methodNode));
+                return;
+            } else if (!methodRedirect.isPresent() && !constructorToFactoryRedirect.isPresent()) {
+                // if none are present, add exception and return
+                methodExceptions.addException(new MissingMethodRedirectOrConstructorToFactoryRedirect(methodNode));
+                return;
+            }
+
+            // only one must be present by this point
+            methodRedirect.ifPresent(methodRedirects::add);
+            constructorToFactoryRedirect.ifPresent(constructorToFactoryRedirects::add);
         }
     }
 
@@ -181,6 +203,18 @@ public class RedirectSetImpl {
     public static class MissingTypeRedirectAndRedirectContainerException extends DasmException {
         public MissingTypeRedirectAndRedirectContainerException(Type redirectSetType) {
             super(redirectSetType.getClassName() + " is missing one of @TypeRedirect or @RedirectContainer annotations");
+        }
+    }
+
+    public static class MissingMethodRedirectOrConstructorToFactoryRedirect extends DasmAnnotationException {
+        public MissingMethodRedirectOrConstructorToFactoryRedirect(MethodNode methodNode) {
+            super("Method `" + methodNode.name + "` is missing a @MethodRedirect or a @ConstructorToFactory annotation.");
+        }
+    }
+
+    public static class BothMethodRedirectAndConstructorToFactoryRedirect extends DasmAnnotationException {
+        public BothMethodRedirectAndConstructorToFactoryRedirect(MethodNode methodNode) {
+            super("Method `" + methodNode.name + "` has both @MethodRedirect and @ConstructorToFactory annotations.");
         }
     }
 

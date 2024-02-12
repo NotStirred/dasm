@@ -13,6 +13,12 @@ import io.github.notstirred.dasm.test.tests.t3.T3Output;
 import io.github.notstirred.dasm.test.tests.t4.T4Dasm;
 import io.github.notstirred.dasm.test.tests.t4.T4Input;
 import io.github.notstirred.dasm.test.tests.t4.T4Output;
+import io.github.notstirred.dasm.test.tests.t5.T5Dasm;
+import io.github.notstirred.dasm.test.tests.t5.T5Input;
+import io.github.notstirred.dasm.test.tests.t5.T5Output;
+import io.github.notstirred.dasm.test.tests.t6.T6Dasm;
+import io.github.notstirred.dasm.test.tests.t6.T6Input;
+import io.github.notstirred.dasm.test.tests.t6.T6Output;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -50,5 +56,21 @@ public class Tests {
      */
     @Test public void testTrivialTypeRedirect() throws DasmWrappedExceptions {
         verifyTransformValid(T4Input.class, T4Output.class, T4Dasm.class);
+    }
+
+    /**
+     * Type/field/method redirects in a copyFrom method transform.
+     * Object -> String
+     */
+    @Test public void testCopyFromTransform() throws DasmWrappedExceptions {
+        verifyTransformValid(T5Input.class, T5Output.class, T5Dasm.class);
+    }
+
+    /**
+     * Constructor to factory redirects with an additional different type redirect
+     * Object -> String
+     */
+    @Test public void testConstructorToFactoryRedirects() throws DasmWrappedExceptions {
+        verifyTransformValid(T6Input.class, T6Output.class, T6Dasm.class);
     }
 }

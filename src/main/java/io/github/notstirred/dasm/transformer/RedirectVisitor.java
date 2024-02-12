@@ -28,45 +28,6 @@ public class RedirectVisitor extends MethodVisitor {
     private final HashMap<String, FieldToMethodRedirectImpl> fieldToMethodRedirects;
     private final HashMap<String, ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects;
 
-    @Override public void visitTypeInsn(int opcode, String typeInternalName) {
-        String redirectedInternalName = this.typeRedirects.get(typeInternalName);
-        if (redirectedInternalName == null) {
-            super.visitTypeInsn(opcode, typeInternalName);
-            return;
-        }
-
-        super.visitTypeInsn(opcode, redirectedInternalName);
-    }
-
-    @Override public void visitMultiANewArrayInsn(String descriptor, int numDimensions) {
-        String redirectedDescriptor = this.typeRedirectsDescriptors.get(descriptor);
-        if (redirectedDescriptor == null) {
-            super.visitMultiANewArrayInsn(descriptor, numDimensions);
-        }
-
-        super.visitMultiANewArrayInsn(redirectedDescriptor, numDimensions);
-    }
-
-    @Override public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
-        String redirectedType = this.typeRedirects.get(type);
-        if (redirectedType == null) {
-            super.visitTryCatchBlock(start, end, handler, type);
-        }
-
-        super.visitTryCatchBlock(start, end, handler, redirectedType);
-    }
-
-    @Override public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index) {
-        String redirectedDescriptor = this.typeRedirectsDescriptors.get(descriptor);
-        if (redirectedDescriptor == null) {
-            super.visitLocalVariable(name, descriptor, signature, start, end, index);
-            return;
-        }
-
-        // TODO: handle generic signatures for redirects? Probably too much effort.
-        super.visitLocalVariable(name, redirectedDescriptor, null, start, end, index);
-    }
-
     public RedirectVisitor(MethodVisitor mv, TransformRedirects redirects, MappingsProvider mappingsProvider) {
         super(ASM9, mv);
         this.mappingsProvider = mappingsProvider;
@@ -115,6 +76,43 @@ public class RedirectVisitor extends MethodVisitor {
         });
     }
 
+    @Override public void visitTypeInsn(int opcode, String typeInternalName) {
+        String redirectedInternalName = this.typeRedirects.get(typeInternalName);
+        if (redirectedInternalName == null) {
+            super.visitTypeInsn(opcode, typeInternalName);
+            return;
+        }
+
+        super.visitTypeInsn(opcode, redirectedInternalName);
+    }
+
+    @Override public void visitMultiANewArrayInsn(String descriptor, int numDimensions) {
+        String redirectedDescriptor = this.typeRedirectsDescriptors.get(descriptor);
+        if (redirectedDescriptor == null) {
+            super.visitMultiANewArrayInsn(descriptor, numDimensions);
+        }
+
+        super.visitMultiANewArrayInsn(redirectedDescriptor, numDimensions);
+    }
+
+    @Override public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
+        String redirectedType = this.typeRedirects.get(type);
+        if (redirectedType == null) {
+            super.visitTryCatchBlock(start, end, handler, type);
+        }
+
+        super.visitTryCatchBlock(start, end, handler, redirectedType);
+    }
+
+    @Override public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index) {
+        String redirectedDescriptor = this.typeRedirectsDescriptors.get(descriptor);
+        if (redirectedDescriptor == null) {
+            super.visitLocalVariable(name, descriptor, signature, start, end, index);
+            return;
+        }
+
+        super.visitLocalVariable(name, redirectedDescriptor, null, start, end, index);
+    }
 
     @SneakyThrows({ FieldToMethodPutFieldWithoutSetterMethod.class, FieldRedirectingToFieldAndMethod.class,
             RedirectChangesOwnerWithIncompatibleTypeRedirect.class, RedirectChangesOwnerWithoutTypeRedirect.class,
@@ -145,17 +143,27 @@ public class RedirectVisitor extends MethodVisitor {
         MethodRedirectImpl methodRedirect = methodRedirects.get(key);
         ConstructorToFactoryRedirectImpl constructorToFactoryRedirect = constructorToFactoryRedirects.get(key);
         if (methodRedirect == null && constructorToFactoryRedirect == null) {
+            // no redirect
             super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
             return;
         } else if (methodRedirect != null && constructorToFactoryRedirect != null) {
+            // both redirects exist?! throw
             throw new MethodRedirectingToMethodAndFactory(methodRedirect, constructorToFactoryRedirect);
         }
 
         if (constructorToFactoryRedirect != null) {
-            throw new Error("Constructor to factory redirect not implemented!");
+            // if there is a constructorToFactoryRedirect we assume that the NEW instruction was removed by ConstructorToFactoryBufferingVisitor
+            // all we need to do is add a different method insn
+            super.visitMethodInsn(
+                    INVOKESTATIC,
+                    constructorToFactoryRedirect.dstOwner().getInternalName(),
+                    constructorToFactoryRedirect.dstName(),
+                    descriptor,
+                    isInterface
+            );
+        } else {
+            doMethodRedirect(opcode, owner, descriptor, methodRedirect);
         }
-
-        doMethodRedirect(opcode, owner, descriptor, methodRedirect);
     }
 
     @Override

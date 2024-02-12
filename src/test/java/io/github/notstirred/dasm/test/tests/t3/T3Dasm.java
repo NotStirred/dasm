@@ -15,7 +15,7 @@ public class T3Dasm {
 
     @RedirectSet
     public interface T3Set {
-        @RedirectContainer(@Ref(String.class))
+        @RedirectContainer(owner = @Ref(String.class))
         abstract class A {
             @MethodRedirect(@MethodSig(ret = @Ref(int.class), name = "hashCode", args = { }))
             public native int length();

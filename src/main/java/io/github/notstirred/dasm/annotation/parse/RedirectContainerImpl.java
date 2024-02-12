@@ -16,7 +16,8 @@ import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseRefAnnotat
 
 @Data
 public class RedirectContainerImpl {
-    private final Type type;
+    private final Type srcType;
+    private final Type dstType;
 
     public static Optional<RedirectContainerImpl> parseRedirectContainer(ClassNode classNode, DasmClassExceptions classExceptions) {
         if (classNode.invisibleAnnotations == null) {
@@ -29,14 +30,15 @@ public class RedirectContainerImpl {
 
         Map<String, Object> values = getAnnotationValues(annotation, RedirectContainer.class);
 
-        Type value;
+        Type owner;
         try {
-            value = parseRefAnnotation("value", values);
+            owner = parseRefAnnotation("owner", values);
         } catch (RefImpl.RefAnnotationGivenNoArguments e) {
             classExceptions.addException(e);
             return Optional.empty();
         }
+        Type newOwner = RefImpl.parseOptionalRefAnnotation(((AnnotationNode) values.get("newOwner"))).orElse(owner);
 
-        return Optional.of(new RedirectContainerImpl(value));
+        return Optional.of(new RedirectContainerImpl(owner, newOwner));
     }
 }
