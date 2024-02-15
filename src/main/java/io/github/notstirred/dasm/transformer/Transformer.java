@@ -13,10 +13,9 @@ import lombok.Getter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 import org.objectweb.asm.commons.Method;
+import org.objectweb.asm.commons.MethodRemapper;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
@@ -104,7 +103,10 @@ public class Transformer {
         }
 
         // FIXME: line numbers
-        MethodVisitor redirectVisitor = new RedirectVisitor(new MethodVisitor(ASM9, dstMethod) { }, redirects, this.mappingsProvider);
+        MethodRemapper typeRedirectRemapper = new MethodRemapper(new MethodVisitor(ASM9, dstMethod) { }, new TypeRemapper(
+                redirects.typeRedirects(), false, mappingsProvider
+        ));
+        MethodVisitor redirectVisitor = new RedirectVisitor(typeRedirectRemapper, redirects, this.mappingsProvider);
         redirectVisitor = new ConstructorToFactoryBufferingVisitor(redirectVisitor, redirects);
         originalMethod.accept(redirectVisitor);
 
