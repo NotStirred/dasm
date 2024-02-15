@@ -18,6 +18,7 @@ import org.objectweb.asm.tree.*;
 import java.util.*;
 
 import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationIfPresent;
+import static io.github.notstirred.dasm.util.Util.atLeastTwo;
 import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
 
 @Getter
@@ -118,7 +119,7 @@ public class RedirectSetImpl {
 
             parseFields(innerClassNode, srcType[0], dstType[0], fieldRedirects, fieldToMethodRedirects, innerClassExceptions);
 
-            parseMethods(innerClassNode, srcType[0], dstType[0], methodRedirects, constructorToFactoryRedirects, innerClassExceptions);
+            parseMethods(innerClassNode, srcType[0], dstType[0], methodRedirects, fieldToMethodRedirects, constructorToFactoryRedirects, innerClassExceptions);
         }
 
         redirectSetExceptions.throwIfHasWrapped();
@@ -143,7 +144,8 @@ public class RedirectSetImpl {
         }
     }
 
-    private static void parseMethods(ClassNode innerClassNode, Type srcType, Type dstType, Set<MethodRedirectImpl> methodRedirects,
+    private static void parseMethods(ClassNode innerClassNode, Type srcType, Type dstType,
+                                     Set<MethodRedirectImpl> methodRedirects, Set<FieldToMethodRedirectImpl> fieldToMethodRedirects,
                                      Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects, DasmClassExceptions exceptions) {
         for (MethodNode methodNode : innerClassNode.methods) {
             if (methodNode.name.equals("<init>") && (methodNode.signature == null || methodNode.signature.equals("()V"))) {
@@ -153,9 +155,21 @@ public class RedirectSetImpl {
             DasmMethodExceptions methodExceptions = exceptions.addNested(new DasmMethodExceptions(methodNode));
 
             Optional<MethodRedirectImpl> methodRedirect = Optional.empty();
+            Optional<FieldToMethodRedirectImpl> fieldToMethodRedirect = Optional.empty();
             Optional<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirect = Optional.empty();
             try {
                 methodRedirect = MethodRedirectImpl.parseMethodRedirect(
+                        srcType,
+                        (innerClassNode.access & ACC_INTERFACE) != 0,
+                        methodNode,
+                        dstType
+                );
+            } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
+                     MethodSigImpl.EmptySrcName e) {
+                methodExceptions.addException(e);
+            }
+            try {
+                fieldToMethodRedirect = FieldToMethodRedirectImpl.parse(
                         srcType,
                         (innerClassNode.access & ACC_INTERFACE) != 0,
                         methodNode,
@@ -177,19 +191,19 @@ public class RedirectSetImpl {
                 methodExceptions.addException(e);
             }
 
-
-            if (methodRedirect.isPresent() && constructorToFactoryRedirect.isPresent()) {
+            if (atLeastTwo(methodRedirect.isPresent(), fieldToMethodRedirect.isPresent(), constructorToFactoryRedirect.isPresent())) {
                 // if both are present, add exception and return
-                methodExceptions.addException(new BothMethodRedirectAndConstructorToFactoryRedirect(methodNode));
+                methodExceptions.addException(new MoreThanOneMethodRedirect(methodNode));
                 return;
-            } else if (!methodRedirect.isPresent() && !constructorToFactoryRedirect.isPresent()) {
+            } else if (!methodRedirect.isPresent() && !fieldToMethodRedirect.isPresent() && !constructorToFactoryRedirect.isPresent()) {
                 // if none are present, add exception and return
-                methodExceptions.addException(new MissingMethodRedirectOrConstructorToFactoryRedirect(methodNode));
+                methodExceptions.addException(new MissingMethodRedirectRedirect(methodNode));
                 return;
             }
 
             // only one must be present by this point
             methodRedirect.ifPresent(methodRedirects::add);
+            fieldToMethodRedirect.ifPresent(fieldToMethodRedirects::add);
             constructorToFactoryRedirect.ifPresent(constructorToFactoryRedirects::add);
         }
     }
@@ -206,15 +220,15 @@ public class RedirectSetImpl {
         }
     }
 
-    public static class MissingMethodRedirectOrConstructorToFactoryRedirect extends DasmAnnotationException {
-        public MissingMethodRedirectOrConstructorToFactoryRedirect(MethodNode methodNode) {
-            super("Method `" + methodNode.name + "` is missing a @MethodRedirect or a @ConstructorToFactory annotation.");
+    public static class MissingMethodRedirectRedirect extends DasmAnnotationException {
+        public MissingMethodRedirectRedirect(MethodNode methodNode) {
+            super("Method `" + methodNode.name + "` is missing a @MethodRedirect, @FieldToMethodRedirect or a @ConstructorToFactoryRedirect annotation.");
         }
     }
 
-    public static class BothMethodRedirectAndConstructorToFactoryRedirect extends DasmAnnotationException {
-        public BothMethodRedirectAndConstructorToFactoryRedirect(MethodNode methodNode) {
-            super("Method `" + methodNode.name + "` has both @MethodRedirect and @ConstructorToFactory annotations.");
+    public static class MoreThanOneMethodRedirect extends DasmAnnotationException {
+        public MoreThanOneMethodRedirect(MethodNode methodNode) {
+            super("Method `" + methodNode.name + "` has more than one of @MethodRedirect, @FieldToMethodRedirect and @ConstructorToFactoryRedirect annotations.");
         }
     }
 

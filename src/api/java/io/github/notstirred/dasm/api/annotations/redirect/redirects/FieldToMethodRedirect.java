@@ -4,9 +4,10 @@ import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 
 public @interface FieldToMethodRedirect {
-    Ref fieldOwner();
+    FieldSig value();
 
-    FieldSig field();
+    /** The name of the setter method, must have the same owner (be in the same class) as the getter method */
+    String setter() default "";
 
-    Ref methodMappingsOwner() default @Ref;
+    Ref mappingsOwner() default @Ref;
 }
