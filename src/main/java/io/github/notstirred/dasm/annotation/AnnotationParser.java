@@ -200,7 +200,7 @@ public class AnnotationParser {
         AnnotationNode annotationNode = getAnnotationIfPresent(annotations, annotationClass);
         if (annotationNode != null) {
             Map<String, Object> values = getAnnotationValues(annotationNode, annotationClass);
-            @SuppressWarnings("unchecked") List<Type> sets = (List<Type>) values.get(setsAnnotationField);
+            @SuppressWarnings("unchecked") List<Type> sets = annotationElementAsList(values.get(setsAnnotationField));
             for (Type redirectSetType : sets) {
                 findRedirectSetsForType(redirectSetType, exceptions);
             }

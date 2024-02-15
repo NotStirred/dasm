@@ -1,5 +1,6 @@
 package io.github.notstirred.dasm.annotation;
 
+import com.google.common.collect.Lists;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 
@@ -13,6 +14,13 @@ import java.util.stream.Collectors;
 import static io.github.notstirred.dasm.util.TypeUtil.classToDescriptor;
 
 public class AnnotationUtil {
+    public static <T> List<T> annotationElementAsList(Object listOrSingleElement) {
+        if (listOrSingleElement instanceof List) {
+            return (List<T>) listOrSingleElement;
+        }
+        return Lists.newArrayList((T) listOrSingleElement);
+    }
+
     @Nullable
     public static AnnotationNode getAnnotationIfPresent(List<AnnotationNode> annotations, Class<?> annotation) {
         if (annotations == null) {
