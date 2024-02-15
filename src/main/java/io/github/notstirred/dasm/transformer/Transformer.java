@@ -79,10 +79,10 @@ public class Transformer {
         TransformRedirects redirects = new TransformRedirects(transform.redirectSets(), this.mappingsProvider);
         BuiltRedirects builtRedirects = new BuiltRedirects(redirects, this.mappingsProvider);
 
+        // TODO: could type redirects be better accomplished by a remapper that skips method bodies (bc redirect chaining)?
         ClassVisitor cv = new ClassVisitor(ASM9, targetClass) {
             @Override public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
                 String redirectedDescriptor = builtRedirects.typeRedirectsDescriptors().getOrDefault(descriptor, descriptor);
-
                 String key = sourceClass.name + "." + name;
 
                 FieldRedirectImpl fieldRedirect = builtRedirects.fieldRedirects().get(key);
@@ -94,7 +94,13 @@ public class Transformer {
             }
 
             @Override public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-                MethodRemapper typeRedirectRemapper = new MethodRemapper(super.visitMethod(access, name, descriptor, signature, exceptions), new TypeRemapper(
+                String key = sourceClass.name + "." + name + descriptor;
+                // here we manually get the redirect, as the remappers only look within a method, not at the definition
+                MethodRedirectImpl methodRedirect = builtRedirects.methodRedirects().get(key);
+                String dstName = methodRedirect == null ? sourceClass.name : methodRedirect.dstName();
+
+                MethodRemapper typeRedirectRemapper = new MethodRemapper(
+                        super.visitMethod(access, dstName, descriptor, signature, exceptions), new TypeRemapper(
                         redirects.typeRedirects(), false, mappingsProvider
                 ));
                 MethodVisitor redirectVisitor = new ConstructorToFactoryBufferingVisitor(typeRedirectRemapper, redirects);
