@@ -35,7 +35,8 @@ import org.objectweb.asm.tree.MethodNode;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.github.notstirred.dasm.annotation.AnnotationUtil.*;
+import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationIfPresent;
+import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationValues;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 public class AnnotationParser {
@@ -100,17 +101,20 @@ public class AnnotationParser {
                 Type srcType = RefImpl.parseRefAnnotation("value", values);
                 ApplicationStage stage = (ApplicationStage) values.get("stage");
 
+                List<RedirectSetImpl> sets = AnnotationUtil.<Type>annotationElementAsList(values.get("sets")).orElseGet(ArrayList::new).stream()
+                        .map(this.redirectSetsByType::get)
+                        .collect(Collectors.toList());
+
                 AnnotationNode addToSetsAnnotation = getAnnotationIfPresent(targetClass.invisibleAnnotations, AddTransformToSets.class);
                 if (addToSetsAnnotation != null) {
                     Map<String, Object> addToSets = getAnnotationValues(addToSetsAnnotation, AddTransformToSets.class);
-                    List<Type> sets = (List<Type>) addToSets.get("value");
+                    List<Type> addTo = (List<Type>) addToSets.get("value");
 
-                    sets.forEach(set -> this.redirectSetsByType.get(set).typeRedirects().add(new TypeRedirectImpl(srcType, targetType)));
+                    addTo.forEach(set -> this.redirectSetsByType.get(set).typeRedirects().add(new TypeRedirectImpl(srcType, targetType)));
                 }
 
-
                 // FIXME: this should verify that there are no method transforms inside this class,
-                return Optional.of(new ClassTransform(srcType, targetType, new ArrayList<>(), stage));
+                return Optional.of(new ClassTransform(srcType, targetType, sets, stage));
             } catch (RefImpl.RefAnnotationGivenNoArguments e) {
                 classExceptions.addException(e);
             }
@@ -200,7 +204,8 @@ public class AnnotationParser {
         AnnotationNode annotationNode = getAnnotationIfPresent(annotations, annotationClass);
         if (annotationNode != null) {
             Map<String, Object> values = getAnnotationValues(annotationNode, annotationClass);
-            @SuppressWarnings("unchecked") List<Type> sets = annotationElementAsList(values.get(setsAnnotationField));
+            @SuppressWarnings("unchecked") List<Type> sets = AnnotationUtil.<Type>annotationElementAsList(values.get(setsAnnotationField))
+                    .orElseGet(ArrayList::new);
             for (Type redirectSetType : sets) {
                 findRedirectSetsForType(redirectSetType, exceptions);
             }

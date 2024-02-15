@@ -1,24 +1,26 @@
 package io.github.notstirred.dasm.annotation;
 
 import com.google.common.collect.Lists;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 
-import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.github.notstirred.dasm.util.TypeUtil.classToDescriptor;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
 
 public class AnnotationUtil {
-    public static <T> List<T> annotationElementAsList(Object listOrSingleElement) {
-        if (listOrSingleElement instanceof List) {
-            return (List<T>) listOrSingleElement;
+    public static <T> Optional<List<T>> annotationElementAsList(Object listOrSingleElement) {
+        if (listOrSingleElement == null) {
+            return empty();
         }
-        return Lists.newArrayList((T) listOrSingleElement);
+        if (listOrSingleElement instanceof List) {
+            return of((List<T>) listOrSingleElement);
+        }
+        return of(Lists.newArrayList((T) listOrSingleElement));
     }
 
     @Nullable
