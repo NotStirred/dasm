@@ -6,6 +6,8 @@ import io.github.notstirred.dasm.annotation.parse.redirects.FieldToMethodRedirec
 import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
 import io.github.notstirred.dasm.data.ClassMethod;
+import io.github.notstirred.dasm.transformer.data.BuiltRedirects;
+import io.github.notstirred.dasm.transformer.data.TransformRedirects;
 import io.github.notstirred.dasm.transformer.exception.*;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;

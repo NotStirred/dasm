@@ -1,4 +1,4 @@
-package io.github.notstirred.dasm.transformer;
+package io.github.notstirred.dasm.transformer.data;
 
 import io.github.notstirred.dasm.annotation.parse.redirects.ConstructorToFactoryRedirectImpl;
 import io.github.notstirred.dasm.annotation.parse.redirects.FieldRedirectImpl;

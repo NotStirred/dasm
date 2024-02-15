@@ -1,5 +1,6 @@
 package io.github.notstirred.dasm.transformer;
 
+import io.github.notstirred.dasm.transformer.data.TransformRedirects;
 import org.objectweb.asm.MethodVisitor;
 
 import java.util.HashMap;

@@ -8,6 +8,7 @@ import io.github.notstirred.dasm.exception.DasmTransformException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.exception.wrapped.DasmClassExceptions;
 import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
+import io.github.notstirred.dasm.transformer.data.*;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
 import io.github.notstirred.dasm.util.TypeUtil;
 import lombok.Getter;

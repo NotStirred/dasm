@@ -1,4 +1,4 @@
-package io.github.notstirred.dasm.transformer;
+package io.github.notstirred.dasm.transformer.data;
 
 import lombok.Value;
 import org.objectweb.asm.Type;
