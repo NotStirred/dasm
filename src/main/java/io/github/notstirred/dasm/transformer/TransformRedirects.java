@@ -51,7 +51,7 @@ public class TransformRedirects {
         }
     }
 
-    public void addLambdaRedirect(ClassMethod classMethodLambda, MethodRedirectImpl methodRedirect) {
-
+    public void addLambdaRedirect(ClassMethod classMethodLambda, MethodRedirectImpl redirect) {
+        methodRedirects.put(classMethodLambda, redirect);
     }
 }

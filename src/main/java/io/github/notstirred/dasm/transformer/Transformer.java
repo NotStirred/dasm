@@ -178,7 +178,10 @@ public class Transformer {
             ClassMethod classMethodLambda = new ClassMethod(getObjectType(handle.getOwner()), new Method(handle.getName(), handle.getDesc()));
             redirects.addLambdaRedirect(
                     classMethodLambda,
-                    new MethodRedirectImpl(classMethodLambda, targetClassType, lambdaRedirects.get(handle), (targetClass.access & ACC_INTERFACE) != 0)
+                    new MethodRedirectImpl(classMethodLambda, targetClassType, lambdaRedirects.get(handle),
+                            (handle.getTag() & H_INVOKESTATIC) != 0,
+                            (targetClass.access & ACC_INTERFACE) != 0
+                    )
             );
         }
     }
