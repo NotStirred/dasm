@@ -33,7 +33,7 @@ public class TestHarness {
         annotationParser.findRedirectSets(dasm);
         annotationParser.findRedirectSets(actual);
         dasm.name = expected.name;
-        Collection<MethodTransform> methodTransforms = annotationParser.buildClassTarget(dasm, "").get().right().get();
+        Collection<MethodTransform> methodTransforms = annotationParser.buildMethodTargets(dasm, "").get();
 
         transformer.transform(actual, methodTransforms);
 

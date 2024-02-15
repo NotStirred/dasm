@@ -89,11 +89,8 @@ public class AnnotationParser {
         classExceptions.throwIfHasWrapped();
     }
 
-    public Optional<Either<ClassTransform, Collection<MethodTransform>>> buildClassTarget(ClassNode targetClass, String methodPrefix)
-            throws DasmWrappedExceptions {
+    public Optional<ClassTransform> buildClassTarget(ClassNode targetClass) throws DasmWrappedExceptions {
         Type targetType = Type.getType(TypeUtil.classNameToDescriptor(targetClass.name));
-        boolean isTargetTypeInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
-
         DasmClassExceptions classExceptions = new DasmClassExceptions("An exception occurred when looking for transforms in", targetClass);
 
         AnnotationNode transformFromClassNode = getAnnotationIfPresent(targetClass.invisibleAnnotations, TransformFromClass.class);
@@ -109,20 +106,26 @@ public class AnnotationParser {
                     Map<String, Object> addToSets = getAnnotationValues(addToSetsAnnotation, AddTransformToSets.class);
                     List<Type> sets = (List<Type>) addToSets.get("value");
 
-                    sets.forEach(set -> this.redirectSetsByType.get(set).typeRedirects().add(new TypeRedirectImpl(
-                            srcType, targetType
-                    )));
+                    sets.forEach(set -> this.redirectSetsByType.get(set).typeRedirects().add(new TypeRedirectImpl(srcType, targetType)));
                 }
 
 
                 // FIXME: this should verify that there are no method transforms inside this class,
-                return Optional.of(Either.left(
-                        new ClassTransform(srcType, targetType, new ArrayList<>(), stage)
-                ));
+                return Optional.of(new ClassTransform(srcType, targetType, new ArrayList<>(), stage));
             } catch (RefImpl.RefAnnotationGivenNoArguments e) {
                 classExceptions.addException(e);
             }
         }
+
+        classExceptions.throwIfHasWrapped();
+        return Optional.empty();
+    }
+
+    public Optional<Collection<MethodTransform>> buildMethodTargets(ClassNode targetClass, String methodPrefix) throws DasmWrappedExceptions {
+        Type targetType = Type.getType(TypeUtil.classNameToDescriptor(targetClass.name));
+        boolean isTargetTypeInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
+
+        DasmClassExceptions classExceptions = new DasmClassExceptions("An exception occurred when looking for transforms in", targetClass);
 
         AnnotationNode dasmNode = getAnnotationIfPresent(targetClass.invisibleAnnotations, Dasm.class);
         if (dasmNode != null) {
@@ -183,11 +186,10 @@ public class AnnotationParser {
 
                 methodTransforms.add(transform);
             }
-            return Optional.of(Either.right(methodTransforms));
+            return Optional.of(methodTransforms);
         }
 
         classExceptions.throwIfHasWrapped();
-
         return Optional.empty();
     }
 
