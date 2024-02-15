@@ -1,5 +1,6 @@
 package io.github.notstirred.dasm.transformer;
 
+import io.github.notstirred.dasm.annotation.parse.redirects.FieldRedirectImpl;
 import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
 import io.github.notstirred.dasm.data.ClassMethod;
@@ -39,8 +40,70 @@ public class Transformer {
         this.mappingsProvider = mappingsProvider;
     }
 
-    public void transform(ClassNode targetClass, ClassTransform transform) {
+    public void transform(ClassNode targetClass, ClassTransform transform) throws NoSuchTypeExists {
+        ClassNode sourceClass = classNodeProvider.classNode(transform.srcType());
 
+        LOGGER.info("Transforming (" + sourceClass.name + "->" + targetClass.name + "): Transforming whole class");
+
+        ClassNode oldNode = new ClassNode(ASM9);
+        targetClass.accept(oldNode);
+
+        oldNode.methods.clear();
+        oldNode.fields.clear();
+
+        targetClass.access = 0;
+        targetClass.name = null;
+        targetClass.signature = null;
+        targetClass.superName = null;
+        targetClass.interfaces.clear();
+        targetClass.sourceFile = null;
+        targetClass.sourceDebug = null;
+        targetClass.module = null;
+        targetClass.outerClass = null;
+        targetClass.outerMethod = null;
+        targetClass.outerMethodDesc = null;
+        targetClass.visibleAnnotations = null;
+        targetClass.invisibleAnnotations = null;
+        targetClass.visibleTypeAnnotations = null;
+        targetClass.invisibleTypeAnnotations = null;
+        targetClass.attrs = null;
+        targetClass.innerClasses.clear();
+        targetClass.nestHostClass = null;
+        targetClass.nestMembers = null;
+        targetClass.permittedSubclasses = null;
+        targetClass.recordComponents = null;
+        targetClass.fields.clear();
+        targetClass.methods.clear();
+
+
+        TransformRedirects redirects = new TransformRedirects(transform.redirectSets(), this.mappingsProvider);
+        BuiltRedirects builtRedirects = new BuiltRedirects(redirects, this.mappingsProvider);
+
+        ClassVisitor cv = new ClassVisitor(ASM9, targetClass) {
+            @Override public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+                String redirectedDescriptor = builtRedirects.typeRedirectsDescriptors().getOrDefault(descriptor, descriptor);
+
+                String key = sourceClass.name + "." + name;
+
+                FieldRedirectImpl fieldRedirect = builtRedirects.fieldRedirects().get(key);
+                if (fieldRedirect != null) {
+                    return super.visitField(access, fieldRedirect.dstName(), redirectedDescriptor, null, value);
+                } else {
+                    return super.visitField(access, name, descriptor, signature, value);
+                }
+            }
+
+            @Override public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                MethodRemapper typeRedirectRemapper = new MethodRemapper(super.visitMethod(access, name, descriptor, signature, exceptions), new TypeRemapper(
+                        redirects.typeRedirects(), false, mappingsProvider
+                ));
+                MethodVisitor redirectVisitor = new ConstructorToFactoryBufferingVisitor(typeRedirectRemapper, redirects);
+                redirectVisitor = new RedirectVisitor(redirectVisitor, redirects, mappingsProvider);
+                return redirectVisitor;
+            }
+        };
+        sourceClass.accept(cv);
+        oldNode.accept(cv);
     }
 
     public void transform(ClassNode targetClass, Collection<MethodTransform> transforms) throws DasmWrappedExceptions {
