@@ -1,9 +1,11 @@
 package io.github.notstirred.dasm.annotation.parse.redirects;
 
 import io.github.notstirred.dasm.annotation.AnnotationUtil;
+import io.github.notstirred.dasm.annotation.parse.FieldSigImpl;
 import io.github.notstirred.dasm.annotation.parse.RefImpl;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.FieldRedirect;
 import io.github.notstirred.dasm.data.ClassField;
+import io.github.notstirred.dasm.data.Field;
 import io.github.notstirred.dasm.exception.DasmAnnotationException;
 import lombok.Data;
 import org.objectweb.asm.Type;
@@ -15,7 +17,6 @@ import java.util.Optional;
 
 import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationValues;
 import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseOptionalRefAnnotation;
-import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseRefAnnotation;
 
 @Data
 public class FieldRedirectImpl {
@@ -33,17 +34,16 @@ public class FieldRedirectImpl {
 
         Map<String, Object> values = getAnnotationValues(annotation, FieldRedirect.class);
 
-        Type srcType = parseRefAnnotation("type", values);
-        String srcName = (String) values.get("name");
+        Field field = FieldSigImpl.parse(((AnnotationNode) values.get("value")));
 
-        if (srcName.isEmpty()) {
+        if (field.name().isEmpty()) {
             throw new FieldRedirectHasEmptySrcName(fieldNode);
         }
 
         Type mappingsOwner = parseOptionalRefAnnotation((AnnotationNode) values.get("mappingsOwner")).orElse(null);
 
         return Optional.of(new FieldRedirectImpl(
-                new ClassField(fieldOwner, mappingsOwner, srcType, srcName),
+                new ClassField(fieldOwner, mappingsOwner, field.type(), field.name()),
                 dstOwner,
                 fieldNode.name
         ));
