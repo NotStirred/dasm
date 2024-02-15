@@ -12,6 +12,11 @@ public class T6Output {
         System.out.println(f);
     }
 
+    public void method3() {
+        File f = new File(new String("parent"), "child");
+        System.out.println(f);
+    }
+
     public String method1out() {
         return T6Dasm.createString();
     }
@@ -23,6 +28,11 @@ public class T6Output {
 
     public void method2out2() {
         File f = T6Dasm.fromParentWithChild(new File("parent"), "child");
+        System.out.println(f);
+    }
+
+    public void method3out() {
+        File f = new File(new String("parent"), "child");
         System.out.println(f);
     }
 }

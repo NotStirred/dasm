@@ -7,7 +7,7 @@ public class TestAddToSetsOutput {
         CubePos.fromLong(0);
     }
 
-    void method2() {
+    void method1out() {
         TestAddToSetsDasm.testFoo(0);
     }
 }

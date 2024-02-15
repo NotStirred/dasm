@@ -12,7 +12,7 @@ import io.github.notstirred.dasm.test.targets.CubePos;
 @Dasm(TestAddToSetsDasm.Set.class)
 public class TestAddToSetsDasm {
     @TransformFromMethod(value = @MethodSig("method1()V"))
-    native String method2();
+    native String method1out();
 
     @RedirectSet
     public interface Set {
@@ -20,7 +20,7 @@ public class TestAddToSetsDasm {
         abstract class A { }
     }
 
-    @AddMethodToSets(owner = @Ref(CubePos.class), method = @MethodSig(name = "fromLong", ret = @Ref(CubePos.class), args = { }), sets = Set.class)
+    @AddMethodToSets(owner = @Ref(CubePos.class), method = @MethodSig(name = "fromLong", ret = @Ref(CubePos.class), args = { @Ref(long.class) }), sets = Set.class)
     public static CubePos testFoo(long l) {
         return null;
     }
