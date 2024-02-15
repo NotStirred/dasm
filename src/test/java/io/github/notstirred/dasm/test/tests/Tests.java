@@ -7,6 +7,7 @@ import io.github.notstirred.dasm.test.tests.addtosets.TestAddToSetsOutput;
 import io.github.notstirred.dasm.test.tests.setinheritance.TestSetInheritanceDasm;
 import io.github.notstirred.dasm.test.tests.setinheritance.TestSetInheritanceInput;
 import io.github.notstirred.dasm.test.tests.setinheritance.TestSetInheritanceOutput;
+import io.github.notstirred.dasm.test.tests.setinheritance_wholeclass.*;
 import io.github.notstirred.dasm.test.tests.t1.T1Dasm;
 import io.github.notstirred.dasm.test.tests.t1.T1Input;
 import io.github.notstirred.dasm.test.tests.t1.T1Output;
@@ -28,7 +29,8 @@ import io.github.notstirred.dasm.test.tests.t6.T6Output;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import static io.github.notstirred.dasm.test.TestHarness.verifyTransformValid;
+import static io.github.notstirred.dasm.test.TestHarness.verifyClassTransformValid;
+import static io.github.notstirred.dasm.test.TestHarness.verifyMethodTransformsValid;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class Tests {
@@ -37,7 +39,7 @@ public class Tests {
      * new Object() -> new String()
      */
     @Test public void testTrivialConstructorRedirects() {
-        verifyTransformValid(T1Input.class, T1Output.class, T1Dasm.class);
+        verifyMethodTransformsValid(T1Input.class, T1Output.class, T1Dasm.class);
     }
 
     /**
@@ -45,7 +47,7 @@ public class Tests {
      * Object#hashCode() -> String#hashCode()
      */
     @Test public void testTrivialImplicitMethodRedirectsDueToTypeRedirects() {
-        verifyTransformValid(T2Input.class, T2Output.class, T2Dasm.class);
+        verifyMethodTransformsValid(T2Input.class, T2Output.class, T2Dasm.class);
     }
 
     /**
@@ -53,7 +55,7 @@ public class Tests {
      * String#hashCode() -> String#length()
      */
     @Test public void testTrivialMethodRedirect() {
-        verifyTransformValid(T3Input.class, T3Output.class, T3Dasm.class);
+        verifyMethodTransformsValid(T3Input.class, T3Output.class, T3Dasm.class);
     }
 
     /**
@@ -61,7 +63,7 @@ public class Tests {
      * Object -> String
      */
     @Test public void testTrivialTypeRedirect() {
-        verifyTransformValid(T4Input.class, T4Output.class, T4Dasm.class);
+        verifyMethodTransformsValid(T4Input.class, T4Output.class, T4Dasm.class);
     }
 
     /**
@@ -69,27 +71,37 @@ public class Tests {
      * Object -> String
      */
     @Test public void testCopyFromTransform() {
-        verifyTransformValid(T5Input.class, T5Output.class, T5Dasm.class);
+        verifyMethodTransformsValid(T5Input.class, T5Output.class, T5Dasm.class);
     }
 
     /**
      * Constructor to factory redirects with an additional different type redirect
      */
     @Test public void testConstructorToFactoryRedirects() {
-        verifyTransformValid(T6Input.class, T6Output.class, T6Dasm.class);
+        verifyMethodTransformsValid(T6Input.class, T6Output.class, T6Dasm.class);
     }
 
     /**
      * A trivial test for a static {@link AddMethodToSets}
      */
     @Test public void testAddMethodToSets() {
-        verifyTransformValid(TestAddToSetsInput.class, TestAddToSetsOutput.class, TestAddToSetsDasm.class);
+        verifyMethodTransformsValid(TestAddToSetsInput.class, TestAddToSetsOutput.class, TestAddToSetsDasm.class);
     }
 
     /**
      * A trivial test for set inheritance
      */
     @Test public void testSetInheritance() {
-        verifyTransformValid(TestSetInheritanceInput.class, TestSetInheritanceOutput.class, TestSetInheritanceDasm.class);
+        verifyMethodTransformsValid(TestSetInheritanceInput.class, TestSetInheritanceOutput.class, TestSetInheritanceDasm.class);
+    }
+
+    /**
+     * A trivial test for set inheritance
+     */
+    @Test public void testSetInheritanceWholeClass() {
+        verifyClassTransformValid(
+                TestSetInheritanceWholeClassInput.class, TestSetInheritanceWholeClassOutput1.class, TestSetInheritanceWholeClassDasm1.class);
+        verifyClassTransformValid(
+                TestSetInheritanceWholeClassInput.class, TestSetInheritanceWholeClassOutput2.class, TestSetInheritanceWholeClassDasm2.class);
     }
 }

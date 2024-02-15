@@ -102,9 +102,11 @@ public class AnnotationParser {
                 Type srcType = RefImpl.parseRefAnnotation("value", values);
                 ApplicationStage stage = (ApplicationStage) values.get("stage");
 
-                List<RedirectSetImpl> sets = AnnotationUtil.<Type>annotationElementAsList(values.get("sets")).orElseGet(ArrayList::new).stream()
-                        .map(this.redirectSetsByType::get)
-                        .collect(Collectors.toList());
+                List<RedirectSetImpl> sets = unrollSets(
+                        AnnotationUtil.<Type>annotationElementAsList(values.get("sets")).orElseGet(ArrayList::new).stream()
+                                .map(this.redirectSetsByType::get)
+                                .collect(Collectors.toList())
+                );
 
                 AnnotationNode addToSetsAnnotation = getAnnotationIfPresent(targetClass.invisibleAnnotations, AddTransformToSets.class);
                 if (addToSetsAnnotation != null) {

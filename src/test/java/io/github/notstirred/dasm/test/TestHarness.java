@@ -2,7 +2,9 @@ package io.github.notstirred.dasm.test;
 
 import io.github.notstirred.dasm.annotation.AnnotationParser;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
+import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
+import io.github.notstirred.dasm.transformer.ClassTransform;
 import io.github.notstirred.dasm.transformer.MethodTransform;
 import io.github.notstirred.dasm.transformer.Transformer;
 import io.github.notstirred.dasm.util.CachingClassProvider;
@@ -20,7 +22,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 public class TestHarness {
-    public static void verifyTransformValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
+    public static void verifyMethodTransformsValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
         ClassNode actual = getClassNodeForClass(actualClass);
         ClassNode expected = getClassNodeForClass(expectedClass);
         ClassNode dasm = getClassNodeForClass(dasmClass);
@@ -38,6 +40,82 @@ public class TestHarness {
 
             transformer.transform(actual, methodTransforms);
         } catch (DasmWrappedExceptions e) {
+            e.printStackTrace();
+            throw new Error(e);
+        }
+
+        assertThat(actual).usingRecursiveComparison()
+                .withRepresentation(new CustomToString())
+                .ignoringFields("name")
+                .ignoringFields("innerClasses.name")
+                .ignoringFields("innerClasses.innerName")
+                .ignoringFields("methods.maxStack") // constructorToMethod redirects don't adjust the max stack variable, so we just ignore it
+                .ignoringFieldsMatchingRegexes(".*visited$")
+                .ignoringFields("sourceFile")
+                .ignoringFieldsOfTypes(LineNumberNode.class)
+                .ignoringFieldsOfTypes(LabelNode.class)
+                .ignoringFieldsOfTypes(AnnotationNode.class)
+                .withEqualsForType((a, b) -> {
+                    if (a.size() != b.size()) {
+                        return false;
+                    }
+
+                    ListIterator<AbstractInsnNode> aIterator = a.iterator();
+                    ListIterator<AbstractInsnNode> bIterator = b.iterator();
+
+                    while (aIterator.hasNext()) {
+                        AbstractInsnNode aNode = aIterator.next();
+                        AbstractInsnNode bNode = bIterator.next();
+
+                        if ((aNode instanceof LabelNode && bNode instanceof LabelNode) ||
+                                (aNode instanceof LineNumberNode && bNode instanceof LineNumberNode)) {
+                            continue;
+                        }
+
+                        assertThat(aNode).usingRecursiveComparison()
+                                .ignoringFields("previousInsn")
+                                .ignoringFields("nextInsn")
+                                .ignoringFields("line")
+                                .isEqualTo(bNode);
+                    }
+                    return true;
+                }, InsnList.class)
+                .withEqualsForType((a, b) -> {
+                    if (a.desc.equals(classNameToDescriptor(actual.name)) &&
+                            b.desc.equals(classNameToDescriptor(expected.name))) {
+                        return true;
+                    }
+                    return a.desc.equals(b.desc);
+                }, TypeInsnNode.class)
+                .withEqualsForType((a, b) -> {
+                    if (a.desc.equals(classNameToDescriptor(actual.name)) &&
+                            b.desc.equals(classNameToDescriptor(expected.name))) {
+                        return true;
+                    }
+                    return a.desc.equals(b.desc);
+                }, LocalVariableNode.class)
+                .usingOverriddenEquals()
+                .isEqualTo(expected);
+    }
+
+    public static void verifyClassTransformValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
+        ClassNode actual = getClassNodeForClass(actualClass);
+        ClassNode expected = getClassNodeForClass(expectedClass);
+        ClassNode dasm = getClassNodeForClass(dasmClass);
+
+        CachingClassProvider classProvider = new CachingClassProvider(TestHarness::getBytesForClassName);
+        Transformer transformer = new Transformer(classProvider, MappingsProvider.IDENTITY);
+
+        AnnotationParser annotationParser = new AnnotationParser(classProvider);
+
+        try {
+            annotationParser.findRedirectSets(dasm);
+            annotationParser.findRedirectSets(actual);
+            dasm.name = expected.name;
+            ClassTransform methodTransforms = annotationParser.buildClassTarget(dasm).get();
+
+            transformer.transform(actual, methodTransforms);
+        } catch (DasmWrappedExceptions | NoSuchTypeExists e) {
             e.printStackTrace();
             throw new Error(e);
         }
