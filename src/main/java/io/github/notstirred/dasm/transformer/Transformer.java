@@ -89,7 +89,7 @@ public class Transformer {
                 if (fieldRedirect != null) {
                     return super.visitField(access, fieldRedirect.dstName(), redirectedDescriptor, null, value);
                 } else {
-                    return super.visitField(access, name, descriptor, signature, value);
+                    return super.visitField(access, name, descriptor, redirectedDescriptor, value);
                 }
             }
 
