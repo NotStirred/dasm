@@ -60,13 +60,16 @@ public class TestHarness {
                         AbstractInsnNode aNode = aIterator.next();
                         AbstractInsnNode bNode = bIterator.next();
 
-                        if (aNode instanceof LabelNode && bNode instanceof LabelNode) {
-                            return true;
+                        if ((aNode instanceof LabelNode && bNode instanceof LabelNode) ||
+                                (aNode instanceof LineNumberNode && bNode instanceof LineNumberNode)) {
+                            continue;
                         }
 
-                        if (!aNode.equals(bNode)) {
-                            return false;
-                        }
+                        assertThat(aNode).usingRecursiveComparison()
+                                .ignoringFields("previousInsn")
+                                .ignoringFields("nextInsn")
+                                .ignoringFields("line")
+                                .isEqualTo(bNode);
                     }
                     return true;
                 }, InsnList.class)
