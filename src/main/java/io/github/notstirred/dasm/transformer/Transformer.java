@@ -22,6 +22,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -99,8 +100,16 @@ public class Transformer {
                 MethodRedirectImpl methodRedirect = builtRedirects.methodRedirects().get(key);
                 String dstName = methodRedirect == null ? name : methodRedirect.dstName();
 
+                Type[] argumentTypes = Type.getArgumentTypes(descriptor);
+                Type returnType = Type.getReturnType(descriptor);
+
+                argumentTypes = Arrays.stream(argumentTypes).map(type -> redirects.typeRedirects().getOrDefault(type, type)).toArray(Type[]::new);
+                returnType = redirects.typeRedirects().getOrDefault(returnType, returnType);
+
+                String redirectedDescriptor = Type.getMethodDescriptor(returnType, argumentTypes);
+
                 MethodRemapper typeRedirectRemapper = new MethodRemapper(
-                        super.visitMethod(access, dstName, descriptor, signature, exceptions), new TypeRemapper(
+                        super.visitMethod(access, dstName, redirectedDescriptor, signature, exceptions), new TypeRemapper(
                         redirects.typeRedirects(), false, mappingsProvider
                 ));
                 MethodVisitor redirectVisitor = new ConstructorToFactoryBufferingVisitor(typeRedirectRemapper, redirects);
