@@ -116,6 +116,30 @@ publishing {
         // Add additional publications (main and main-sources are added by the java plugin)
         dasm(MavenPublication) {
             from components.java
+
+            pom {
+                name = "DASM"
+                description = 'A library for declarative annotation based bytecode transformations.'
+                url = 'https://github.com/NotStirred/dasm'
+                licenses {
+                    license {
+                        name = "MIT"
+                        url = "https://opensource.org/license/mit/"
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'NotStirred'
+                        name = 'Tom Martin'
+                        email = 'tom.martin1239@gmail.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git@github.com:NotStirred/dasm.git'
+                    developerConnection = 'scm:git:git@github.com:NotStirred/dasm.git'
+                    url = 'https://github.com/NotStirred/dasm'
+                }
+            }
         }
     }
 
@@ -128,8 +152,8 @@ publishing {
             }
         }
     }
-}
 
-signing {
-    sign publishing.publications.dasm
+    signing {
+        sign publishing.publications.dasm
+    }
 }
