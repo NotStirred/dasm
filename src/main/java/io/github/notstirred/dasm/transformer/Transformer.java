@@ -283,7 +283,10 @@ public class Transformer {
     @Getter
     public static class SrcMethodNotFound extends DasmTransformException {
         public SrcMethodNotFound(ClassMethod method, Method remappedMethod) {
-            super("Could not find source method: `" + method.method().getName() + "` | remapped: `" + remappedMethod.getName() + "`");
+            super(
+                    "Could not find source method: `" + method.method().getName() + method.method().getDescriptor() +
+                            "` | remapped: `" + remappedMethod.getName() + remappedMethod.getDescriptor() + "`"
+            );
         }
     }
 }
