@@ -20,7 +20,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 public class TestHarness {
-    public static void verifyTransformValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) throws DasmWrappedExceptions {
+    public static void verifyTransformValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
         ClassNode actual = getClassNodeForClass(actualClass);
         ClassNode expected = getClassNodeForClass(expectedClass);
         ClassNode dasm = getClassNodeForClass(dasmClass);
@@ -30,12 +30,17 @@ public class TestHarness {
 
         AnnotationParser annotationParser = new AnnotationParser(classProvider);
 
-        annotationParser.findRedirectSets(dasm);
-        annotationParser.findRedirectSets(actual);
-        dasm.name = expected.name;
-        Collection<MethodTransform> methodTransforms = annotationParser.buildMethodTargets(dasm, "").get();
+        try {
+            annotationParser.findRedirectSets(dasm);
+            annotationParser.findRedirectSets(actual);
+            dasm.name = expected.name;
+            Collection<MethodTransform> methodTransforms = annotationParser.buildMethodTargets(dasm, "").get();
 
-        transformer.transform(actual, methodTransforms);
+            transformer.transform(actual, methodTransforms);
+        } catch (DasmWrappedExceptions e) {
+            e.printStackTrace();
+            throw new Error(e);
+        }
 
         assertThat(actual).usingRecursiveComparison()
                 .withRepresentation(new CustomToString())

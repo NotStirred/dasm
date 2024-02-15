@@ -1,10 +1,12 @@
 package io.github.notstirred.dasm.test.tests;
 
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddMethodToSets;
-import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
 import io.github.notstirred.dasm.test.tests.addtosets.TestAddToSetsDasm;
 import io.github.notstirred.dasm.test.tests.addtosets.TestAddToSetsInput;
 import io.github.notstirred.dasm.test.tests.addtosets.TestAddToSetsOutput;
+import io.github.notstirred.dasm.test.tests.setinheritance.TestSetInheritanceDasm;
+import io.github.notstirred.dasm.test.tests.setinheritance.TestSetInheritanceInput;
+import io.github.notstirred.dasm.test.tests.setinheritance.TestSetInheritanceOutput;
 import io.github.notstirred.dasm.test.tests.t1.T1Dasm;
 import io.github.notstirred.dasm.test.tests.t1.T1Input;
 import io.github.notstirred.dasm.test.tests.t1.T1Output;
@@ -34,7 +36,7 @@ public class Tests {
      * Verify that constructors are properly redirected.
      * new Object() -> new String()
      */
-    @Test public void testTrivialConstructorRedirects() throws DasmWrappedExceptions {
+    @Test public void testTrivialConstructorRedirects() {
         verifyTransformValid(T1Input.class, T1Output.class, T1Dasm.class);
     }
 
@@ -42,7 +44,7 @@ public class Tests {
      * Verify that type redirects implicitly do self method redirects.
      * Object#hashCode() -> String#hashCode()
      */
-    @Test public void testTrivialImplicitMethodRedirectsDueToTypeRedirects() throws DasmWrappedExceptions {
+    @Test public void testTrivialImplicitMethodRedirectsDueToTypeRedirects() {
         verifyTransformValid(T2Input.class, T2Output.class, T2Dasm.class);
     }
 
@@ -50,7 +52,7 @@ public class Tests {
      * Verify that method redirects work
      * String#hashCode() -> String#length()
      */
-    @Test public void testTrivialMethodRedirect() throws DasmWrappedExceptions {
+    @Test public void testTrivialMethodRedirect() {
         verifyTransformValid(T3Input.class, T3Output.class, T3Dasm.class);
     }
 
@@ -58,7 +60,7 @@ public class Tests {
      * Verify that type redirects work for method parameters and return types.
      * Object -> String
      */
-    @Test public void testTrivialTypeRedirect() throws DasmWrappedExceptions {
+    @Test public void testTrivialTypeRedirect() {
         verifyTransformValid(T4Input.class, T4Output.class, T4Dasm.class);
     }
 
@@ -66,21 +68,21 @@ public class Tests {
      * Type/field/method redirects in a copyFrom method transform.
      * Object -> String
      */
-    @Test public void testCopyFromTransform() throws DasmWrappedExceptions {
+    @Test public void testCopyFromTransform() {
         verifyTransformValid(T5Input.class, T5Output.class, T5Dasm.class);
     }
 
     /**
      * Constructor to factory redirects with an additional different type redirect
      */
-    @Test public void testConstructorToFactoryRedirects() throws DasmWrappedExceptions {
+    @Test public void testConstructorToFactoryRedirects() {
         verifyTransformValid(T6Input.class, T6Output.class, T6Dasm.class);
     }
 
     /**
      * A trivial test for a static {@link AddMethodToSets}
      */
-    @Test public void testAddMethodToSets() throws DasmWrappedExceptions {
+    @Test public void testAddMethodToSets() {
         verifyTransformValid(TestAddToSetsInput.class, TestAddToSetsOutput.class, TestAddToSetsDasm.class);
     }
 }
