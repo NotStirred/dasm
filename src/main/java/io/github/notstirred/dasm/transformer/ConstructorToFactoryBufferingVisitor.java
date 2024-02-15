@@ -14,6 +14,7 @@ import static org.objectweb.asm.Opcodes.ASM9;
 public class ConstructorToFactoryBufferingVisitor extends MethodVisitor {
     private final Deque<NewInsnData> newStack = new ArrayDeque<>();
     private final Deque<List<Runnable>> instructionsStack = new ArrayDeque<>();
+    private int newDepth = 0;
 
     private final Map<String, ConstructorToFactoryRedirectImpl> redirects;
 
@@ -39,8 +40,9 @@ public class ConstructorToFactoryBufferingVisitor extends MethodVisitor {
 
     @Override public void visitTypeInsn(int opcode, String type) {
         if (opcode == Opcodes.NEW) {
-            newStack.push(new NewInsnData(type));
-            instructionsStack.push(new ArrayList<>());
+            this.newStack.push(new NewInsnData(type));
+            this.instructionsStack.push(new ArrayList<>());
+            this.newDepth++;
         } else if (noInstructionsStack()) {
             super.visitTypeInsn(opcode, type);
         } else {
@@ -71,22 +73,40 @@ public class ConstructorToFactoryBufferingVisitor extends MethodVisitor {
             return;
         }
 
+        this.newDepth--;
+
         NewInsnData newInsn = newStack.pop();
         List<Runnable> instructions = instructionsStack.pop();
 
         ConstructorToFactoryRedirectImpl redirect = this.redirects.get(owner + "." + name + descriptor);
-        // If there is no redirect, we keep the instruction, otherwise we don't add it.
-        if (redirect == null) {
-            super.visitTypeInsn(Opcodes.NEW, newInsn.type);
-            if (newInsn.consumedDup()) {
-                super.visitInsn(Opcodes.DUP); // DUP insns immediately after NEW insns are unconditionally removed, see visitInsn
+        if (this.newDepth == 0) {
+            // If there is no redirect, we keep the instruction, otherwise we don't add it.
+            if (redirect == null) {
+                super.visitTypeInsn(Opcodes.NEW, newInsn.type);
+                if (newInsn.consumedDup()) {
+                    super.visitInsn(Opcodes.DUP); // DUP insns immediately after NEW insns are unconditionally removed, see visitInsn
+                }
             }
-        }
 
-        // Add all buffered instructions between the last NEW and this instruction
-        instructions.forEach(Runnable::run);
-        // Unconditionally add the UNCHANGED invokespecial. Changing it is up to RedirectVisitor (due to invariant 1).
-        super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+            // Add all buffered instructions between the last NEW and this instruction
+            instructions.forEach(Runnable::run);
+            // Unconditionally add the UNCHANGED invokespecial. Changing it is up to RedirectVisitor (due to invariant 1).
+            super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+        } else {
+            List<Runnable> outerInsns = instructionsStack.peek();
+            // If there is no redirect, we keep the instruction, otherwise we don't add it.
+            if (redirect == null) {
+                outerInsns.add(() -> super.visitTypeInsn(Opcodes.NEW, newInsn.type));
+                if (newInsn.consumedDup()) {
+                    outerInsns.add(() -> super.visitInsn(Opcodes.DUP)); // DUP insns immediately after NEW insns are unconditionally removed, see visitInsn
+                }
+            }
+
+            // Add all buffered instructions between the last NEW and this instruction
+            outerInsns.addAll(instructions);
+            // Unconditionally add the UNCHANGED invokespecial. Changing it is up to RedirectVisitor (due to invariant 1).
+            outerInsns.add(() -> super.visitMethodInsn(opcode, owner, name, descriptor, isInterface));
+        }
     }
 
     @Override public void visitParameter(String name, int access) {
