@@ -303,21 +303,23 @@ public class RedirectVisitor extends MethodVisitor {
         String methodRedirectNewOwner = methodRedirect.dstOwner().getInternalName();
 
         // Non-static field redirects must have a corresponding type redirect if they change owner
-        if (typeRedirectOwner == null) {
-            // If there is no type redirect, the method redirect must not change owner
-            if (!methodRedirectNewOwner.equals(currentOwner)) {
-                throw new RedirectChangesOwnerWithoutTypeRedirect(methodRedirect);
-            }
-        } else {
-            // If there is a type redirect, the method redirect must change owner to the same owner as the type redirect
-            if (!methodRedirectNewOwner.equals(typeRedirectOwner)) {
-                throw new RedirectChangesOwnerWithIncompatibleTypeRedirect(methodRedirect, currentOwner, methodRedirectNewOwner);
+        if (!methodRedirect.isStatic()) {
+            if (typeRedirectOwner == null) {
+                // If there is no type redirect, the method redirect must not change owner
+                if (!methodRedirectNewOwner.equals(currentOwner)) {
+                    throw new RedirectChangesOwnerWithoutTypeRedirect(methodRedirect);
+                }
+            } else {
+                // If there is a type redirect, the method redirect must change owner to the same owner as the type redirect
+                if (!methodRedirectNewOwner.equals(typeRedirectOwner)) {
+                    throw new RedirectChangesOwnerWithIncompatibleTypeRedirect(methodRedirect, currentOwner, methodRedirectNewOwner);
+                }
             }
         }
 
         super.visitMethodInsn(
-                opcode,
-                methodRedirect.dstOwner().getInternalName(),
+                opcode == INVOKESPECIAL ? INVOKESPECIAL : methodRedirect.isStatic() ? INVOKESTATIC : methodRedirect.isDstOwnerInterface() ? INVOKEINTERFACE : INVOKEVIRTUAL,
+                SKIP_TYPE_REDIRECT_PREFIX + methodRedirect.dstOwner().getInternalName(),
                 methodRedirect.dstName(),
                 descriptor,
                 methodRedirect.isDstOwnerInterface()

@@ -18,6 +18,7 @@ import java.util.Optional;
 
 import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseOptionalRefAnnotation;
 import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseRefAnnotation;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 public class AddMethodToSetsImpl {
     public static Optional<Pair<List<Type>, MethodRedirectImpl>> parse(Type dstOwner, boolean isDstInterface, MethodNode methodNode)
@@ -41,6 +42,7 @@ public class AddMethodToSetsImpl {
                 new ClassMethod(methodOwner, mappingsOwner, srcMethod),
                 dstOwner,
                 methodNode.name,
+                (methodNode.access & ACC_STATIC) != 0,
                 isDstInterface
         )));
     }

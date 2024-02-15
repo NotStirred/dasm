@@ -15,12 +15,14 @@ import java.util.Map;
 import java.util.Optional;
 
 import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseOptionalRefAnnotation;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 @Data
 public class MethodRedirectImpl {
     private final ClassMethod srcMethod;
     private final Type dstOwner;
     private final String dstName;
+    private final boolean isStatic;
     private final boolean isDstOwnerInterface;
 
     public static Optional<MethodRedirectImpl> parseMethodRedirect(Type methodOwner, boolean methodOwnerIsInterface, MethodNode methodNode,
@@ -41,6 +43,7 @@ public class MethodRedirectImpl {
                 new ClassMethod(methodOwner, mappingsOwner, srcMethod),
                 dstOwner,
                 methodNode.name,
+                (methodNode.access & ACC_STATIC) != 0,
                 methodOwnerIsInterface
         ));
     }

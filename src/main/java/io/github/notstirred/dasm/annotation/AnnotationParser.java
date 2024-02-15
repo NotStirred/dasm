@@ -24,7 +24,6 @@ import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
 import io.github.notstirred.dasm.transformer.ClassTransform;
 import io.github.notstirred.dasm.transformer.MethodTransform;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
-import io.github.notstirred.dasm.util.Either;
 import io.github.notstirred.dasm.util.TypeUtil;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -36,8 +35,8 @@ import org.objectweb.asm.tree.MethodNode;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationIfPresent;
-import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationValues;
+import static io.github.notstirred.dasm.annotation.AnnotationUtil.*;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 public class AnnotationParser {
     private final ClassNodeProvider provider;
@@ -182,6 +181,7 @@ public class AnnotationParser {
                             transform.srcMethod(),
                             targetType,
                             nonPrefixedMethodName,
+                            (method.access & ACC_STATIC) != 0,
                             isTargetTypeInterface
                     )));
                 }
