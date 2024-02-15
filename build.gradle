@@ -111,10 +111,6 @@ artifacts {
     archives javadocJar, sourcesJar, apiJar, apiJavadocJar, apiSourcesJar
 }
 
-signing {
-    sign configurations.archives
-}
-
 publishing {
     publications {
         // Add additional publications (main and main-sources are added by the java plugin)
@@ -132,4 +128,8 @@ publishing {
             }
         }
     }
+}
+
+signing {
+    sign publishing.publications.dasm
 }
