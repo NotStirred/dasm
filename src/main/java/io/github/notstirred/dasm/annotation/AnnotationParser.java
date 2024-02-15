@@ -247,7 +247,7 @@ public class AnnotationParser {
     }
 
     private void unrollSetsInner(RedirectSetImpl redirectSet, Collection<RedirectSetImpl> out) {
-        out.add(redirectSet);
         redirectSet.superRedirectSets().stream().map(this.redirectSetsByType::get).forEach(set -> unrollSetsInner(set, out));
+        out.add(redirectSet);
     }
 }
