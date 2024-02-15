@@ -97,7 +97,7 @@ public class Transformer {
                 String key = sourceClass.name + "." + name + descriptor;
                 // here we manually get the redirect, as the remappers only look within a method, not at the definition
                 MethodRedirectImpl methodRedirect = builtRedirects.methodRedirects().get(key);
-                String dstName = methodRedirect == null ? sourceClass.name : methodRedirect.dstName();
+                String dstName = methodRedirect == null ? name : methodRedirect.dstName();
 
                 MethodRemapper typeRedirectRemapper = new MethodRemapper(
                         super.visitMethod(access, dstName, descriptor, signature, exceptions), new TypeRemapper(
