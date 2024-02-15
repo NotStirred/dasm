@@ -13,11 +13,13 @@ import java.util.Map;
 import java.util.Optional;
 
 import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseRefAnnotation;
+import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
 
 @Data
 public class TypeRedirectImpl {
     private final Type srcType;
     private final Type dstType;
+    private final boolean isDstInterface;
 
     public static Optional<TypeRedirectImpl> parseTypeRedirect(ClassNode classNode, DasmClassExceptions methodExceptions) {
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(classNode.invisibleAnnotations, TypeRedirect.class);
@@ -44,6 +46,6 @@ public class TypeRedirectImpl {
             return Optional.empty();
         }
 
-        return Optional.of(new TypeRedirectImpl(from, to));
+        return Optional.of(new TypeRedirectImpl(from, to, (classNode.access & ACC_INTERFACE) != 0));
     }
 }

@@ -18,12 +18,13 @@ public class TypeRemapper extends Remapper {
 
     private final boolean debugLogging;
 
-    public TypeRemapper(Map<Type, Type> typeRedirectsIn, boolean debugLogging, MappingsProvider mappingsProvider) {
+    public TypeRemapper(Map<Type, TypeAndIsInterface> typeRedirectsIn, boolean debugLogging, MappingsProvider mappingsProvider) {
         this.debugLogging = debugLogging;
 
         this.typeRedirects = new HashMap<>();
         for (Type type : typeRedirectsIn.keySet()) {
-            typeRedirects.put(mappingsProvider.remapType(type).getInternalName(), mappingsProvider.remapType(typeRedirectsIn.get(type)).getInternalName());
+            typeRedirects.put(
+                    mappingsProvider.remapType(type).getInternalName(), mappingsProvider.remapType(typeRedirectsIn.get(type).type()).getInternalName());
         }
 
         typeRedirects.forEach((old, n) -> LOGGER.info("Type mapping: " + old + " -> " + n));

@@ -26,8 +26,8 @@ public class BuiltRedirects {
         this.typeRedirects = new HashMap<>();
         this.typeRedirectsDescriptors = new HashMap<>();
         redirects.typeRedirects().forEach((srcType, dstType) -> {
-            typeRedirects.put(srcType.getInternalName(), dstType.getInternalName());
-            typeRedirectsDescriptors.put(srcType.getDescriptor(), dstType.getDescriptor());
+            typeRedirects.put(srcType.getInternalName(), dstType.type().getInternalName());
+            typeRedirectsDescriptors.put(srcType.getDescriptor(), dstType.type().getDescriptor());
         });
 
         this.methodRedirects = new HashMap<>();

@@ -103,15 +103,21 @@ public class Transformer {
                 Type[] argumentTypes = Type.getArgumentTypes(descriptor);
                 Type returnType = Type.getReturnType(descriptor);
 
-                argumentTypes = Arrays.stream(argumentTypes).map(type -> redirects.typeRedirects().getOrDefault(type, type)).toArray(Type[]::new);
-                returnType = redirects.typeRedirects().getOrDefault(returnType, returnType);
+                argumentTypes = Arrays.stream(argumentTypes)
+                        .map(type -> redirects.typeRedirects().getOrDefault(type, new TypeAndIsInterface(type, false)))
+                        .map(TypeAndIsInterface::type)
+                        .toArray(Type[]::new);
+                returnType = redirects.typeRedirects().getOrDefault(returnType, new TypeAndIsInterface(returnType, false)).type();
 
                 String redirectedDescriptor = Type.getMethodDescriptor(returnType, argumentTypes);
 
+                MethodVisitor methodVisitor = new Interfacicitifier(
+                        super.visitMethod(access, dstName, redirectedDescriptor, signature, exceptions), redirects
+                );
                 MethodRemapper typeRedirectRemapper = new MethodRemapper(
-                        super.visitMethod(access, dstName, redirectedDescriptor, signature, exceptions), new TypeRemapper(
-                        redirects.typeRedirects(), false, mappingsProvider
-                ));
+                        methodVisitor,
+                        new TypeRemapper(redirects.typeRedirects(), false, mappingsProvider)
+                );
                 MethodVisitor redirectVisitor = new ConstructorToFactoryBufferingVisitor(typeRedirectRemapper, redirects);
                 redirectVisitor = new RedirectVisitor(redirectVisitor, redirects, mappingsProvider);
                 return redirectVisitor;
@@ -181,7 +187,7 @@ public class Transformer {
         }
 
         // FIXME: line numbers
-        MethodRemapper typeRedirectRemapper = new MethodRemapper(new MethodVisitor(ASM9, dstMethod) { }, new TypeRemapper(
+        MethodRemapper typeRedirectRemapper = new MethodRemapper(new Interfacicitifier(dstMethod, redirects) { }, new TypeRemapper(
                 redirects.typeRedirects(), false, mappingsProvider
         ));
         MethodVisitor redirectVisitor = new RedirectVisitor(typeRedirectRemapper, redirects, this.mappingsProvider);
@@ -200,13 +206,13 @@ public class Transformer {
 
         for (int i = 0; i < parameterTypes.length; i++) {
             if (parameterTypes[i].getSort() == Type.OBJECT) {
-                Type type = redirects.typeRedirects().get(parameterTypes[i]);
-                parameterTypes[i] = type != null ? type : parameterTypes[i];
+                TypeAndIsInterface type = redirects.typeRedirects().get(parameterTypes[i]);
+                parameterTypes[i] = type != null ? type.type() : parameterTypes[i];
             }
         }
 
         if (returnType.getSort() == Type.OBJECT) {
-            returnType = redirects.typeRedirects().getOrDefault(returnType, returnType);
+            returnType = redirects.typeRedirects().getOrDefault(returnType, new TypeAndIsInterface(returnType, false)).type();
         }
 
         return Type.getMethodDescriptor(returnType, parameterTypes);

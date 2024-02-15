@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 
 import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationIfPresent;
 import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationValues;
+import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 public class AnnotationParser {
@@ -110,7 +111,8 @@ public class AnnotationParser {
                     Map<String, Object> addToSets = getAnnotationValues(addToSetsAnnotation, AddTransformToSets.class);
                     List<Type> addTo = (List<Type>) addToSets.get("value");
 
-                    addTo.forEach(set -> this.redirectSetsByType.get(set).typeRedirects().add(new TypeRedirectImpl(srcType, targetType)));
+                    addTo.forEach(set -> this.redirectSetsByType.get(set).typeRedirects()
+                            .add(new TypeRedirectImpl(srcType, targetType, (targetClass.access & ACC_INTERFACE) != 0)));
                 }
 
                 // FIXME: this should verify that there are no method transforms inside this class,
