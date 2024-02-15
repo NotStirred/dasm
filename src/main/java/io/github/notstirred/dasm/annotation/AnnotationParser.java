@@ -160,13 +160,15 @@ public class AnnotationParser {
 
                 // FIXME: figure out if there is a way to avoid this with mixin.
                 // Name is modified here to prevent mixin from overwriting it. We remove this prefix in postApply.
-                String prefixedMethodName = methodPrefix + method.name
-                        .replace("<init>", "__init__")
-                        .replace("<clinit>", "__clinit__");
+                // We redirect to the non-prefixed name, but create the method with the prefix, for later removal.
+                String nonPrefixedMethodName = method.name;
+                String prefixedMethodName = methodPrefix + nonPrefixedMethodName;
 
                 MethodTransform transform = new MethodTransform(
                         new ClassMethod(methodOwner, methodOwner, transformFromMethod.srcMethod()),
-                        prefixedMethodName,
+                        prefixedMethodName // We have to rename constructors because we add a prefix, and mixin expects that anything with <> is either init, or clinit
+                                .replace("<init>", "__init__")
+                                .replace("<clinit>", "__clinit__"),
                         redirectSets,
                         transformFromMethod.stage()
                 );
@@ -179,7 +181,7 @@ public class AnnotationParser {
                     sets.forEach(set -> this.redirectSetsByType.get(set).methodRedirects().add(new MethodRedirectImpl(
                             transform.srcMethod(),
                             targetType,
-                            transform.dstMethodName(),
+                            nonPrefixedMethodName,
                             isTargetTypeInterface
                     )));
                 }
