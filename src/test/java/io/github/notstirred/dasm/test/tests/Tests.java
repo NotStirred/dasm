@@ -85,4 +85,11 @@ public class Tests {
     @Test public void testAddMethodToSets() {
         verifyTransformValid(TestAddToSetsInput.class, TestAddToSetsOutput.class, TestAddToSetsDasm.class);
     }
+
+    /**
+     * A trivial test for set inheritance
+     */
+    @Test public void testSetInheritance() {
+        verifyTransformValid(TestSetInheritanceInput.class, TestSetInheritanceOutput.class, TestSetInheritanceDasm.class);
+    }
 }

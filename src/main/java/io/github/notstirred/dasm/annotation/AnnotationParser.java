@@ -136,8 +136,9 @@ public class AnnotationParser {
         if (dasmNode != null) {
             Map<String, Object> values = getAnnotationValues(dasmNode, Dasm.class);
             @SuppressWarnings("unchecked")
-            List<RedirectSetImpl> defaultRedirectSets = ((List<Type>) values.get("value")).stream()
-                    .map(this.redirectSetsByType::get).collect(Collectors.toList());
+            List<RedirectSetImpl> defaultRedirectSets = unrollSets(((List<Type>) values.get("value")).stream()
+                    .map(this.redirectSetsByType::get).collect(Collectors.toList())
+            );
 
             List<MethodTransform> methodTransforms = new ArrayList<>();
             for (Iterator<MethodNode> iterator = targetClass.methods.iterator(); iterator.hasNext(); ) {
@@ -161,6 +162,7 @@ public class AnnotationParser {
 
                 List<RedirectSetImpl> redirectSets = transformFromMethod.overriddenRedirectSets().map(types ->
                                 types.stream().map(this.redirectSetsByType::get).collect(Collectors.toList()))
+                        .map(this::unrollSets)
                         .orElse(defaultRedirectSets);
 
                 // FIXME: figure out if there is a way to avoid this with mixin.
@@ -233,5 +235,19 @@ public class AnnotationParser {
         for (Type superRedirectSet : existingSet.superRedirectSets()) {
             findRedirectSetsForType(superRedirectSet, exceptions);
         }
+    }
+
+    /**
+     * @return A collection of all redirect sets and super redirect sets in depth first order
+     */
+    private List<RedirectSetImpl> unrollSets(Collection<RedirectSetImpl> redirectSets) {
+        List<RedirectSetImpl> unrolledSets = new ArrayList<>();
+        redirectSets.forEach(set -> unrollSetsInner(set, unrolledSets));
+        return unrolledSets;
+    }
+
+    private void unrollSetsInner(RedirectSetImpl redirectSet, Collection<RedirectSetImpl> out) {
+        out.add(redirectSet);
+        redirectSet.superRedirectSets().stream().map(this.redirectSetsByType::get).forEach(set -> unrollSetsInner(set, out));
     }
 }
