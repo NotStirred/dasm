@@ -3,7 +3,7 @@ package io.github.notstirred.dasm.test.tests.t6;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.ConstructorToFactoryRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
-import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectContainer;
+import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
 import io.github.notstirred.dasm.api.annotations.selector.ConstructorMethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
@@ -34,28 +34,28 @@ public class T6Dasm {
         @TypeRedirect(from = @Ref(Object.class), to = @Ref(String.class))
         abstract class A { }
 
-        @RedirectContainer(owner = @Ref(Object.class), newOwner = @Ref(T6Dasm.class))
+        @InterOwnerContainer(owner = @Ref(Object.class), newOwner = @Ref(T6Dasm.class))
         abstract class B {
             @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = { }))
-            public native String createString();
+            static native String createString();
         }
     }
 
     @RedirectSet
     public interface InnerConstructorSet {
-        @RedirectContainer(owner = @Ref(File.class), newOwner = @Ref(T6Dasm.class))
+        @InterOwnerContainer(owner = @Ref(File.class), newOwner = @Ref(T6Dasm.class))
         abstract class B {
             @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = @Ref(String.class)))
-            public native File fromString(String s);
+            static native File fromString(String s);
         }
     }
 
     @RedirectSet
     public interface OuterConstructorSet {
-        @RedirectContainer(owner = @Ref(File.class), newOwner = @Ref(T6Dasm.class))
+        @InterOwnerContainer(owner = @Ref(File.class), newOwner = @Ref(T6Dasm.class))
         abstract class B {
             @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = { @Ref(File.class), @Ref(String.class) }))
-            public native File fromParentWithChild(File parent, String s);
+            static native File fromParentWithChild(File parent, String s);
         }
     }
 

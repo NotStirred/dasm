@@ -9,9 +9,8 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.CLASS)
-public @interface RedirectContainer {
+public @interface InterOwnerContainer {
     Ref owner();
 
-    /** If not specified, the value provided to {@link RedirectContainer#owner()} is used (ie no owner change). */
-    Ref newOwner() default @Ref;
+    Ref newOwner();
 }

@@ -21,7 +21,7 @@ public class TypeRedirectImpl {
     private final Type dstType;
     private final boolean isDstInterface;
 
-    public static Optional<TypeRedirectImpl> parseTypeRedirect(ClassNode classNode, DasmClassExceptions methodExceptions) {
+    public static Optional<TypeRedirectImpl> parse(ClassNode classNode, DasmClassExceptions methodExceptions) {
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(classNode.invisibleAnnotations, TypeRedirect.class);
         if (annotation == null) {
             return Optional.empty();

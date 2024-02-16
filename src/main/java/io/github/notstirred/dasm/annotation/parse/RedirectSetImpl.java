@@ -18,8 +18,10 @@ import org.objectweb.asm.tree.*;
 import java.util.*;
 
 import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationIfPresent;
-import static io.github.notstirred.dasm.util.Util.atLeastTwo;
+import static io.github.notstirred.dasm.util.TypeUtil.simpleClassNameOf;
+import static io.github.notstirred.dasm.util.Util.atLeastTwoOf;
 import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 @Getter
 public class RedirectSetImpl {
@@ -84,38 +86,62 @@ public class RedirectSetImpl {
             DasmClassExceptions innerClassExceptions = redirectSetExceptions.addNested(new DasmClassExceptions(
                     "An exception occurred when parsing inner class of redirect set", innerClassNode));
 
-            Optional<TypeRedirectImpl> typeRedirect = TypeRedirectImpl.parseTypeRedirect(innerClassNode, innerClassExceptions);
-            Optional<RedirectContainerImpl> redirectContainer = RedirectContainerImpl.parseRedirectContainer(innerClassNode, innerClassExceptions);
+            Optional<TypeRedirectImpl> typeRedirect = TypeRedirectImpl.parse(innerClassNode, innerClassExceptions);
+            Optional<InterOwnerContainerImpl> interOwnerContainer = InterOwnerContainerImpl.parse(innerClassNode, innerClassExceptions);
+            Optional<IntraOwnerContainerImpl> intraOwnerContainer = IntraOwnerContainerImpl.parse(innerClassNode, innerClassExceptions);
 
             if (innerClassExceptions.hasWrapped()) {
-                continue; // If creating the typeRedirect/redirectContainer has errored, we should exit now otherwise more errors caused by this will show from below
+                continue; // If creating the typeRedirect/interOwnerContainer has errored, we should exit now otherwise more errors caused by this will show from below
             }
 
-            if (!(typeRedirect.isPresent() | redirectContainer.isPresent())) {
-                // If the inner class has neither @TypeRedirect nor @RedirectContainer, report it.
-                innerClassExceptions.addException(new MissingTypeRedirectAndRedirectContainerException(Type.getObjectType(innerClassNode.name)));
+            if (!(typeRedirect.isPresent() | interOwnerContainer.isPresent() | intraOwnerContainer.isPresent())) {
+                // The inner class must have one of @TypeRedirect, @InterOwnerContainer, @IntraOwnerContainer, but does not.
+                innerClassExceptions.addException(new MissingContainerException(Type.getObjectType(innerClassNode.name)));
                 // We don't know what the src/dst owners are, we can't continue parsing this inner class.
                 continue;
-            } else if (typeRedirect.isPresent() & redirectContainer.isPresent()) {
-                // If the inner class has both @TypeRedirect and @RedirectContainer, report it.
-                innerClassExceptions.addException(new BothTypeRedirectAndRedirectContainerException(Type.getObjectType(innerClassNode.name)));
+            } else if (atLeastTwoOf(typeRedirect.isPresent(), interOwnerContainer.isPresent(), intraOwnerContainer.isPresent())) {
+                // If the inner class has more than one of @TypeRedirect, @InterOwnerContainer, @IntraOwnerContainer.
+                innerClassExceptions.addException(new MoreThanOneContainerException(Type.getObjectType(innerClassNode.name)));
                 // We don't know what the src/dst owners are, we can't continue parsing this inner class.
                 continue;
             }
 
             Type[] srcType = new Type[1]; // java is dumb
             Type[] dstType = new Type[1];
+            boolean[] nonStaticRedirectsAllowed = new boolean[1];
 
             typeRedirect.ifPresent(redirect -> {
                 srcType[0] = redirect.srcType();
                 dstType[0] = redirect.dstType();
+                nonStaticRedirectsAllowed[0] = true;
                 typeRedirects.add(redirect);
             });
 
-            redirectContainer.ifPresent(container -> {
+            interOwnerContainer.ifPresent(container -> {
                 srcType[0] = container.srcType();
                 dstType[0] = container.dstType();
+                nonStaticRedirectsAllowed[0] = false;
             });
+
+            intraOwnerContainer.ifPresent(container -> {
+                srcType[0] = container.type();
+                dstType[0] = container.type();
+                nonStaticRedirectsAllowed[0] = true;
+            });
+
+            if (!nonStaticRedirectsAllowed[0]) {
+                // Verify that there are no non-static members
+                boolean nonStaticMembersExist = innerClassNode.methods.stream()
+                        // filter the default constructor, it's not a valid redirect anyway.
+                        .filter(methodNode -> !(methodNode.name.equals("<init>") && methodNode.desc.equals("()V")))
+                        .anyMatch(method -> (method.access & ACC_STATIC) == 0) |
+                        innerClassNode.fields.stream().anyMatch(field -> (field.access & ACC_STATIC) == 0);
+                if (nonStaticMembersExist) {
+                    innerClassExceptions.addException(new InterOwnerContainerHasNonStaticRedirects(Type.getObjectType(innerClassNode.name)));
+                    // The layout is illegal, we can't continue parsing this inner class.
+                    continue;
+                }
+            }
 
             parseFields(innerClassNode, srcType[0], dstType[0], fieldRedirects, fieldToMethodRedirects, innerClassExceptions);
 
@@ -191,7 +217,7 @@ public class RedirectSetImpl {
                 methodExceptions.addException(e);
             }
 
-            if (atLeastTwo(methodRedirect.isPresent(), fieldToMethodRedirect.isPresent(), constructorToFactoryRedirect.isPresent())) {
+            if (atLeastTwoOf(methodRedirect.isPresent(), fieldToMethodRedirect.isPresent(), constructorToFactoryRedirect.isPresent())) {
                 // if both are present, add exception and return
                 methodExceptions.addException(new MoreThanOneMethodRedirect(methodNode));
                 return;
@@ -208,15 +234,22 @@ public class RedirectSetImpl {
         }
     }
 
-    public static class BothTypeRedirectAndRedirectContainerException extends DasmException {
-        public BothTypeRedirectAndRedirectContainerException(Type type) {
-            super(type.getClassName() + " has both @TypeRedirect and @Redirect container");
+    public static class InterOwnerContainerHasNonStaticRedirects extends DasmException {
+        public InterOwnerContainerHasNonStaticRedirects(Type type) {
+            super("InterOwnerContainer " + simpleClassNameOf(type) + " contains non-static redirects which is invalid." +
+                    "Consider using @TypeRedirect instead.");
         }
     }
 
-    public static class MissingTypeRedirectAndRedirectContainerException extends DasmException {
-        public MissingTypeRedirectAndRedirectContainerException(Type redirectSetType) {
-            super(redirectSetType.getClassName() + " is missing one of @TypeRedirect or @RedirectContainer annotations");
+    public static class MoreThanOneContainerException extends DasmException {
+        public MoreThanOneContainerException(Type type) {
+            super(simpleClassNameOf(type) + " has more than one of  @TypeRedirect, @InterOwnerContainer, @IntraOwnerContainer");
+        }
+    }
+
+    public static class MissingContainerException extends DasmException {
+        public MissingContainerException(Type redirectSetType) {
+            super(simpleClassNameOf(redirectSetType) + " is missing one of @TypeRedirect, @InterOwnerContainer, @IntraOwnerContainer.");
         }
     }
 
@@ -233,15 +266,14 @@ public class RedirectSetImpl {
     }
 
     public static class MissingRedirectSetAnnotationException extends DasmException {
-
         public MissingRedirectSetAnnotationException(Type redirectSetType) {
-            super(redirectSetType.getClassName() + " is missing @RedirectSet annotation");
+            super(simpleClassNameOf(redirectSetType) + " is missing @RedirectSet annotation");
         }
     }
 
     public static class NonInterfaceIsUsedAsRedirectSetException extends DasmException {
         public NonInterfaceIsUsedAsRedirectSetException(Type redirectSetType) {
-            super("Non-interface " + redirectSetType.getClassName() + " is used as a redirect set");
+            super("Non-interface " + simpleClassNameOf(redirectSetType) + " is used as a redirect set");
         }
     }
 }

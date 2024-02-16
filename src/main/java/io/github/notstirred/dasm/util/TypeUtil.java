@@ -3,6 +3,8 @@ package io.github.notstirred.dasm.util;
 import lombok.Data;
 import org.objectweb.asm.Type;
 
+import static java.lang.Math.max;
+
 @Data
 public class TypeUtil {
     public static String classToDescriptor(Class<?> clazz) {
@@ -15,5 +17,10 @@ public class TypeUtil {
 
     public static String classDescriptorToClassName(String descriptor) {
         return Type.getType(descriptor).getClassName();
+    }
+
+    public static String simpleClassNameOf(Type type) {
+        String className = type.getClassName();
+        return className.substring(max(0, className.lastIndexOf('.') + 1)).replace('$', '.');
     }
 }
