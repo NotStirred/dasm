@@ -100,8 +100,16 @@ public class Tests {
      */
     @Test public void testSetInheritanceWholeClass() {
         verifyClassTransformValid(
-                TestSetInheritanceWholeClassInput.class, TestSetInheritanceWholeClassOutput1.class, TestSetInheritanceWholeClassDasm1.class);
+                TestSetInheritanceWholeClassInput.class,
+                TestSetInheritanceWholeClassOutput1.class,
+                TestSetInheritanceWholeClassDasm1.class,
+                0
+        );
         verifyClassTransformValid(
-                TestSetInheritanceWholeClassInput.class, TestSetInheritanceWholeClassOutput2.class, TestSetInheritanceWholeClassDasm2.class);
+                TestSetInheritanceWholeClassInput.class,
+                TestSetInheritanceWholeClassOutput2.class,
+                TestSetInheritanceWholeClassDasm2.class,
+                1
+        );
     }
 }
