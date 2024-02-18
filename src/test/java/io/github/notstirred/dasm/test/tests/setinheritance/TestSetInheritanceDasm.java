@@ -6,8 +6,8 @@ import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 
 @Dasm(TestSetInheritanceDerivedSetA.class)
 public class TestSetInheritanceDasm {
-//    @TransformFromMethod(value = @MethodSig("method1()Ljava/lang/Object;"))
-//    native String method1out1();
+    @TransformFromMethod(value = @MethodSig("method1()Ljava/lang/Object;"))
+    native String method1out1();
 
     @TransformFromMethod(value = @MethodSig("method1()Ljava/lang/Object;"), useRedirectSets = TestSetInheritanceDerivedSetB.class)
     native String method1out2();
