@@ -24,17 +24,10 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 public class TestHarness {
-    public static void verifyMethodTransformsValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
-        verifyMethodTransformsValid(actualClass, expectedClass, dasmClass, 0);
-    }
-
     /**
-     * Prefer {@link #verifyMethodTransformsValid(Class, Class, Class)} if only one test uses the input class
      * Verifies that the actualClass equals the expectedClass after transforms in dasmClass+actualClass have been applied
-     *
-     * @param subTestIdx Which subtest this is. Use when multiple tests use the same input actualClass. A different index for each expectedClass should be used.
      */
-    public static void verifyMethodTransformsValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass, int subTestIdx) {
+    public static void verifyMethodTransformsValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
         ClassNode actual = getClassNodeForClass(actualClass);
         ClassNode expected = getClassNodeForClass(expectedClass);
         ClassNode dasm = getClassNodeForClass(dasmClass);
@@ -58,20 +51,13 @@ public class TestHarness {
 
         assertClassNodesEqual(actual, expected);
 
-        callAllMethodsWithDummies(actualClass, expectedClass, actual, subTestIdx);
-    }
-
-    public static void verifyClassTransformValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
-        verifyClassTransformValid(actualClass, expectedClass, dasmClass, 0);
+        callAllMethodsWithDummies(actualClass, expectedClass, actual);
     }
 
     /**
-     * Prefer {@link #verifyClassTransformValid(Class, Class, Class)} if only one test uses the input class
      * Verifies that the actualClass equals the expectedClass after transforms in dasmClass+actualClass have been applied
-     *
-     * @param subTestIdx Which subtest this is. Use when multiple tests use the same input actualClass
      */
-    public static void verifyClassTransformValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass, int subTestIdx) {
+    public static void verifyClassTransformValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
         ClassNode actual = getClassNodeForClass(actualClass);
         ClassNode expected = getClassNodeForClass(expectedClass);
         ClassNode dasm = getClassNodeForClass(dasmClass);
@@ -95,7 +81,7 @@ public class TestHarness {
 
         assertClassNodesEqual(actual, expected);
 
-        callAllMethodsWithDummies(actualClass, expectedClass, actual, subTestIdx);
+        callAllMethodsWithDummies(actualClass, expectedClass, actual);
     }
 
     private static void assertClassNodesEqual(ClassNode actual, ClassNode expected) {
@@ -153,9 +139,19 @@ public class TestHarness {
                 .isEqualTo(expected);
     }
 
-    private static void callAllMethodsWithDummies(Class<?> actualClass, Class<?> expectedClass, ClassNode actual, int subTestIdx) {
+    private static String getUnusedClassName(String originalClassName) {
+        int idx = 1;
+        String uniqueName = originalClassName + "_" + idx;
+        while (CLASS_BYTES.containsKey(uniqueName.replace('/', '.'))) {
+            idx++;
+            uniqueName = originalClassName + "_" + idx;
+        }
+        return uniqueName;
+    }
+
+    private static void callAllMethodsWithDummies(Class<?> actualClass, Class<?> expectedClass, ClassNode actual) {
         // Modify the name, as the input class is already loaded by this point.
-        actual.name = actual.name + "_TRANSFORMED" + subTestIdx;
+        actual.name = getUnusedClassName(actual.name);
         String transformedName = actual.name.replace('/', '.');
 
         // Write transformed class
