@@ -14,14 +14,26 @@ import java.lang.annotation.Target;
  * The marked type must be an {@code interface} and must contain only {@code abstract class} definitions marked with {@link TypeRedirect}<br/>
  * By convention the marked type's name should end with `RedirectSet`, or `Set`
  * <br/><br/>
+ * A {@link RedirectSet} may contain any number of {@code interface}s, and/or {@code abstract class}es. That <b><i>must</i></b> be annotated with one of: {@link TypeRedirect}, {@link InterOwnerContainer}, or {@link IntraOwnerContainer}<br/>
+ * <ul>
+ *     <li>An inner type must be an {@code interface} if its destination type is an {@code interface}</li>
+ *     <li>An inner type must be an {@code abstract class} if its destination type is an {@code abstract class}</li>
+ * </ul>
+ * <h3>Destination Type</h3>
+ * A destination type is defined as a type <i>after</i> dasm redirects are applied eg:
+ * <ul>
+ *     <li>A {@link TypeRedirect}'s dst type is {@link TypeRedirect#to()}</li>
+ *     <li>A {@link InterOwnerContainer}'s dst type is {@link InterOwnerContainer#newOwner()}</li>
+ *     <li>A {@link IntraOwnerContainer}'s dst type is {@link IntraOwnerContainer#owner()}</li>
+ * </ul>
+ *
+ * <br/><br/>
  * <h2>Example</h2>
  * <pre>{@code
  * @DasmRedirectSet
  * interface ExampleSet {
- *
  *     @TypeRedirect(from = @Ref(Foo.class), to = @Ref(Bar.class))
  *     abstract class FooToBarRedirects {
- *
  *         @FieldRedirect("newName") public String stringThing;
  *     }
  * }

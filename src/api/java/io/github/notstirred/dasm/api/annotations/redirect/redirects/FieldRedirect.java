@@ -1,6 +1,7 @@
 package io.github.notstirred.dasm.api.annotations.redirect.redirects;
 
-import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectContainer;
+import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
+import io.github.notstirred.dasm.api.annotations.redirect.sets.IntraOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 
@@ -11,11 +12,14 @@ import java.lang.annotation.Target;
 
 /**
  * <pre>{@code}</pre>
- * Must be marked on any field within a class marked with {@link TypeRedirect} or {@link RedirectContainer}.<br/>
- * The {@link FieldRedirect#value()} specifies the field to target within the source class.
- * The type, name, and access of the field specify what to redirect to within the destination class.
+ * The annotated field <b><u>must</u></b> be within either a {@link TypeRedirect}, {@link InterOwnerContainer}, or {@link IntraOwnerContainer}, otherwise it will be ignored.
  * <br/><br/>
- * The {@code final} keyword must be omitted to avoid having to define a constructor to set it.
+ * Specifies that uses of the annotation-specified field should be replaced with the annotated field.
+ * <br/><br/>
+ * <h2>Important notes</h2>
+ * Changing the type of a field is only valid with a corresponding {@link TypeRedirect} from the old->new type.
+ * <br/><br/>
+ * Changing the owner of a <b><u>non-static</u></b> field is only valid within a {@link TypeRedirect}.
  * <br/><br/>
  * <h2>Example:</h2>
  * The following field redirect specifies a redirect from {@code int existingFieldName} to {@code int newFieldName}
@@ -27,10 +31,13 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.CLASS)
 public @interface FieldRedirect {
+    /** The field to replace */
     FieldSig value();
 
     /**
-     * Only useful if the codebase is remapped and field owners are moved
+     * The source field's mapping owner.
+     * <br/><br/>
+     * Only useful if the codebase is remapped and method/field owners are moved<br/>
      * Allows specifying the class which owns the field in the mappings
      */
     Ref mappingsOwner() default @Ref;

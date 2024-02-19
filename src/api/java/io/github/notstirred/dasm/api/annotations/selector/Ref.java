@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
  * <pre>{@code}</pre>
  * A concrete reference to a class through {@link Ref#value()} <b><u>or</u></b> a String through {@link Ref#string()}.
  * <br/><br/>
- * If both are specified, the {@link Ref#string()} is used.
+ * If both are specified {@link Ref#string()} is used.
  * <br/><br/>
  * <h2>Examples:</h2>
  * <p>Ex1:</p>
@@ -29,7 +29,7 @@ public @interface Ref {
     Class<?> value() default EmptyRef.class;
 
     /**
-     * The string name of the class in the fully qualified name format, eg: {@code java.lang.Object}
+     * The string name of the class in the fully qualified name format, eg: "java.lang.Object"
      */
     String string() default "";
 
