@@ -19,7 +19,7 @@ import java.lang.annotation.Target;
  *     <li>An inner type must be an {@code interface} if its destination type is an {@code interface}</li>
  *     <li>An inner type must be an {@code abstract class} if its destination type is an {@code abstract class}</li>
  * </ul>
- * <h3>Destination Type</h3>
+ * <h2>Destination Type</h2>
  * A destination type is defined as a type <i>after</i> dasm redirects are applied eg:
  * <ul>
  *     <li>A {@link TypeRedirect}'s dst type is {@link TypeRedirect#to()}</li>
