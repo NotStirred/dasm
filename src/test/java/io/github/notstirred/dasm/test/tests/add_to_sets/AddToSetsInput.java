@@ -4,6 +4,6 @@ import io.github.notstirred.dasm.test.targets.CubePos;
 
 public class AddToSetsInput {
     void method1() {
-        CubePos.fromLong(0);
+        CubePos.from(0);
     }
 }

@@ -5,6 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class Chunk {
-    public ChunkPos chunkPos;
+public class LevelSection {
+    public Vec3i vec3i;
 }

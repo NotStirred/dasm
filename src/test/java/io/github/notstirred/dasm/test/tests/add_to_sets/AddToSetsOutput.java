@@ -4,7 +4,7 @@ import io.github.notstirred.dasm.test.targets.CubePos;
 
 public class AddToSetsOutput {
     void method1() {
-        CubePos.fromLong(0);
+        CubePos.from(0);
     }
 
     void method1out() {

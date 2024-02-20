@@ -30,7 +30,7 @@ public class TestAddToSets extends BaseMethodTest {
         abstract class A { }
     }
 
-    @AddMethodToSets(owner = @Ref(CubePos.class), method = @MethodSig(name = "fromLong", ret = @Ref(CubePos.class), args = { @Ref(long.class) }), sets = Set.class)
+    @AddMethodToSets(owner = @Ref(CubePos.class), method = @MethodSig(name = "from", ret = @Ref(CubePos.class), args = { @Ref(long.class) }), sets = Set.class)
     public static CubePos testFoo(long l) {
         return null;
     }

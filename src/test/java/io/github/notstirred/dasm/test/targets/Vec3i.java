@@ -1,17 +1,36 @@
 package io.github.notstirred.dasm.test.targets;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.Value;
 
 @AllArgsConstructor
+@Getter(AccessLevel.PRIVATE)
 @Value
-public class CubePos {
+public class Vec3i {
     public int x;
     public int y;
     public int z;
 
-    public CubePos(long cubePos) {
-        this(extractX(cubePos), extractY(cubePos), extractZ(cubePos));
+    public Vec3i(long packed) {
+        this(extractX(packed), extractY(packed), extractZ(packed));
+    }
+
+    public static Vec3i fromLong(long l) {
+        return new Vec3i(l);
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public int getZ() {
+        return z;
     }
 
     public long asLong() {
@@ -22,8 +41,8 @@ public class CubePos {
         return i;
     }
 
-    public static CubePos from(long cubePos) {
-        return new CubePos(cubePos);
+    public static Vec3i from(long cubePos) {
+        return new Vec3i(cubePos);
     }
 
     public static int extractX(long packed) {
