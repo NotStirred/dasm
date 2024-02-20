@@ -1,3 +1,5 @@
+import java.nio.file.Files
+
 plugins {
     id 'java'
     id 'maven-publish'
@@ -160,3 +162,80 @@ publishing {
         sign publishing.publications.dasm
     }
 }
+
+class TestTemplate extends DefaultTask {
+    private String testName;
+    private String packageName;
+
+    @Option(option = "name", description = "The name of the test.")
+    void setTestName(String name) {
+        this.testName = name;
+    }
+
+    @Input
+    String getTestName() {
+        return testName;
+    }
+
+    @Option(option = "package", description = "The package the test should be in.")
+    void setPackage(String name) {
+        this.packageName = name;
+    }
+
+    @Input
+    String getPackageName() {
+        return packageName;
+    }
+
+    @TaskAction
+    void instantiateTemplate() {
+        Set<File> srcDirs = project.sourceSets.test.getAllSource().getSrcDirs()
+        var testDir = new File(srcDirs.stream().filter {
+            it.name.endsWith("java")
+        }.findFirst().get(), "io/github/notstirred/dasm/test/tests/" + packageName)
+        testDir.mkdirs()
+        Files.writeString(new File(testDir, "Test" + testName + ".java").toPath(),
+                """package io.github.notstirred.dasm.test.tests.${packageName};
+
+import io.github.notstirred.dasm.api.annotations.Dasm;
+import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
+import io.github.notstirred.dasm.test.tests.BaseMethodTest;
+
+import static io.github.notstirred.dasm.test.tests.TestData.single;
+
+/**
+ * TODO
+ */
+@Dasm(Test${testName}.Set.class)
+public class Test${testName} extends BaseMethodTest {
+    public Test${testName}() {
+        super(single(${testName}Input.class, ${testName}Output.class, Test${testName}.class));
+    }
+    
+    @RedirectSet
+    interface Set {
+    
+    }
+}
+"""
+        )
+        Files.writeString(new File(testDir, testName + "Input.java").toPath(),
+                """package io.github.notstirred.dasm.test.tests.${packageName};
+            
+public class ${testName}Input {
+    // TODO
+}
+"""
+        )
+        Files.writeString(new File(testDir, testName + "Output.java").toPath(),
+                """package io.github.notstirred.dasm.test.tests.${packageName};
+
+public class ${testName}Output {
+    // TODO
+}
+"""
+        )
+    }
+}
+
+tasks.register('testTemplate', TestTemplate)
