@@ -23,7 +23,6 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -101,27 +100,13 @@ public class Transformer {
                 MethodRedirectImpl methodRedirect = builtRedirects.methodRedirects().get(key);
                 String dstName = methodRedirect == null ? name : methodRedirect.dstName();
 
-                Type[] argumentTypes = Type.getArgumentTypes(descriptor);
-                Type returnType = Type.getReturnType(descriptor);
+                String redirectedDescriptor = applyTransformsToMethodDescriptor(descriptor, redirects);
 
-                argumentTypes = Arrays.stream(argumentTypes)
-                        .map(type -> redirects.typeRedirects().getOrDefault(type, new TypeAndIsInterface(type, false)))
-                        .map(TypeAndIsInterface::type)
-                        .toArray(Type[]::new);
-                returnType = redirects.typeRedirects().getOrDefault(returnType, new TypeAndIsInterface(returnType, false)).type();
-
-                String redirectedDescriptor = Type.getMethodDescriptor(returnType, argumentTypes);
-
-                MethodVisitor methodVisitor = new Interfacicitifier(
-                        super.visitMethod(access, dstName, redirectedDescriptor, signature, exceptions), redirects
+                return dasmTransformingVisitor(
+                        super.visitMethod(access, dstName, redirectedDescriptor, signature, exceptions),
+                        redirects,
+                        mappingsProvider
                 );
-                MethodRemapper typeRedirectRemapper = new MethodRemapper(
-                        methodVisitor,
-                        new TypeRemapper(redirects.typeRedirects(), false, mappingsProvider)
-                );
-                MethodVisitor redirectVisitor = new ConstructorToFactoryBufferingVisitor(typeRedirectRemapper, redirects);
-                redirectVisitor = new RedirectVisitor(redirectVisitor, redirects, mappingsProvider);
-                return redirectVisitor;
             }
         };
         sourceClass.accept(cv);
@@ -177,7 +162,7 @@ public class Transformer {
 
         cloneAndApplyLambdaRedirects(srcClass, targetClass, originalMethod, redirects, debugLogging);
 
-        String dstMethodDescriptor = applyTransformsToMethodDescriptor(originalMethod, redirects);
+        String dstMethodDescriptor = applyTransformsToMethodDescriptor(originalMethod.desc, redirects);
 
         MethodNode dstMethod = removeExistingMethod(targetClass, dstMethodName, dstMethodDescriptor);
         if (dstMethod != null && (dstMethod.access & ACC_NATIVE) == 0) {
@@ -187,13 +172,7 @@ public class Transformer {
             dstMethod = new MethodNode(originalMethod.access, dstMethodName, dstMethodDescriptor, null, originalMethod.exceptions.toArray(new String[0]));
         }
 
-        // FIXME: line numbers
-        MethodRemapper typeRedirectRemapper = new MethodRemapper(new Interfacicitifier(dstMethod, redirects) { }, new TypeRemapper(
-                redirects.typeRedirects(), false, mappingsProvider
-        ));
-        MethodVisitor redirectVisitor = new RedirectVisitor(typeRedirectRemapper, redirects, this.mappingsProvider);
-        redirectVisitor = new ConstructorToFactoryBufferingVisitor(redirectVisitor, redirects);
-        originalMethod.accept(redirectVisitor);
+        originalMethod.accept(dasmTransformingVisitor(dstMethod, redirects, mappingsProvider));
 
         dstMethod.name = dstMethodName;
 
@@ -201,9 +180,21 @@ public class Transformer {
         return dstMethod;
     }
 
-    private String applyTransformsToMethodDescriptor(MethodNode method, TransformRedirects redirects) {
-        Type[] parameterTypes = Type.getArgumentTypes(method.desc);
-        Type returnType = Type.getReturnType(method.desc);
+    /**
+     * Apply all dasm transforms to a method body
+     */
+    private static MethodVisitor dasmTransformingVisitor(MethodVisitor visitor, TransformRedirects redirects, MappingsProvider mappingsProvider) {
+        // FIXME: line numbers
+        visitor = new Interfacicitifier(visitor, redirects);
+        visitor = new MethodRemapper(visitor, new TypeRemapper(redirects.typeRedirects(), false, mappingsProvider));
+        visitor = new RedirectVisitor(visitor, redirects, mappingsProvider);
+        visitor = new ConstructorToFactoryBufferingVisitor(visitor, redirects);
+        return visitor;
+    }
+
+    private static String applyTransformsToMethodDescriptor(String methodDescriptor, TransformRedirects redirects) {
+        Type[] parameterTypes = Type.getArgumentTypes(methodDescriptor);
+        Type returnType = Type.getReturnType(methodDescriptor);
 
         for (int i = 0; i < parameterTypes.length; i++) {
             if (parameterTypes[i].getSort() == Type.OBJECT) {
