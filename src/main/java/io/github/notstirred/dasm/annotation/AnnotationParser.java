@@ -1,9 +1,6 @@
 package io.github.notstirred.dasm.annotation;
 
-import io.github.notstirred.dasm.annotation.parse.MethodSigImpl;
-import io.github.notstirred.dasm.annotation.parse.RedirectSetImpl;
-import io.github.notstirred.dasm.annotation.parse.RefImpl;
-import io.github.notstirred.dasm.annotation.parse.TransformFromMethodImpl;
+import io.github.notstirred.dasm.annotation.parse.*;
 import io.github.notstirred.dasm.annotation.parse.addtosets.AddFieldToSetsImpl;
 import io.github.notstirred.dasm.annotation.parse.addtosets.AddMethodToSetsImpl;
 import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl;
@@ -15,7 +12,9 @@ import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddTransform
 import io.github.notstirred.dasm.api.annotations.transform.ApplicationStage;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromClass;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
+import io.github.notstirred.dasm.api.annotations.transform.TransformMethod;
 import io.github.notstirred.dasm.data.ClassMethod;
+import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.exception.wrapped.DasmClassExceptions;
 import io.github.notstirred.dasm.exception.wrapped.DasmFieldExceptions;
@@ -143,26 +142,34 @@ public class AnnotationParser {
             );
 
             List<MethodTransform> methodTransforms = new ArrayList<>();
-            for (Iterator<MethodNode> iterator = targetClass.methods.iterator(); iterator.hasNext(); ) {
-                MethodNode method = iterator.next();
+            for (MethodNode method : targetClass.methods) {
                 AnnotationNode transformFromMethodAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, TransformFromMethod.class);
-                if (transformFromMethodAnnotation == null) {
+                AnnotationNode transformMethodAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, TransformMethod.class);
+                if (transformFromMethodAnnotation == null && transformMethodAnnotation == null) {
                     continue;
                 }
-                iterator.remove();
                 DasmMethodExceptions methodExceptions = classExceptions.addNested(new DasmMethodExceptions(method));
+                if (transformFromMethodAnnotation != null && transformMethodAnnotation != null) {
+                    methodExceptions.addException(new BothTransformMethodAndTransformFromMethodPresent(method));
+                    continue;
+                }
 
-                TransformFromMethodImpl transformFromMethod;
+                TransformMethodImpl transformMethod;
                 try {
-                    transformFromMethod = TransformFromMethodImpl.parse(transformFromMethodAnnotation);
-                } catch (MethodSigImpl.InvalidMethodSignature | RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.EmptySrcName e) {
+                    if (transformFromMethodAnnotation != null) {
+                        transformMethod = TransformFromMethodImpl.parse(transformFromMethodAnnotation);
+                    } else {
+                        transformMethod = TransformMethodImpl.parse(transformMethodAnnotation);
+                    }
+                } catch (MethodSigImpl.InvalidMethodSignature | RefImpl.RefAnnotationGivenNoArguments |
+                         MethodSigImpl.EmptySrcName e) {
                     methodExceptions.addException(e);
                     continue;
                 }
 
-                Type methodOwner = transformFromMethod.copyFrom().orElse(targetType);
+                Type methodOwner = transformMethod.owner().orElse(targetType);
 
-                List<RedirectSetImpl> redirectSets = transformFromMethod.overriddenRedirectSets().map(types ->
+                List<RedirectSetImpl> redirectSets = transformMethod.overriddenRedirectSets().map(types ->
                                 types.stream().map(this.redirectSetsByType::get).collect(Collectors.toList()))
                         .map(this::unrollSets)
                         .orElse(defaultRedirectSets);
@@ -174,12 +181,13 @@ public class AnnotationParser {
                 String prefixedMethodName = methodPrefix + nonPrefixedMethodName;
 
                 MethodTransform transform = new MethodTransform(
-                        new ClassMethod(methodOwner, methodOwner, transformFromMethod.srcMethod()),
+                        new ClassMethod(methodOwner, methodOwner, transformMethod.srcMethod()),
                         prefixedMethodName // We have to rename constructors because we add a prefix, and mixin expects that anything with <> is either init, or clinit
                                 .replace("<init>", "__init__")
                                 .replace("<clinit>", "__clinit__"),
                         redirectSets,
-                        transformFromMethod.stage()
+                        transformMethod.stage(),
+                        transformMethod.inPlace()
                 );
 
                 AnnotationNode addToSetsAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, AddTransformToSets.class);
@@ -251,5 +259,11 @@ public class AnnotationParser {
     private void unrollSetsInner(RedirectSetImpl redirectSet, Collection<RedirectSetImpl> out) {
         redirectSet.superRedirectSets().stream().map(this.redirectSetsByType::get).forEach(set -> unrollSetsInner(set, out));
         out.add(redirectSet);
+    }
+
+    public static class BothTransformMethodAndTransformFromMethodPresent extends DasmException {
+        public BothTransformMethodAndTransformFromMethodPresent(MethodNode methodNode) {
+            super(String.format("Method %s has both TransformMethod and TransformFromMethod annotations.", methodNode.name));
+        }
     }
 }

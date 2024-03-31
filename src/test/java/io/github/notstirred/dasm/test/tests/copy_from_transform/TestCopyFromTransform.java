@@ -23,7 +23,7 @@ public class TestCopyFromTransform extends BaseMethodTest {
     @TransformFromMethod(value = @MethodSig("method1(Ljava/lang/Object;)Ljava/lang/Object;"))
     public native String method2(String param);
 
-    @TransformFromMethod(value = @MethodSig("methodOnAnotherClass(Ljava/lang/Object;)Ljava/lang/Object;"), copyFrom = @Ref(TestCopyFromTransform.class))
+    @TransformFromMethod(value = @MethodSig("methodOnAnotherClass(Ljava/lang/Object;)Ljava/lang/Object;"), owner = @Ref(TestCopyFromTransform.class))
     public native String methodOnAnotherClassTransformed(String param);
 
     @RedirectSet

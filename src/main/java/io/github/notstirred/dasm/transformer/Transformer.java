@@ -134,12 +134,14 @@ public class Transformer {
 
             // FIXME: synthetic accessor methods
             // FIXME: add non-clone redirects
-            MethodNode methodNode;
             TransformRedirects transformRedirects = new TransformRedirects(transform.redirectSets(), this.mappingsProvider);
             try {
-                methodNode = cloneAndApplyRedirects(srcClass, targetClass, transform.srcMethod(), transform.dstMethodName(),
-                        transformRedirects, true
-                );
+                if (transform.inPlace()) {
+                    applyRedirects(srcClass, transform.srcMethod(), transformRedirects, true);
+                } else {
+                    cloneAndApplyRedirects(srcClass, targetClass, transform.srcMethod(), transform.dstMethodName(), transformRedirects, true);
+                }
+
             } catch (SrcMethodNotFound e) {
                 dasmClassExceptions.addException(e);
                 continue;
@@ -152,32 +154,31 @@ public class Transformer {
     /**
      * @param redirects lambda redirects are implicitly added, so the parameter is modified.
      */
-    private MethodNode cloneAndApplyRedirects(ClassNode srcClass, ClassNode targetClass, ClassMethod classMethod, String dstMethodName,
+    private MethodNode cloneAndApplyRedirects(ClassNode srcClass, ClassNode targetClass, ClassMethod srcMethod, String dstMethodName,
                                               TransformRedirects redirects, boolean debugLogging) throws SrcMethodNotFound {
-        Method existingMethod = classMethod.remap(this.mappingsProvider).method();
+        Method existingMethod = srcMethod.remap(this.mappingsProvider).method();
 
-        MethodNode originalMethod = srcClass.methods.stream()
+        MethodNode srcMethodNode = srcClass.methods.stream()
                 .filter(method -> existingMethod.getName().equals(method.name) && existingMethod.getDescriptor().equals(method.desc))
-                .findAny().orElseThrow(() -> new SrcMethodNotFound(classMethod, existingMethod));
+                .findAny().orElseThrow(() -> new SrcMethodNotFound(srcMethod, existingMethod));
 
-        cloneAndApplyLambdaRedirects(srcClass, targetClass, originalMethod, redirects, debugLogging);
+        cloneAndApplyLambdaRedirects(srcClass, targetClass, srcMethodNode, redirects, debugLogging);
 
-        String dstMethodDescriptor = applyTransformsToMethodDescriptor(originalMethod.desc, redirects);
+        String dstMethodDescriptor = applyTransformsToMethodDescriptor(srcMethodNode.desc, redirects);
 
-        MethodNode dstMethod = removeExistingMethod(targetClass, dstMethodName, dstMethodDescriptor);
-        if (dstMethod != null && (dstMethod.access & ACC_NATIVE) == 0) {
+        MethodNode existingMethodNode = removeExistingMethod(targetClass, dstMethodName, dstMethodDescriptor);
+        if (existingMethodNode != null && (existingMethodNode.access & ACC_NATIVE) == 0) {
             LOGGER.debug("Method transform overwriting existing method " + dstMethodName + " " + dstMethodDescriptor);
-        } else {
-            // FIXME: transform exceptions
-            dstMethod = new MethodNode(originalMethod.access, dstMethodName, dstMethodDescriptor, null, originalMethod.exceptions.toArray(new String[0]));
         }
+        // FIXME: transform exceptions
+        MethodNode dstMethodNode = new MethodNode(srcMethodNode.access, dstMethodName, dstMethodDescriptor, null, srcMethodNode.exceptions.toArray(new String[0]));
 
-        originalMethod.accept(dasmTransformingVisitor(dstMethod, redirects, mappingsProvider));
+        srcMethodNode.accept(dasmTransformingVisitor(dstMethodNode, redirects, mappingsProvider));
 
-        dstMethod.name = dstMethodName;
+        dstMethodNode.name = dstMethodName;
 
-        targetClass.methods.add(dstMethod);
-        return dstMethod;
+        targetClass.methods.add(dstMethodNode);
+        return dstMethodNode;
     }
 
     /**
@@ -261,6 +262,69 @@ public class Transformer {
                             (targetClass.access & ACC_INTERFACE) != 0
                     )
             );
+        }
+    }
+
+    private void applyRedirects(ClassNode srcClass, ClassMethod srcMethod, TransformRedirects redirects,
+                                boolean debugLogging) throws SrcMethodNotFound {
+        Method existingMethod = srcMethod.remap(this.mappingsProvider).method();
+
+        MethodNode originalMethod = srcClass.methods.stream()
+                .filter(method -> existingMethod.getName().equals(method.name) && existingMethod.getDescriptor().equals(method.desc))
+                .findAny().orElseThrow(() -> new SrcMethodNotFound(srcMethod, existingMethod));
+
+        applyLambdaRedirects(srcClass, originalMethod, redirects, debugLogging);
+
+        String dstMethodDescriptor = applyTransformsToMethodDescriptor(originalMethod.desc, redirects);
+
+        MethodNode existingMethodNode = removeExistingMethod(srcClass, originalMethod.name, dstMethodDescriptor);
+        if (existingMethodNode != null && (existingMethodNode.access & ACC_NATIVE) == 0 && !originalMethod.desc.equals(dstMethodDescriptor)) {
+            // in-place transforms must be overwriting a different method than the src one to log (otherwise every in-place transform would log)
+            LOGGER.debug("Method transform overwriting existing method " + originalMethod.name + " " + dstMethodDescriptor);
+        }
+
+        MethodNode dstMethodNode = new MethodNode(originalMethod.access, originalMethod.name, dstMethodDescriptor, null, originalMethod.exceptions.toArray(new String[0]));
+        originalMethod.accept(
+                dasmTransformingVisitor(dstMethodNode, redirects, mappingsProvider)
+        );
+        srcClass.methods.remove(originalMethod);
+        srcClass.methods.add(dstMethodNode);
+    }
+
+    private void applyLambdaRedirects(ClassNode srcClass, MethodNode method, TransformRedirects redirects,
+                                      boolean debugLogging) throws SrcMethodNotFound {
+        for (AbstractInsnNode instruction : method.instructions) {
+            if (instruction.getOpcode() == INVOKEDYNAMIC) {
+                InvokeDynamicInsnNode invoke = (InvokeDynamicInsnNode) instruction;
+                String bootstrapMethodName = invoke.bsm.getName();
+                String bootstrapMethodOwner = invoke.bsm.getOwner();
+                if (bootstrapMethodName.equals("metafactory") && bootstrapMethodOwner.equals("java/lang/invoke/LambdaMetafactory")) {
+                    for (Object bsmArg : invoke.bsmArgs) {
+                        if (!(bsmArg instanceof Handle)) {
+                            continue;
+                        }
+                        Handle handle = (Handle) bsmArg;
+                        String owner = handle.getOwner();
+                        if (!owner.equals(srcClass.name)) {
+                            continue;
+                        }
+                        String name = handle.getName();
+                        String desc = handle.getDesc();
+                        // ignore method references into own class
+                        MethodNode targetNode =
+                                srcClass.methods.stream().filter(m -> m.name.equals(name) && m.desc.equals(desc)).findFirst().orElse(null);
+                        if (targetNode == null || (targetNode.access & ACC_SYNTHETIC) == 0) {
+                            continue;
+                        }
+                        applyRedirects(
+                                srcClass,
+                                new ClassMethod(Type.getObjectType(handle.getOwner()), new Method(name, desc)),
+                                redirects,
+                                debugLogging
+                        );
+                    }
+                }
+            }
         }
     }
 

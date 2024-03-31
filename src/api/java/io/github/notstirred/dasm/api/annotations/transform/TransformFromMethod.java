@@ -13,12 +13,12 @@ import java.lang.annotation.Target;
 public @interface TransformFromMethod {
     MethodSig value();
 
+    Ref owner() default @Ref();
+
     ApplicationStage stage() default ApplicationStage.PRE_APPLY;
 
     // FIXME: add synthetic accessors
 //    boolean makeSyntheticAccessor() default false;
-
-    Ref copyFrom() default @Ref();
 
     Class<?>[] useRedirectSets() default { };
 }

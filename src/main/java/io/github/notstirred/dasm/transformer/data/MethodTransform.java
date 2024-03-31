@@ -13,4 +13,5 @@ public class MethodTransform {
     private final String dstMethodName;
     private final List<RedirectSetImpl> redirectSets;
     private final ApplicationStage stage;
+    private final boolean inPlace;
 }
