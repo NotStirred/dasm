@@ -16,4 +16,8 @@ public class ConstructorToFactoryInput {
         File f = new File(new String("parent"), "child");
         System.out.println(f);
     }
+
+    public String method1out() {
+        return null;
+    }
 }
