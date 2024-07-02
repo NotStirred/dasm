@@ -2,7 +2,6 @@ package io.github.notstirred.dasm.test;
 
 import io.github.notstirred.dasm.annotation.AnnotationParser;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
-import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
 import io.github.notstirred.dasm.test.utils.ByteArrayClassLoader;
 import io.github.notstirred.dasm.transformer.Transformer;
@@ -17,9 +16,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 import static io.github.notstirred.dasm.util.TypeUtil.classNameToDescriptor;
+import static io.github.notstirred.dasm.util.TypeUtil.classNameToInternalName;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.objectweb.asm.Opcodes.ASM9;
 
@@ -49,6 +51,16 @@ public class TestHarness {
             throw new Error(e);
         }
 
+        ClassWriter classWriter = new ClassWriter(0);
+        actual.accept(classWriter);
+        try {
+            Path path = Path.of(".dasm.out/" + actual.name.replace('.', '/') + ".class").toAbsolutePath();
+            Files.createDirectories(path.getParent());
+            Files.write(path, classWriter.toByteArray());
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+
         assertClassNodesEqual(actual, expected);
 
         callAllMethodsWithDummies(actualClass, expectedClass, actual);
@@ -74,14 +86,27 @@ public class TestHarness {
             ClassTransform methodTransforms = annotationParser.buildClassTarget(dasm).get();
 
             transformer.transform(actual, methodTransforms);
-        } catch (DasmWrappedExceptions | NoSuchTypeExists e) {
+
+            assertClassNodesEqual(actual, expected);
+
+            ClassWriter classWriter = new ClassWriter(0);
+            actual.accept(classWriter);
+            try {
+                Path path = Path.of(".dasm.out/" + actual.name.replace('.', '/') + ".class").toAbsolutePath();
+                Files.createDirectories(path.getParent());
+                Files.write(path, classWriter.toByteArray());
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+
+            callAllMethodsWithDummies(actualClass, expectedClass, actual);
+
+        } catch (Throwable e) {
+
+
             e.printStackTrace();
             throw new Error(e);
         }
-
-        assertClassNodesEqual(actual, expected);
-
-        callAllMethodsWithDummies(actualClass, expectedClass, actual);
     }
 
     private static void assertClassNodesEqual(ClassNode actual, ClassNode expected) {
@@ -112,6 +137,15 @@ public class TestHarness {
                                 (aNode instanceof LineNumberNode && bNode instanceof LineNumberNode)) {
                             continue;
                         }
+                        if ((aNode instanceof FieldInsnNode aField && bNode instanceof FieldInsnNode bField)) {
+                            if (!(aField.owner.equals(classNameToInternalName(actual.name)) && bField.owner.equals(classNameToInternalName(expected.name)))) {
+                                assertThat(aField.owner).isEqualTo(bField.owner);
+                            }
+                            assertThat(aField.desc).isEqualTo(bField.desc);
+                            assertThat(aField.name).isEqualTo(bField.name);
+//                            assertThat(aField).isEqualTo(bField);
+                            continue;
+                        }
 
                         assertThat(aNode).usingRecursiveComparison()
                                 .ignoringFields("previousInsn")
@@ -135,6 +169,13 @@ public class TestHarness {
                     }
                     return a.desc.equals(b.desc);
                 }, LocalVariableNode.class)
+//                .withEqualsForType((a, b) -> {
+//                    if (!(a.owner.equals(classNameToInternalName(actual.name)) && b.owner.equals(classNameToInternalName(expected.name)))) {
+//                        assertThat(a.owner).isEqualTo(b.owner);
+//                    }
+//                    assertThat(a.desc).isEqualTo(b.desc);
+//                    assertThat(a.name).isEqualTo(b.name);
+//                }, FieldInsnNode.class)
                 .usingOverriddenEquals()
                 .isEqualTo(expected);
     }

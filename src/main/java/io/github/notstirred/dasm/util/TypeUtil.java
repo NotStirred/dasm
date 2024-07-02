@@ -15,6 +15,10 @@ public class TypeUtil {
         return "L" + className.replace('.', '/') + ";";
     }
 
+    public static String classNameToInternalName(String className) {
+        return className.replace('.', '/');
+    }
+
     public static String classDescriptorToClassName(String descriptor) {
         return Type.getType(descriptor).getClassName();
     }
