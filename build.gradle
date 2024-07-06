@@ -5,6 +5,7 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id 'io.freefair.lombok' version '8.4'
+    id 'jacoco'
 }
 
 group 'io.github.notstirred'
@@ -110,6 +111,13 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
     }
+    finalizedBy jacocoTestReport // report is always generated after tests run
+}
+jacocoTestReport {
+    dependsOn test // tests are required to run before generating the report
+}
+jacoco {
+    toolVersion = "0.8.11"
 }
 
 artifacts {

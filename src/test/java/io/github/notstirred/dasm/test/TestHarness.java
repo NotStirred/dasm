@@ -193,6 +193,9 @@ public class TestHarness {
         }
 
         for (Method expectedMethod : expectedClass.getDeclaredMethods()) {
+            if (expectedMethod.getName().contains("$jacocoInit"))
+                continue;
+
             expectedMethod.setAccessible(true);
 
             Method actualMethod;
