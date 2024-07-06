@@ -9,7 +9,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * <pre>{@code}</pre>
  * An element of a {@link RedirectSet}
  * <br/><br/>
  * Specifies that any occurrence of the type {@link TypeRedirect#from()} must be replaced with the type {@link TypeRedirect#to()}.

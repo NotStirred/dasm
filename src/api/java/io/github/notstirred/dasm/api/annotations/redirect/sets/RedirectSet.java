@@ -8,7 +8,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * <pre>{@code}</pre>
  * Marks that an {@code interface} should be used as a redirect set.
  * <br/><br/>
  * The marked type must be an {@code interface} and must contain only {@code abstract class} definitions marked with {@link TypeRedirect}<br/>

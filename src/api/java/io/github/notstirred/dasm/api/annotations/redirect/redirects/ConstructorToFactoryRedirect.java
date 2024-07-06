@@ -11,7 +11,6 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.CLASS;
 
 /**
- * <pre>{@code}</pre>
  * The annotated method <b><u>must</u></b> be within either a {@link TypeRedirect} <b><u>or</u></b> a {@link InterOwnerContainer}, otherwise it will be ignored.
  * <br/><br/>
  * Specifies that uses of the annotation-specified constructor should be replaced with the annotated factory method.

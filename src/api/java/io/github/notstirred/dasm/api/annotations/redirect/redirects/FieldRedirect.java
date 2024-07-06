@@ -11,7 +11,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * <pre>{@code}</pre>
  * The annotated field <b><u>must</u></b> be within either a {@link TypeRedirect}, {@link InterOwnerContainer}, or {@link IntraOwnerContainer}, otherwise it will be ignored.
  * <br/><br/>
  * Specifies that uses of the annotation-specified field should be replaced with the annotated field.

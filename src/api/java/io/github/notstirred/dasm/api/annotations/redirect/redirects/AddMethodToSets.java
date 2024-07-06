@@ -11,7 +11,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * <pre>{@code}</pre>
  * May be added to a method within a {@link Dasm} class.
  * <br/><br/>
  * Add a {@link MethodRedirect} to multiple {@link RedirectSet}s inline at method definition, rather than duplicating the method definition inside a {@link RedirectSet}.

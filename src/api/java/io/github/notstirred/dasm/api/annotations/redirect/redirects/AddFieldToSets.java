@@ -11,7 +11,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * <pre>{@code}</pre>
  * May be added to a field within a {@link Dasm} class.
  * <br/><br/>
  * Add a {@link FieldRedirect} to multiple {@link RedirectSet}s inline at field definition, rather than duplicating the field definition inside a {@link RedirectSet}.

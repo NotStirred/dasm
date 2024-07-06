@@ -11,7 +11,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * <pre>{@code}</pre>
  * May be added to a method within a {@link Dasm} class. The annotated item <b><u>must</u></b> be annotated with {@link TransformFromMethod} or {@link TransformFromClass}
  * <br/><br/>
  * Add a redirect from the source for the transform, to the resulting copied method, rather than duplicating the method definition inside a {@link RedirectSet}.
