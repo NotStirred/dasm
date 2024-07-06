@@ -2,7 +2,6 @@ package io.github.notstirred.dasm.test;
 
 import io.github.notstirred.dasm.annotation.AnnotationParser;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
-import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
 import io.github.notstirred.dasm.test.utils.ByteArrayClassLoader;
 import io.github.notstirred.dasm.transformer.Transformer;
@@ -20,6 +19,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 import static io.github.notstirred.dasm.util.TypeUtil.classNameToDescriptor;
+import static io.github.notstirred.dasm.util.TypeUtil.classNameToInternalName;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.objectweb.asm.Opcodes.ASM9;
 
@@ -74,14 +74,13 @@ public class TestHarness {
             ClassTransform methodTransforms = annotationParser.buildClassTarget(dasm).get();
 
             transformer.transform(actual, methodTransforms);
-        } catch (DasmWrappedExceptions | NoSuchTypeExists e) {
+
+            assertClassNodesEqual(actual, expected);
+            callAllMethodsWithDummies(actualClass, expectedClass, actual);
+        } catch (Throwable e) {
             e.printStackTrace();
             throw new Error(e);
         }
-
-        assertClassNodesEqual(actual, expected);
-
-        callAllMethodsWithDummies(actualClass, expectedClass, actual);
     }
 
     private static void assertClassNodesEqual(ClassNode actual, ClassNode expected) {
@@ -110,6 +109,14 @@ public class TestHarness {
 
                         if ((aNode instanceof LabelNode && bNode instanceof LabelNode) ||
                                 (aNode instanceof LineNumberNode && bNode instanceof LineNumberNode)) {
+                            continue;
+                        }
+                        if ((aNode instanceof FieldInsnNode aField && bNode instanceof FieldInsnNode bField)) {
+                            if (!(aField.owner.equals(classNameToInternalName(actual.name)) && bField.owner.equals(classNameToInternalName(expected.name)))) {
+                                assertThat(aField.owner).isEqualTo(bField.owner);
+                            }
+                            assertThat(aField.desc).isEqualTo(bField.desc);
+                            assertThat(aField.name).isEqualTo(bField.name);
                             continue;
                         }
 
