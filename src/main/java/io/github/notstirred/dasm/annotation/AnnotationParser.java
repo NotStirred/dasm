@@ -24,6 +24,7 @@ import io.github.notstirred.dasm.transformer.data.ClassTransform;
 import io.github.notstirred.dasm.transformer.data.MethodTransform;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
 import io.github.notstirred.dasm.util.TypeUtil;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -142,30 +143,11 @@ public class AnnotationParser {
             );
 
             List<MethodTransform> methodTransforms = new ArrayList<>();
-            for (MethodNode method : targetClass.methods) {
-                AnnotationNode transformFromMethodAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, TransformFromMethod.class);
-                AnnotationNode transformMethodAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, TransformMethod.class);
-                if (transformFromMethodAnnotation == null && transformMethodAnnotation == null) {
-                    continue;
-                }
-                DasmMethodExceptions methodExceptions = classExceptions.addNested(new DasmMethodExceptions(method));
-                if (transformFromMethodAnnotation != null && transformMethodAnnotation != null) {
-                    methodExceptions.addException(new BothTransformMethodAndTransformFromMethodPresent(method));
-                    continue;
-                }
 
-                TransformMethodImpl transformMethod;
-                try {
-                    if (transformFromMethodAnnotation != null) {
-                        transformMethod = TransformFromMethodImpl.parse(transformFromMethodAnnotation);
-                    } else {
-                        transformMethod = TransformMethodImpl.parse(transformMethodAnnotation);
-                    }
-                } catch (MethodSigImpl.InvalidMethodSignature | RefImpl.RefAnnotationGivenNoArguments |
-                         MethodSigImpl.EmptySrcName e) {
-                    methodExceptions.addException(e);
+            for (MethodNode method : targetClass.methods) {
+                TransformMethodImpl transformMethod = parseTransformMethod(method, classExceptions);
+                if (transformMethod == null)
                     continue;
-                }
 
                 Type methodOwner = transformMethod.owner().orElse(targetType);
 
@@ -211,6 +193,39 @@ public class AnnotationParser {
 
         classExceptions.throwIfHasWrapped();
         return Optional.empty();
+    }
+
+    /**
+     * @param method          The method on which to look for annotations
+     * @param classExceptions The object to add nested exceptions to if they occur
+     * @return null if there was no annotation or there was an exception
+     */
+    @Nullable
+    private static TransformMethodImpl parseTransformMethod(MethodNode method, DasmClassExceptions classExceptions) {
+        TransformMethodImpl transformMethod;
+        AnnotationNode transformFromMethodAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, TransformFromMethod.class);
+        AnnotationNode transformMethodAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, TransformMethod.class);
+        if (transformFromMethodAnnotation == null && transformMethodAnnotation == null) {
+            return null;
+        }
+        DasmMethodExceptions methodExceptions = classExceptions.addNested(new DasmMethodExceptions(method));
+        if (transformFromMethodAnnotation != null && transformMethodAnnotation != null) {
+            methodExceptions.addException(new BothTransformMethodAndTransformFromMethodPresent(method));
+            return null;
+        }
+
+        try {
+            if (transformFromMethodAnnotation != null) {
+                transformMethod = TransformFromMethodImpl.parse(transformFromMethodAnnotation);
+            } else {
+                transformMethod = TransformMethodImpl.parse(transformMethodAnnotation);
+            }
+        } catch (MethodSigImpl.InvalidMethodSignature | RefImpl.RefAnnotationGivenNoArguments |
+                 MethodSigImpl.EmptySrcName e) {
+            methodExceptions.addException(e);
+            return null;
+        }
+        return transformMethod;
     }
 
     private void findRedirectSetsForAnnotation(List<AnnotationNode> annotations, Class<?> annotationClass, String setsAnnotationField,
