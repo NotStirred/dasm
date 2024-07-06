@@ -10,7 +10,6 @@ import io.github.notstirred.dasm.transformer.data.BuiltRedirects;
 import io.github.notstirred.dasm.transformer.data.TransformRedirects;
 import io.github.notstirred.dasm.transformer.exception.*;
 import lombok.SneakyThrows;
-import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -18,7 +17,6 @@ import org.objectweb.asm.Type;
 
 import static io.github.notstirred.dasm.transformer.TypeRemapper.SKIP_TYPE_REDIRECT_PREFIX;
 import static org.objectweb.asm.Opcodes.*;
-import static org.objectweb.asm.Type.getArgumentTypes;
 
 public class RedirectVisitor extends MethodVisitor {
     private final BuiltRedirects redirects;
@@ -112,16 +110,6 @@ public class RedirectVisitor extends MethodVisitor {
             }
         }
         super.visitInvokeDynamicInsn(name, descriptor, bsm, bsmArgs);
-    }
-
-    @NotNull private String addOwnerAsFirstArgument(String owner, String descriptor) {
-        Type[] argumentTypes = getArgumentTypes(descriptor);
-        Type retType = Type.getReturnType(descriptor);
-        Type[] newArgs = new Type[argumentTypes.length + 1];
-        newArgs[0] = Type.getObjectType(owner);
-        System.arraycopy(argumentTypes, 0, newArgs, 1, argumentTypes.length);
-        descriptor = Type.getMethodDescriptor(retType, newArgs);
-        return descriptor;
     }
 
     private void doFieldToMethodRedirect(int opcode, String currentOwner, String name, String descriptor, FieldToMethodRedirectImpl fieldToMethodRedirect)

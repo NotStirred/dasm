@@ -116,7 +116,7 @@ public class Transformer {
     public void transform(ClassNode targetClass, Collection<MethodTransform> transforms) throws DasmWrappedExceptions {
         DasmClassExceptions dasmClassExceptions = new DasmClassExceptions("An exception occurred when transforming", targetClass);
 
-        Type targetClassType = Type.getType(TypeUtil.classNameToDescriptor(targetClass.name));
+        Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         for (MethodTransform transform : transforms) {
             Type methodSrcOwner = transform.srcMethod().owner();
 
@@ -261,7 +261,7 @@ public class Transformer {
             }
         }
 
-        Type targetClassType = Type.getType(TypeUtil.classNameToDescriptor(targetClass.name));
+        Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         for (Handle handle : lambdaRedirects.keySet()) {
             ClassMethod classMethodLambda = new ClassMethod(getObjectType(handle.getOwner()), new Method(handle.getName(), handle.getDesc()));
             redirects.addLambdaRedirect(

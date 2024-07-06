@@ -46,7 +46,7 @@ public class AnnotationParser {
     }
 
     public void findRedirectSets(ClassNode targetClass) throws DasmWrappedExceptions {
-        Type targetClassType = Type.getType(TypeUtil.classNameToDescriptor(targetClass.name));
+        Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         boolean isTargetInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
 
         DasmClassExceptions classExceptions = new DasmClassExceptions("An exception occurred when finding used redirect sets in", targetClass);
@@ -88,7 +88,7 @@ public class AnnotationParser {
     }
 
     public Optional<ClassTransform> buildClassTarget(ClassNode targetClass) throws DasmWrappedExceptions {
-        Type targetType = Type.getType(TypeUtil.classNameToDescriptor(targetClass.name));
+        Type targetType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         DasmClassExceptions classExceptions = new DasmClassExceptions("An exception occurred when looking for transforms in", targetClass);
 
         AnnotationNode transformFromClassNode = getAnnotationIfPresent(targetClass.invisibleAnnotations, TransformFromClass.class);
@@ -126,7 +126,7 @@ public class AnnotationParser {
     }
 
     public Optional<Collection<MethodTransform>> buildMethodTargets(ClassNode targetClass, String methodPrefix) throws DasmWrappedExceptions {
-        Type targetType = Type.getType(TypeUtil.classNameToDescriptor(targetClass.name));
+        Type targetType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         boolean isTargetTypeInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
 
         DasmClassExceptions classExceptions = new DasmClassExceptions("An exception occurred when looking for transforms in", targetClass);
