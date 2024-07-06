@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.github.notstirred.dasm.util.TypeUtil.classNameToDescriptor;
+import static io.github.notstirred.dasm.util.TypeUtil.typeNameToDescriptor;
 import static org.objectweb.asm.Type.getType;
 
 
@@ -28,9 +28,9 @@ public class TransformRedirects {
         for (RedirectSetImpl redirectSet : redirectSets) {
             for (TypeRedirectImpl typeRedirect : redirectSet.typeRedirects()) {
                 typeRedirects.put(
-                        getType(classNameToDescriptor(mappingsProvider.mapClassName(typeRedirect.srcType().getClassName()))),
+                        getType(typeNameToDescriptor(mappingsProvider.mapClassName(typeRedirect.srcType().getClassName()))),
                         new TypeAndIsInterface(
-                                getType(classNameToDescriptor(mappingsProvider.mapClassName(typeRedirect.dstType().getClassName()))),
+                                getType(typeNameToDescriptor(mappingsProvider.mapClassName(typeRedirect.dstType().getClassName()))),
                                 typeRedirect.isDstInterface()
                         )
                 );

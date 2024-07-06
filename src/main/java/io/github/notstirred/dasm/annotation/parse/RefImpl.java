@@ -11,7 +11,7 @@ import org.objectweb.asm.tree.AnnotationNode;
 import java.util.Map;
 import java.util.Optional;
 
-import static io.github.notstirred.dasm.util.TypeUtil.classNameToDescriptor;
+import static io.github.notstirred.dasm.util.TypeUtil.typeNameToDescriptor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RefImpl {
@@ -24,7 +24,7 @@ public class RefImpl {
         if (values.containsKey("string")) {
             String string = (String) values.get("string");
             if (!string.isEmpty()) {
-                type = Type.getType(classNameToDescriptor(string));
+                type = Type.getType(typeNameToDescriptor(string));
             }
         }
         if (type == null || type.getClassName().equals(Ref.EmptyRef.class.getName())) {
@@ -43,7 +43,7 @@ public class RefImpl {
         if (values.containsKey("string")) {
             String string = (String) values.get("string");
             if (!string.isEmpty()) {
-                type = Type.getType(classNameToDescriptor(string));
+                type = Type.getType(typeNameToDescriptor(string));
             }
         }
         if (type == null || type.getClassName().equals(Ref.EmptyRef.class.getName())) {

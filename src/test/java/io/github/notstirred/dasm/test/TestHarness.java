@@ -20,8 +20,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-import static io.github.notstirred.dasm.util.TypeUtil.classNameToDescriptor;
 import static io.github.notstirred.dasm.util.TypeUtil.classNameToInternalName;
+import static io.github.notstirred.dasm.util.TypeUtil.typeNameToDescriptor;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.objectweb.asm.Opcodes.ASM9;
 
@@ -151,15 +151,15 @@ public class TestHarness {
                     return true;
                 }, InsnList.class)
                 .withEqualsForType((a, b) -> {
-                    if (a.desc.equals(classNameToDescriptor(actual.name)) &&
-                            b.desc.equals(classNameToDescriptor(expected.name))) {
+                    if (a.desc.equals(typeNameToDescriptor(actual.name)) &&
+                            b.desc.equals(typeNameToDescriptor(expected.name))) {
                         return true;
                     }
                     return a.desc.equals(b.desc);
                 }, TypeInsnNode.class)
                 .withEqualsForType((a, b) -> {
-                    if (a.desc.equals(classNameToDescriptor(actual.name)) &&
-                            b.desc.equals(classNameToDescriptor(expected.name))) {
+                    if (a.desc.equals(typeNameToDescriptor(actual.name)) &&
+                            b.desc.equals(typeNameToDescriptor(expected.name))) {
                         return true;
                     }
                     return a.desc.equals(b.desc);

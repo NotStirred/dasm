@@ -1,6 +1,7 @@
 package io.github.notstirred.dasm.api.provider;
 
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
 
 import static org.objectweb.asm.Type.ARRAY;
 import static org.objectweb.asm.Type.OBJECT;
@@ -30,7 +31,7 @@ public interface MappingsProvider {
     String mapClassName(String className);
 
     default Type remapType(Type type) {
-        return Type.getObjectType(this.mapClassName(type.getClassName()).replace('.', '/'));
+        return Method.getMethod(this.mapClassName(type.getClassName()).replace('/', '.') + " x()").getReturnType();
     }
 
     default Type remapDescType(Type t) {
