@@ -101,8 +101,13 @@ public class Transformer {
 
                 String redirectedDescriptor = applyTransformsToMethodDescriptor(descriptor, redirects, Collections.emptyList());
 
+                MethodVisitor visitor = super.visitMethod(access, dstName, redirectedDescriptor, signature, exceptions);
+                assert visitor instanceof MethodNode; // We assume that we receive a MethodNode (ClassNode always returns one)
                 return dasmTransformingVisitor(
-                        super.visitMethod(access, dstName, redirectedDescriptor, signature, exceptions),
+                        redirectedDescriptor,
+                        Type.getObjectType(targetClass.name),
+                        descriptor,
+                        (MethodNode) visitor,
                         redirects,
                         mappingsProvider,
                         Collections.emptyList()
@@ -173,7 +178,7 @@ public class Transformer {
         // FIXME: transform exceptions
         MethodNode dstMethodNode = new MethodNode(srcMethodNode.access, dstMethodName, dstMethodDescriptor, null, srcMethodNode.exceptions.toArray(new String[0]));
 
-        srcMethodNode.accept(dasmTransformingVisitor(dstMethodNode, redirects, mappingsProvider, addedParameters));
+        srcMethodNode.accept(dasmTransformingVisitor(dstMethodDescriptor, Type.getObjectType(targetClass.name), srcMethodNode.desc, dstMethodNode, redirects, mappingsProvider, addedParameters));
 
         dstMethodNode.name = dstMethodName;
 
@@ -184,10 +189,11 @@ public class Transformer {
     /**
      * Apply all dasm transforms to a method body
      */
-    private static MethodVisitor dasmTransformingVisitor(MethodVisitor visitor, TransformRedirects redirects, MappingsProvider mappingsProvider,
+    private static MethodVisitor dasmTransformingVisitor(String newMethodDescriptor, Type owner, String originalMethodDesc, MethodNode node,
+                                                         TransformRedirects redirects, MappingsProvider mappingsProvider,
                                                          List<AddedParameter> addedParameters) {
         // FIXME: line numbers
-        visitor = new ParameterAdder(visitor, addedParameters);
+        MethodVisitor visitor = new ParameterAdder(node, owner, originalMethodDesc, newMethodDescriptor, addedParameters);
         visitor = new Interfacicitifier(visitor, redirects);
         visitor = new MethodRemapper(visitor, new TypeRemapper(redirects.typeRedirects(), false, mappingsProvider));
         visitor = new RedirectVisitor(visitor, redirects, mappingsProvider);
@@ -201,22 +207,34 @@ public class Transformer {
         Type returnType = Type.getReturnType(methodDescriptor);
 
         for (int i = 0; i < parameterTypes.length; i++) {
-            if (parameterTypes[i].getSort() == Type.OBJECT) {
-                TypeAndIsInterface type = redirects.typeRedirects().get(parameterTypes[i]);
-                parameterTypes[i] = type != null ? type.type() : parameterTypes[i];
-            }
+            parameterTypes[i] = redirectType(parameterTypes[i], redirects);
         }
 
-        if (returnType.getSort() == Type.OBJECT) {
-            returnType = redirects.typeRedirects().getOrDefault(returnType, new TypeAndIsInterface(returnType, false)).type();
-        }
+        returnType = redirectType(returnType, redirects);
 
         List<Type> parameterTypeList = new ArrayList<>(Arrays.asList(parameterTypes));
-        for (AddedParameter addedParameter : addedParameters) {
-            parameterTypeList.add(addedParameter.type());
-        }
+
+        // add parameters such that indices are always with respect to the original method signature and do not change as parameters are added.
+        int[] addedParameterCount = new int[]{0}; // java is stupid
+        addedParameters.stream().sorted(Comparator.comparingInt(AddedParameter::index))
+                .forEachOrdered(addedParameter -> {
+                    parameterTypeList.add(addedParameter.index() + addedParameterCount[0], addedParameter.type());
+                    addedParameterCount[0]++;
+                });
 
         return Type.getMethodDescriptor(returnType, parameterTypeList.toArray(new Type[0]));
+    }
+
+    private static Type redirectType(Type parameterType, TransformRedirects redirects) {
+        if (parameterType.getSort() == Type.ARRAY) {
+            TypeAndIsInterface type = redirects.typeRedirects().get(parameterType.getElementType());
+            String arrayPart = String.join("", Collections.nCopies(parameterType.getDimensions(), "["));
+            parameterType = type != null ? Type.getType(arrayPart + type.type()) : parameterType;
+        } else {
+            TypeAndIsInterface type = redirects.typeRedirects().get(parameterType);
+            parameterType = type != null ? type.type() : parameterType;
+        }
+        return parameterType;
     }
 
     private void cloneAndApplyLambdaRedirects(ClassNode srcClass, ClassNode targetClass, MethodNode method, TransformRedirects redirects,
@@ -294,7 +312,7 @@ public class Transformer {
 
         MethodNode dstMethodNode = new MethodNode(originalMethod.access, originalMethod.name, dstMethodDescriptor, null, originalMethod.exceptions.toArray(new String[0]));
         originalMethod.accept(
-                dasmTransformingVisitor(dstMethodNode, redirects, mappingsProvider, addedParameters)
+                dasmTransformingVisitor(dstMethodDescriptor, Type.getObjectType(srcClass.name), originalMethod.desc, dstMethodNode, redirects, mappingsProvider, addedParameters)
         );
         srcClass.methods.remove(originalMethod);
         srcClass.methods.add(dstMethodNode);

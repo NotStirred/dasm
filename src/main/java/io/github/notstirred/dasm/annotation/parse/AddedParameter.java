@@ -11,11 +11,14 @@ import java.util.Map;
 @Value
 public class AddedParameter {
     Type type;
+    int index;
 
     public static AddedParameter parse(AnnotationNode annotation) throws RefImpl.RefAnnotationGivenNoArguments {
         Map<String, Object> values = AnnotationUtil.getAnnotationValues(annotation, AddUnusedParam.class);
 
         Type type = RefImpl.parseRefAnnotation("type", values);
-        return new AddedParameter(type);
+        int index = (int) values.get("index");
+
+        return new AddedParameter(type, index);
     }
 }
