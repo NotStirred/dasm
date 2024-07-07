@@ -1,5 +1,6 @@
 package io.github.notstirred.dasm.transformer;
 
+import io.github.notstirred.dasm.annotation.parse.AddedParameter;
 import io.github.notstirred.dasm.annotation.parse.redirects.FieldRedirectImpl;
 import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
@@ -23,9 +24,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.getObjectType;
@@ -100,12 +99,13 @@ public class Transformer {
                 MethodRedirectImpl methodRedirect = builtRedirects.methodRedirects().get(key);
                 String dstName = methodRedirect == null ? name : methodRedirect.dstName();
 
-                String redirectedDescriptor = applyTransformsToMethodDescriptor(descriptor, redirects);
+                String redirectedDescriptor = applyTransformsToMethodDescriptor(descriptor, redirects, Collections.emptyList());
 
                 return dasmTransformingVisitor(
                         super.visitMethod(access, dstName, redirectedDescriptor, signature, exceptions),
                         redirects,
-                        mappingsProvider
+                        mappingsProvider,
+                        Collections.emptyList()
                 );
             }
         };
@@ -137,9 +137,9 @@ public class Transformer {
             TransformRedirects transformRedirects = new TransformRedirects(transform.redirectSets(), this.mappingsProvider);
             try {
                 if (transform.inPlace()) {
-                    applyRedirects(srcClass, transform.srcMethod(), transformRedirects, true);
+                    applyRedirects(srcClass, transform.srcMethod(), transformRedirects, transform.addedParameters(), true);
                 } else {
-                    cloneAndApplyRedirects(srcClass, targetClass, transform.srcMethod(), transform.dstMethodName(), transformRedirects, true);
+                    cloneAndApplyRedirects(srcClass, targetClass, transform.srcMethod(), transform.dstMethodName(), transformRedirects, transform.addedParameters(), true);
                 }
 
             } catch (SrcMethodNotFound e) {
@@ -155,7 +155,7 @@ public class Transformer {
      * @param redirects lambda redirects are implicitly added, so the parameter is modified.
      */
     private MethodNode cloneAndApplyRedirects(ClassNode srcClass, ClassNode targetClass, ClassMethod srcMethod, String dstMethodName,
-                                              TransformRedirects redirects, boolean debugLogging) throws SrcMethodNotFound {
+                                              TransformRedirects redirects, List<AddedParameter> addedParameters, boolean debugLogging) throws SrcMethodNotFound {
         Method existingMethod = srcMethod.remap(this.mappingsProvider).method();
 
         MethodNode srcMethodNode = srcClass.methods.stream()
@@ -164,7 +164,7 @@ public class Transformer {
 
         cloneAndApplyLambdaRedirects(srcClass, targetClass, srcMethodNode, redirects, debugLogging);
 
-        String dstMethodDescriptor = applyTransformsToMethodDescriptor(srcMethodNode.desc, redirects);
+        String dstMethodDescriptor = applyTransformsToMethodDescriptor(srcMethodNode.desc, redirects, addedParameters);
 
         MethodNode existingMethodNode = removeExistingMethod(targetClass, dstMethodName, dstMethodDescriptor);
         if (existingMethodNode != null && (existingMethodNode.access & ACC_NATIVE) == 0) {
@@ -173,7 +173,7 @@ public class Transformer {
         // FIXME: transform exceptions
         MethodNode dstMethodNode = new MethodNode(srcMethodNode.access, dstMethodName, dstMethodDescriptor, null, srcMethodNode.exceptions.toArray(new String[0]));
 
-        srcMethodNode.accept(dasmTransformingVisitor(dstMethodNode, redirects, mappingsProvider));
+        srcMethodNode.accept(dasmTransformingVisitor(dstMethodNode, redirects, mappingsProvider, addedParameters));
 
         dstMethodNode.name = dstMethodName;
 
@@ -184,8 +184,10 @@ public class Transformer {
     /**
      * Apply all dasm transforms to a method body
      */
-    private static MethodVisitor dasmTransformingVisitor(MethodVisitor visitor, TransformRedirects redirects, MappingsProvider mappingsProvider) {
+    private static MethodVisitor dasmTransformingVisitor(MethodVisitor visitor, TransformRedirects redirects, MappingsProvider mappingsProvider,
+                                                         List<AddedParameter> addedParameters) {
         // FIXME: line numbers
+        visitor = new ParameterAdder(visitor, addedParameters);
         visitor = new Interfacicitifier(visitor, redirects);
         visitor = new MethodRemapper(visitor, new TypeRemapper(redirects.typeRedirects(), false, mappingsProvider));
         visitor = new RedirectVisitor(visitor, redirects, mappingsProvider);
@@ -193,7 +195,8 @@ public class Transformer {
         return visitor;
     }
 
-    private static String applyTransformsToMethodDescriptor(String methodDescriptor, TransformRedirects redirects) {
+    private static String applyTransformsToMethodDescriptor(String methodDescriptor, TransformRedirects redirects,
+                                                            List<AddedParameter> addedParameters) {
         Type[] parameterTypes = Type.getArgumentTypes(methodDescriptor);
         Type returnType = Type.getReturnType(methodDescriptor);
 
@@ -208,7 +211,12 @@ public class Transformer {
             returnType = redirects.typeRedirects().getOrDefault(returnType, new TypeAndIsInterface(returnType, false)).type();
         }
 
-        return Type.getMethodDescriptor(returnType, parameterTypes);
+        List<Type> parameterTypeList = new ArrayList<>(Arrays.asList(parameterTypes));
+        for (AddedParameter addedParameter : addedParameters) {
+            parameterTypeList.add(addedParameter.type());
+        }
+
+        return Type.getMethodDescriptor(returnType, parameterTypeList.toArray(new Type[0]));
     }
 
     private void cloneAndApplyLambdaRedirects(ClassNode srcClass, ClassNode targetClass, MethodNode method, TransformRedirects redirects,
@@ -245,6 +253,7 @@ public class Transformer {
                                 new ClassMethod(Type.getObjectType(handle.getOwner()), new Method(name, desc)),
                                 newName,
                                 redirects,
+                                Collections.emptyList(),
                                 debugLogging
                         );
                     }
@@ -266,7 +275,7 @@ public class Transformer {
     }
 
     private void applyRedirects(ClassNode srcClass, ClassMethod srcMethod, TransformRedirects redirects,
-                                boolean debugLogging) throws SrcMethodNotFound {
+                                List<AddedParameter> addedParameters, boolean debugLogging) throws SrcMethodNotFound {
         Method existingMethod = srcMethod.remap(this.mappingsProvider).method();
 
         MethodNode originalMethod = srcClass.methods.stream()
@@ -275,7 +284,7 @@ public class Transformer {
 
         applyLambdaRedirects(srcClass, originalMethod, redirects, debugLogging);
 
-        String dstMethodDescriptor = applyTransformsToMethodDescriptor(originalMethod.desc, redirects);
+        String dstMethodDescriptor = applyTransformsToMethodDescriptor(originalMethod.desc, redirects, addedParameters);
 
         MethodNode existingMethodNode = removeExistingMethod(srcClass, originalMethod.name, dstMethodDescriptor);
         if (existingMethodNode != null && (existingMethodNode.access & ACC_NATIVE) == 0 && !originalMethod.desc.equals(dstMethodDescriptor)) {
@@ -285,7 +294,7 @@ public class Transformer {
 
         MethodNode dstMethodNode = new MethodNode(originalMethod.access, originalMethod.name, dstMethodDescriptor, null, originalMethod.exceptions.toArray(new String[0]));
         originalMethod.accept(
-                dasmTransformingVisitor(dstMethodNode, redirects, mappingsProvider)
+                dasmTransformingVisitor(dstMethodNode, redirects, mappingsProvider, addedParameters)
         );
         srcClass.methods.remove(originalMethod);
         srcClass.methods.add(dstMethodNode);
@@ -320,6 +329,7 @@ public class Transformer {
                                 srcClass,
                                 new ClassMethod(Type.getObjectType(handle.getOwner()), new Method(name, desc)),
                                 redirects,
+                                Collections.emptyList(),
                                 debugLogging
                         );
                     }
