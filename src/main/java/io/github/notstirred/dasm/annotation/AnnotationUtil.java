@@ -1,6 +1,7 @@
 package io.github.notstirred.dasm.annotation;
 
 import com.google.common.collect.Lists;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -34,6 +35,20 @@ public class AnnotationUtil {
             }
         }
         return null;
+    }
+
+    @NotNull
+    public static List<AnnotationNode> getAllAnnotations(List<AnnotationNode> annotations, Class<?> annotation) {
+        List<AnnotationNode> annotationsOfType = new ArrayList<>();
+        if (annotations == null) {
+            return annotationsOfType;
+        }
+        for (AnnotationNode annotationNode : annotations) {
+            if (annotationNode.desc.equals(classToDescriptor(annotation))) {
+                annotationsOfType.add(annotationNode);
+            }
+        }
+        return annotationsOfType;
     }
 
     public boolean isAnnotationIfPresent(List<AnnotationNode> annotations, Class<?> annotation) {

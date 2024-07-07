@@ -9,10 +9,7 @@ import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddFieldToSets;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddMethodToSets;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddTransformToSets;
-import io.github.notstirred.dasm.api.annotations.transform.ApplicationStage;
-import io.github.notstirred.dasm.api.annotations.transform.TransformFromClass;
-import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
-import io.github.notstirred.dasm.api.annotations.transform.TransformMethod;
+import io.github.notstirred.dasm.api.annotations.transform.*;
 import io.github.notstirred.dasm.data.ClassMethod;
 import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
@@ -24,6 +21,7 @@ import io.github.notstirred.dasm.transformer.data.ClassTransform;
 import io.github.notstirred.dasm.transformer.data.MethodTransform;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
 import io.github.notstirred.dasm.util.TypeUtil;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -35,8 +33,7 @@ import org.objectweb.asm.tree.MethodNode;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationIfPresent;
-import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationValues;
+import static io.github.notstirred.dasm.annotation.AnnotationUtil.*;
 import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
@@ -145,7 +142,9 @@ public class AnnotationParser {
             List<MethodTransform> methodTransforms = new ArrayList<>();
 
             for (MethodNode method : targetClass.methods) {
-                TransformMethodImpl transformMethod = parseTransformMethod(method, classExceptions);
+                DasmMethodExceptions methodExceptions = classExceptions.addNested(new DasmMethodExceptions(method));
+
+                TransformMethodImpl transformMethod = parseTransformMethod(method, methodExceptions);
                 if (transformMethod == null)
                     continue;
 
@@ -162,6 +161,8 @@ public class AnnotationParser {
                 String nonPrefixedMethodName = method.name;
                 String prefixedMethodName = methodPrefix + nonPrefixedMethodName;
 
+                List<AddedParameter> addedParameters = getAddedParameters(method, methodExceptions);
+
                 MethodTransform transform = new MethodTransform(
                         new ClassMethod(methodOwner, methodOwner, transformMethod.srcMethod()),
                         prefixedMethodName // We have to rename constructors because we add a prefix, and mixin expects that anything with <> is either init, or clinit
@@ -169,7 +170,8 @@ public class AnnotationParser {
                                 .replace("<clinit>", "__clinit__"),
                         redirectSets,
                         transformMethod.stage(),
-                        transformMethod.inPlace()
+                        transformMethod.inPlace(),
+                        addedParameters
                 );
 
                 AnnotationNode addToSetsAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, AddTransformToSets.class);
@@ -188,6 +190,7 @@ public class AnnotationParser {
 
                 methodTransforms.add(transform);
             }
+            classExceptions.throwIfHasWrapped();
             return Optional.of(methodTransforms);
         }
 
@@ -196,19 +199,37 @@ public class AnnotationParser {
     }
 
     /**
+     * @param method           The method to look for annotations on
+     * @param methodExceptions The object to add nested exceptions to if they occur
+     * @return The requested parameters to add to the transformed method in order.
+     */
+    @NotNull
+    private static List<AddedParameter> getAddedParameters(MethodNode method, DasmMethodExceptions methodExceptions) {
+        List<AnnotationNode> addUnusedParamAnnotations = getAllAnnotations(method.invisibleAnnotations, AddUnusedParam.class);
+        List<AddedParameter> addedParameters = new ArrayList<>();
+        for (AnnotationNode annotation : addUnusedParamAnnotations) {
+            try {
+                addedParameters.add(AddedParameter.parse(annotation));
+            } catch (RefImpl.RefAnnotationGivenNoArguments e) {
+                methodExceptions.addException(e);
+            }
+        }
+        return addedParameters;
+    }
+
+    /**
      * @param method          The method on which to look for annotations
-     * @param classExceptions The object to add nested exceptions to if they occur
+     * @param methodExceptions The object to add nested exceptions to if they occur
      * @return null if there was no annotation or there was an exception
      */
     @Nullable
-    private static TransformMethodImpl parseTransformMethod(MethodNode method, DasmClassExceptions classExceptions) {
+    private static TransformMethodImpl parseTransformMethod(MethodNode method, DasmMethodExceptions methodExceptions) {
         TransformMethodImpl transformMethod;
         AnnotationNode transformFromMethodAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, TransformFromMethod.class);
         AnnotationNode transformMethodAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, TransformMethod.class);
         if (transformFromMethodAnnotation == null && transformMethodAnnotation == null) {
             return null;
         }
-        DasmMethodExceptions methodExceptions = classExceptions.addNested(new DasmMethodExceptions(method));
         if (transformFromMethodAnnotation != null && transformMethodAnnotation != null) {
             methodExceptions.addException(new BothTransformMethodAndTransformFromMethodPresent(method));
             return null;
