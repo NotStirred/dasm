@@ -1,0 +1,32 @@
+package io.github.notstirred.dasm.test.tests.trivial_primitive_redirect;
+
+import io.github.notstirred.dasm.api.annotations.Dasm;
+import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
+import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
+import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
+import io.github.notstirred.dasm.api.annotations.selector.Ref;
+import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
+import io.github.notstirred.dasm.test.tests.BaseMethodTest;
+
+import static io.github.notstirred.dasm.test.tests.TestData.single;
+
+/**
+ * Verify that type redirects work for method parameters and return types.
+ * Object -> String
+ */
+@Dasm(TestTrivialPrimitiveRedirect.T4Set.class)
+public class TestTrivialPrimitiveRedirect extends BaseMethodTest {
+    public TestTrivialPrimitiveRedirect() {
+        super(single(TrivialPrimitiveRedirectInput.class, TrivialPrimitiveRedirectOutput.class, TestTrivialPrimitiveRedirect.class));
+    }
+
+    @TransformFromMethod(value = @MethodSig("method1([I)[I"))
+    public native float[] method2(float[] a);
+
+    @RedirectSet
+    public interface T4Set {
+        @TypeRedirect(from = @Ref(int.class), to = @Ref(float.class))
+        abstract class A {
+        }
+    }
+}
