@@ -2,12 +2,14 @@ package io.github.notstirred.dasm.test;
 
 import io.github.notstirred.dasm.annotation.AnnotationParser;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
+import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
 import io.github.notstirred.dasm.test.utils.ByteArrayClassLoader;
 import io.github.notstirred.dasm.transformer.Transformer;
 import io.github.notstirred.dasm.transformer.data.ClassTransform;
 import io.github.notstirred.dasm.transformer.data.MethodTransform;
 import io.github.notstirred.dasm.util.CachingClassProvider;
+import org.assertj.core.api.RecursiveComparisonAssert;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
@@ -30,9 +32,9 @@ public class TestHarness {
      * Verifies that the actualClass equals the expectedClass after transforms in dasmClass+actualClass have been applied
      */
     public static void verifyMethodTransformsValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
-        ClassNode actual = getClassNodeForClass(actualClass);
-        ClassNode expected = getClassNodeForClass(expectedClass);
-        ClassNode dasm = getClassNodeForClass(dasmClass);
+        ClassNode actual = classNodeFromClass(actualClass);
+        ClassNode expected = classNodeFromClass(expectedClass);
+        ClassNode dasm = classNodeFromClass(dasmClass);
 
         CachingClassProvider classProvider = new CachingClassProvider(TestHarness::getBytesForClassName);
         Transformer transformer = new Transformer(classProvider, MappingsProvider.IDENTITY);
@@ -51,28 +53,29 @@ public class TestHarness {
             throw new Error(e);
         }
 
-        ClassWriter classWriter = new ClassWriter(0);
-        actual.accept(classWriter);
+        // Write and re-read class bytes to fix issues with label nodes being wonky
+        byte[] bytecode = classNodeToBytes(actual);
+        ClassNode reparsedClassNode = classNodeFromBytes(bytecode);
+
         try {
-            Path path = Path.of(".dasm.out/method_transforms" + actual.name.replace('.', '/') + ".class").toAbsolutePath();
+            Path path = Path.of(".dasm.out/method_transforms/" + reparsedClassNode.name.replace('.', '/') + ".class").toAbsolutePath();
             Files.createDirectories(path.getParent());
-            Files.write(path, classWriter.toByteArray());
+            Files.write(path, bytecode);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
 
-        assertClassNodesEqual(actual, expected);
-
-        callAllMethodsWithDummies(actualClass, expectedClass, actual);
+        assertClassNodesEqual(reparsedClassNode, expected);
+        callAllMethodsWithDummies(actualClass, expectedClass, reparsedClassNode);
     }
 
     /**
      * Verifies that the actualClass equals the expectedClass after transforms in dasmClass+actualClass have been applied
      */
     public static void verifyClassTransformValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
-        ClassNode actual = getClassNodeForClass(actualClass);
-        ClassNode expected = getClassNodeForClass(expectedClass);
-        ClassNode dasm = getClassNodeForClass(dasmClass);
+        ClassNode actual = classNodeFromClass(actualClass);
+        ClassNode expected = classNodeFromClass(expectedClass);
+        ClassNode dasm = classNodeFromClass(dasmClass);
 
         CachingClassProvider classProvider = new CachingClassProvider(TestHarness::getBytesForClassName);
         Transformer transformer = new Transformer(classProvider, MappingsProvider.IDENTITY);
@@ -86,38 +89,36 @@ public class TestHarness {
             ClassTransform methodTransforms = annotationParser.buildClassTarget(dasm).get();
 
             transformer.transform(actual, methodTransforms);
-
-            assertClassNodesEqual(actual, expected);
-            callAllMethodsWithDummies(actualClass, expectedClass, actual);
-
-            ClassWriter classWriter = new ClassWriter(0);
-            actual.accept(classWriter);
-            try {
-                Path path = Path.of(".dasm.out/class_transforms" + actual.name.replace('.', '/') + ".class").toAbsolutePath();
-                Files.createDirectories(path.getParent());
-                Files.write(path, classWriter.toByteArray());
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-        } catch (Throwable e) {
+        } catch (DasmWrappedExceptions | NoSuchTypeExists e) {
             e.printStackTrace();
             throw new Error(e);
         }
+
+        // Write and re-read class bytes to fix issues with label nodes being wonky
+        byte[] bytecode = classNodeToBytes(actual);
+        ClassNode reparsedClassNode = classNodeFromBytes(bytecode);
+
+        try {
+            Path path = Path.of(".dasm.out/class_transforms/" + reparsedClassNode.name.replace('.', '/') + ".class").toAbsolutePath();
+            Files.createDirectories(path.getParent());
+            Files.write(path, bytecode);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        assertClassNodesEqual(reparsedClassNode, expected);
+        callAllMethodsWithDummies(actualClass, expectedClass, reparsedClassNode);
+    }
+
+    private static byte[] classNodeToBytes(ClassNode actual) {
+        ClassWriter classWriter = new ClassWriter(0);
+        actual.accept(classWriter);
+        byte[] bytecode = classWriter.toByteArray();
+        return bytecode;
     }
 
     private static void assertClassNodesEqual(ClassNode actual, ClassNode expected) {
-        assertThat(actual).usingRecursiveComparison()
-                .withRepresentation(new CustomToString())
-                .ignoringFields("name")
-                .ignoringFields("innerClasses.name")
-                .ignoringFields("innerClasses.innerName")
-                .ignoringFields("methods.maxStack") // constructorToMethod redirects don't adjust the max stack variable, so we just ignore it
-                .ignoringFieldsMatchingRegexes(".*visited$")
-                .ignoringFields("sourceFile")
-                .ignoringFieldsOfTypes(LineNumberNode.class)
-                .ignoringFieldsOfTypes(LabelNode.class)
-                .ignoringFieldsOfTypes(AnnotationNode.class)
-                .withEqualsForType((a, b) -> {
+        configuredAssertThat(actual).withEqualsForType((a, b) -> {
                     if (a.size() != b.size()) {
                         return false;
                     }
@@ -142,10 +143,9 @@ public class TestHarness {
                             continue;
                         }
 
-                        assertThat(aNode).usingRecursiveComparison()
+                        configuredAssertThat(aNode)
                                 .ignoringFields("previousInsn")
                                 .ignoringFields("nextInsn")
-                                .ignoringFields("line")
                                 .isEqualTo(bNode);
                     }
                     return true;
@@ -164,8 +164,23 @@ public class TestHarness {
                     }
                     return a.desc.equals(b.desc);
                 }, LocalVariableNode.class)
-                .usingOverriddenEquals()
                 .isEqualTo(expected);
+    }
+
+    private static RecursiveComparisonAssert<?> configuredAssertThat(Object actual) {
+        return assertThat(actual).usingRecursiveComparison()
+                .withRepresentation(new CustomToString())
+                .ignoringFields("name")
+                .ignoringCollectionOrderInFields("methods.localVariables")
+                .ignoringFields("innerClasses.name")
+                .ignoringFields("innerClasses.innerName")
+                .ignoringFields("innerClasses.innerName")
+                .ignoringFields("methods.maxStack") // constructorToMethod redirects don't adjust the max stack variable, so we just ignore it
+                .ignoringFieldsMatchingRegexes(".*visited$")
+                .ignoringFields("sourceFile")
+                .ignoringFieldsMatchingRegexes(".*line$")
+                .ignoringFields("label")
+                .ignoringAllOverriddenEquals();
     }
 
     private static String getUnusedClassName(String originalClassName) {
@@ -271,9 +286,16 @@ public class TestHarness {
         }
     }
 
-    private static ClassNode getClassNodeForClass(Class<?> clazz) {
+    private static ClassNode classNodeFromClass(Class<?> clazz) {
         ClassNode dst = new ClassNode(ASM9);
         final ClassReader classReader = new ClassReader(getBytesForClassName(clazz.getName()).get());
+        classReader.accept(dst, 0);
+        return dst;
+    }
+
+    private static ClassNode classNodeFromBytes(byte[] bytecode) {
+        ClassNode dst = new ClassNode(ASM9);
+        final ClassReader classReader = new ClassReader(bytecode);
         classReader.accept(dst, 0);
         return dst;
     }
@@ -299,6 +321,7 @@ public class TestHarness {
         DUMMY_VALUES.put(Integer.class, Integer.valueOf(2));
         DUMMY_VALUES.put(float.class, 3.0f);
         DUMMY_VALUES.put(float[].class, new float[]{ 3.0f, 3.0f, 3.0f });
+        DUMMY_VALUES.put(float[][].class, new float[][]{new float[]{3.0f, 3.0f, 3.0f}});
         DUMMY_VALUES.put(Float.class, Float.valueOf(4.0f));
         DUMMY_VALUES.put(boolean.class, true);
         DUMMY_VALUES.put(boolean[].class, new boolean[]{ true, true, true });
