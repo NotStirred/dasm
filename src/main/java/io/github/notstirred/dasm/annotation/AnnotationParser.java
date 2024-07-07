@@ -33,7 +33,8 @@ import org.objectweb.asm.tree.MethodNode;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.github.notstirred.dasm.annotation.AnnotationUtil.*;
+import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationIfPresent;
+import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationValues;
 import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
@@ -205,13 +206,24 @@ public class AnnotationParser {
      */
     @NotNull
     private static List<AddedParameter> getAddedParameters(MethodNode method, DasmMethodExceptions methodExceptions) {
-        List<AnnotationNode> addUnusedParamAnnotations = getAllAnnotations(method.invisibleAnnotations, AddUnusedParam.class);
         List<AddedParameter> addedParameters = new ArrayList<>();
-        for (AnnotationNode annotation : addUnusedParamAnnotations) {
-            try {
-                addedParameters.add(AddedParameter.parse(annotation));
-            } catch (RefImpl.RefAnnotationGivenNoArguments e) {
-                methodExceptions.addException(e);
+        AnnotationNode addUnusedParamAnnotationList = getAnnotationIfPresent(method.visibleAnnotations, AddUnusedParam.List.class);
+        if (addUnusedParamAnnotationList != null) {
+            for (AnnotationNode annotation : ((List<AnnotationNode>) addUnusedParamAnnotationList.values.get(1))) {
+                try {
+                    addedParameters.add(AddedParameter.parse(annotation));
+                } catch (RefImpl.RefAnnotationGivenNoArguments e) {
+                    methodExceptions.addException(e);
+                }
+            }
+        } else {
+            AnnotationNode addUnusedParamAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, AddUnusedParam.class);
+            if (addUnusedParamAnnotation != null) {
+                try {
+                    addedParameters.add(AddedParameter.parse(addUnusedParamAnnotation));
+                } catch (RefImpl.RefAnnotationGivenNoArguments e) {
+                    methodExceptions.addException(e);
+                }
             }
         }
         return addedParameters;

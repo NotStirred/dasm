@@ -2,15 +2,15 @@ package io.github.notstirred.dasm.transformer;
 
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
 import io.github.notstirred.dasm.transformer.data.TypeAndIsInterface;
+import io.github.notstirred.dasm.util.RemapperWithPrimitives;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.Remapper;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class TypeRemapper extends Remapper {
+public class TypeRemapper extends RemapperWithPrimitives {
     public static final String SKIP_TYPE_REDIRECT_PREFIX = "dasm_redirect[";
 
     private static final Logger LOGGER = LogManager.getLogger();
