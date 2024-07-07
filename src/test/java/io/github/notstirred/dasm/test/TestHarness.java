@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 import static io.github.notstirred.dasm.util.TypeUtil.classNameToDescriptor;
@@ -49,6 +51,16 @@ public class TestHarness {
             throw new Error(e);
         }
 
+        ClassWriter classWriter = new ClassWriter(0);
+        actual.accept(classWriter);
+        try {
+            Path path = Path.of(".dasm.out/method_transforms" + actual.name.replace('.', '/') + ".class").toAbsolutePath();
+            Files.createDirectories(path.getParent());
+            Files.write(path, classWriter.toByteArray());
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+
         assertClassNodesEqual(actual, expected);
 
         callAllMethodsWithDummies(actualClass, expectedClass, actual);
@@ -77,6 +89,16 @@ public class TestHarness {
 
             assertClassNodesEqual(actual, expected);
             callAllMethodsWithDummies(actualClass, expectedClass, actual);
+
+            ClassWriter classWriter = new ClassWriter(0);
+            actual.accept(classWriter);
+            try {
+                Path path = Path.of(".dasm.out/class_transforms" + actual.name.replace('.', '/') + ".class").toAbsolutePath();
+                Files.createDirectories(path.getParent());
+                Files.write(path, classWriter.toByteArray());
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
         } catch (Throwable e) {
             e.printStackTrace();
             throw new Error(e);
