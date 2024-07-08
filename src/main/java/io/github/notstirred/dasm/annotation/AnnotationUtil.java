@@ -51,7 +51,7 @@ public class AnnotationUtil {
         return annotationsOfType;
     }
 
-    public boolean isAnnotationIfPresent(List<AnnotationNode> annotations, Class<?> annotation) {
+    public static boolean isAnnotationPresent(List<AnnotationNode> annotations, Class<?> annotation) {
         if (annotations == null) {
             return false;
         }

@@ -17,9 +17,8 @@ public class TestTrivialAddUnusedParam extends BaseMethodTest {
         super(single(TrivialAddUnusedParamInput.class, TrivialAddUnusedParamOutput.class, TestTrivialAddUnusedParam.class));
     }
 
-    @AddUnusedParam(type = @Ref(Float.class), index = 1)
     @TransformFromMethod(value = @MethodSig("method1(Ljava/lang/Object;)Ljava/lang/Object;"))
-    public native String method2(String param, Float b);
+    public native String method2(String param, @AddUnusedParam Float b);
 
     @RedirectSet
     public interface Set {

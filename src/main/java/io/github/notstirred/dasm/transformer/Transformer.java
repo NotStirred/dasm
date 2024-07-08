@@ -215,11 +215,9 @@ public class Transformer {
         List<Type> parameterTypeList = new ArrayList<>(Arrays.asList(parameterTypes));
 
         // add parameters such that indices are always with respect to the original method signature and do not change as parameters are added.
-        int[] addedParameterCount = new int[]{0}; // java is stupid
         addedParameters.stream().sorted(Comparator.comparingInt(AddedParameter::index))
                 .forEachOrdered(addedParameter -> {
-                    parameterTypeList.add(addedParameter.index() + addedParameterCount[0], addedParameter.type());
-                    addedParameterCount[0]++;
+                    parameterTypeList.add(addedParameter.index(), addedParameter.type());
                 });
 
         return Type.getMethodDescriptor(returnType, parameterTypeList.toArray(new Type[0]));
