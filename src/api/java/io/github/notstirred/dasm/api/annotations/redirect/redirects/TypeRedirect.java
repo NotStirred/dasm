@@ -11,11 +11,15 @@ import java.lang.annotation.Target;
 /**
  * An element of a {@link RedirectSet}
  * <br/><br/>
- * Specifies that any occurrence of the type {@link TypeRedirect#from()} must be replaced with the type {@link TypeRedirect#to()}.
+ * Specifies that any occurrence of the type {@link #from()} must be replaced with the type {@link #to()}.<br/>
+ * <b><u>Array types cannot be directly redirected</u></b>; instead the element type may be redirected.
  * <br/><br/>
- * Must be marked on a {@code class}/{@code interface} within a {@link RedirectSet} {@code interface}.
+ * Must be marked on a type within a {@link RedirectSet} {@code interface}.
  * <br/><br/>
- * The {@code class}/{@code interface} marked with {@link TypeRedirect} can optionally contain any number of {@link FieldRedirect}s and {@link MethodRedirect}
+ * The marked type <b><u>must</u></b> match the {@link #to()} type in terms of {@code class}/{@code interface}, ({@code abstract} doesn't matter).
+ * <br/><br/>
+ * The type marked with {@link TypeRedirect} can optionally contain any number of {@link FieldRedirect}s and {@link MethodRedirect}
+ *
  * <br/><br/>
  * By convention the marked class's name should have the format {@code FromClass_to_ToClass}, eg: {@code Object_to_String}.
  * It should also be {@code abstract}
@@ -32,9 +36,13 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.CLASS)
 public @interface TypeRedirect {
-    /** The type to replace with {@link TypeRedirect#to()} */
+    /**
+     * The type to replace with {@link #to()}
+     */
     Ref from();
 
-    /** The type to replace {@link TypeRedirect#from()} with */
+    /**
+     * The type to replace {@link #from()} with
+     */
     Ref to();
 }

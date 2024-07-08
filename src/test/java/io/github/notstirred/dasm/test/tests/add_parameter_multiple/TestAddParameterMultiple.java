@@ -17,34 +17,17 @@ public class TestAddParameterMultiple extends BaseMethodTest {
         super(single(AddParameterMultipleInput.class, AddParameterMultipleOutput.class, TestAddParameterMultiple.class));
     }
 
-    @AddUnusedParam(type = @Ref(float[][].class), index = 1)
-    @AddUnusedParam(type = @Ref(float[][].class), index = 0)
     @TransformFromMethod(value = @MethodSig("method1(Ljava.lang.Object;)[Ljava.lang.Object;"))
-    public native float[] method1out1(float[] c, float a, float[][] b);
+    public native float[] method1out1(@AddUnusedParam float[][] c, float a, @AddUnusedParam float[][] b);
 
-    @AddUnusedParam(type = @Ref(float[][].class), index = 1)
-    @AddUnusedParam(type = @Ref(int.class), index = 1)
-    @AddUnusedParam(type = @Ref(int.class), index = 1)
     @TransformFromMethod(value = @MethodSig("method1(Ljava.lang.Object;)[Ljava.lang.Object;"))
-    public native float[] method1out2(float a, float[][] b, int c, int d);
+    public native float[] method1out2(float a, @AddUnusedParam float[][] b, @AddUnusedParam int c, @AddUnusedParam int d);
 
-
-    @AddUnusedParam(type = @Ref(float.class), index = 0)
-    @AddUnusedParam(type = @Ref(float.class), index = 0)
-    @AddUnusedParam(type = @Ref(int.class), index = 1)
-    @AddUnusedParam(type = @Ref(double.class), index = 1)
-    @AddUnusedParam(type = @Ref(long.class), index = 2)
-    @AddUnusedParam(type = @Ref(boolean.class), index = 3)
     @TransformFromMethod(value = @MethodSig("method2(Ljava.lang.String;Ljava.lang.String;Ljava.lang.String;)[Ljava.lang.String;"))
-    public native String[] method2out1(float a, float b, String c, int d, double e, String f, long g, String h, boolean i);
+    public native String[] method2out1(@AddUnusedParam float a, @AddUnusedParam float b, String c, @AddUnusedParam int d, @AddUnusedParam double e, String f, @AddUnusedParam long g, String h, @AddUnusedParam boolean i);
 
-    @AddUnusedParam(type = @Ref(long.class), index = 0)
-    @AddUnusedParam(type = @Ref(int.class), index = 0)
-    @AddUnusedParam(type = @Ref(double.class), index = 1)
-    @AddUnusedParam(type = @Ref(int.class), index = 2)
-    @AddUnusedParam(type = @Ref(long.class), index = 2)
     @TransformFromMethod(value = @MethodSig("method3(JJ)[Ljava.lang.String;"))
-    public native void method3out1(long c, int d, long a, double e, long b, int f, long g);
+    public native void method3out1(@AddUnusedParam long c, @AddUnusedParam int d, long a, @AddUnusedParam double e, long b, @AddUnusedParam int f, @AddUnusedParam long g);
 
     @RedirectSet
     public interface Set {

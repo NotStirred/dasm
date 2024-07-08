@@ -207,22 +207,17 @@ public class AnnotationParser {
     @NotNull
     private static List<AddedParameter> getAddedParameters(MethodNode method, DasmMethodExceptions methodExceptions) {
         List<AddedParameter> addedParameters = new ArrayList<>();
-        AnnotationNode addUnusedParamAnnotationList = getAnnotationIfPresent(method.visibleAnnotations, AddUnusedParam.List.class);
-        if (addUnusedParamAnnotationList != null) {
-            for (AnnotationNode annotation : ((List<AnnotationNode>) addUnusedParamAnnotationList.values.get(1))) {
-                try {
-                    addedParameters.add(AddedParameter.parse(annotation));
-                } catch (RefImpl.RefAnnotationGivenNoArguments e) {
-                    methodExceptions.addException(e);
-                }
-            }
-        } else {
-            AnnotationNode addUnusedParamAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, AddUnusedParam.class);
-            if (addUnusedParamAnnotation != null) {
-                try {
-                    addedParameters.add(AddedParameter.parse(addUnusedParamAnnotation));
-                } catch (RefImpl.RefAnnotationGivenNoArguments e) {
-                    methodExceptions.addException(e);
+
+        List<AnnotationNode>[] invisibleParameterAnnotations = method.invisibleParameterAnnotations;
+        if (invisibleParameterAnnotations == null)
+            return addedParameters;
+
+        Type[] argumentTypes = Type.getArgumentTypes(method.desc);
+        for (int i = 0; i < invisibleParameterAnnotations.length; i++) {
+            List<AnnotationNode> invisibleParameterAnnotation = invisibleParameterAnnotations[i];
+            if (invisibleParameterAnnotation != null) {
+                if (AnnotationUtil.isAnnotationPresent(invisibleParameterAnnotation, AddUnusedParam.class)) {
+                    addedParameters.add(new AddedParameter(argumentTypes[i], i));
                 }
             }
         }
