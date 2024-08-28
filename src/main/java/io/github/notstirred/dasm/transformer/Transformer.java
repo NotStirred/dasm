@@ -86,10 +86,10 @@ public class Transformer {
                 String key = sourceClass.name + "." + name;
 
                 FieldRedirectImpl fieldRedirect = builtRedirects.fieldRedirects().get(key);
-                if (fieldRedirect != null) {
-                    return super.visitField(access, fieldRedirect.dstName(), redirectedDescriptor, null, value);
+                if (fieldRedirect == null) {
+                    return super.visitField(access, name, redirectedDescriptor, signature, value);
                 } else {
-                    return super.visitField(access, name, descriptor, redirectedDescriptor, value);
+                    return super.visitField(access, fieldRedirect.dstName(), redirectedDescriptor, null, value);
                 }
             }
 
