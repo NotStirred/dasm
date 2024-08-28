@@ -1,4 +1,4 @@
-package io.github.notstirred.dasm.test.tests.method_redirect;
+package io.github.notstirred.dasm.test.tests.intra_method_redirect;
 
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.MethodRedirect;
@@ -15,14 +15,14 @@ import static io.github.notstirred.dasm.test.tests.TestData.single;
  * Verify that method redirects work
  * String#hashCode() -> String#length()
  */
-@Dasm(TestTrivialMethodRedirect.T3Set.class)
-public class TestTrivialMethodRedirect extends BaseMethodTest {
-    public TestTrivialMethodRedirect() {
-        super(single(TrivialMethodRedirectInput.class, TrivialMethodRedirectOutput.class, TestTrivialMethodRedirect.class));
+@Dasm(TestIntraMethodRedirect.T3Set.class)
+public class TestIntraMethodRedirect extends BaseMethodTest {
+    public TestIntraMethodRedirect() {
+        super(single(IntraMethodRedirectInput.class, IntraMethodRedirectOutput.class, TestIntraMethodRedirect.class));
     }
 
     @TransformFromMethod(value = @MethodSig("method1(Ljava/lang/String;)V"))
-    native String method2(String param);
+    native void method1out(String param);
 
     @RedirectSet
     public interface T3Set {
