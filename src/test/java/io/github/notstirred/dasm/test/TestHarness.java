@@ -12,6 +12,8 @@ import io.github.notstirred.dasm.util.CachingClassProvider;
 import org.assertj.core.api.RecursiveComparisonAssert;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.commons.ClassRemapper;
+import org.objectweb.asm.commons.SimpleRemapper;
 import org.objectweb.asm.tree.*;
 
 import java.io.IOException;
@@ -195,12 +197,14 @@ public class TestHarness {
 
     private static void callAllMethodsWithDummies(Class<?> actualClass, Class<?> expectedClass, ClassNode actual) {
         // Modify the name, as the input class is already loaded by this point.
-        actual.name = getUnusedClassName(actual.name);
-        String transformedName = actual.name.replace('/', '.');
+        ClassNode renamedActual = new ClassNode(ASM9);
+        actual.accept(new ClassRemapper(renamedActual, new SimpleRemapper(actual.name, getUnusedClassName(actual.name))));
+
+        String transformedName = renamedActual.name.replace('/', '.');
 
         // Write transformed class
         ClassWriter classWriter = new ClassWriter(0);
-        actual.accept(classWriter);
+        renamedActual.accept(classWriter);
 
         // Load transformed class
         byte[] previouslyLoadedClass = CLASS_BYTES.put(transformedName, classWriter.toByteArray());
