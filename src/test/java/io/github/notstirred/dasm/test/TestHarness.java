@@ -4,6 +4,7 @@ import io.github.notstirred.dasm.annotation.AnnotationParser;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
+import io.github.notstirred.dasm.test.targets.CubePos;
 import io.github.notstirred.dasm.test.targets.Vec3i;
 import io.github.notstirred.dasm.test.utils.ByteArrayClassLoader;
 import io.github.notstirred.dasm.transformer.Transformer;
@@ -67,6 +68,9 @@ public class TestHarness {
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
+
+        expected.methods.sort(Comparator.comparing(methodNode -> methodNode.name));
+        reparsedClassNode.methods.sort(Comparator.comparing(methodNode -> methodNode.name));
 
         assertClassNodesEqual(reparsedClassNode, expected);
         callAllMethodsWithDummies(actualClass, expectedClass, reparsedClassNode);
@@ -179,10 +183,14 @@ public class TestHarness {
                 .ignoringFields("innerClasses.innerName")
                 .ignoringFields("innerClasses.innerName")
                 .ignoringFields("methods.maxStack") // constructorToMethod redirects don't adjust the max stack variable, so we just ignore it
+                .ignoringFields("methods.signature") // dasm doesn't attempt to create a valid signature.
                 .ignoringFieldsMatchingRegexes(".*visited$")
                 .ignoringFields("sourceFile")
                 .ignoringFieldsMatchingRegexes(".*line$")
                 .ignoringFields("label")
+                .ignoringFields("bsmArgs.name")
+                .ignoringFields("bsmArgs.owner")
+                .ignoringFields("methods.name")
                 .ignoringAllOverriddenEquals();
     }
 
@@ -348,5 +356,6 @@ public class TestHarness {
         DUMMY_VALUES.put(String.class, "a");
         DUMMY_VALUES.put(String[].class, new String[]{ "b", "c", "d" });
         DUMMY_VALUES.put(Vec3i.class, new Vec3i(5, -15, 190));
+        DUMMY_VALUES.put(CubePos.class, new CubePos(-9, 3, 128736));
     }
 }

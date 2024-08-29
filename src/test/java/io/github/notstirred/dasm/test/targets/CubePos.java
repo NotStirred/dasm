@@ -14,6 +14,10 @@ public class CubePos {
         this(extractX(cubePos), extractY(cubePos), extractZ(cubePos));
     }
 
+    public static CubePos of(int x, int y, int z) {
+        return new CubePos(x, y, z);
+    }
+
     public long asLong() {
         long i = 0L;
         i |= ((long) this.x & (1 << 21) - 1) << 43;
