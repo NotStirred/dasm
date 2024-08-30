@@ -238,44 +238,20 @@ public class Transformer {
     private void cloneAndApplyLambdaRedirects(ClassNode srcClass, ClassNode targetClass, MethodNode method, TransformRedirects redirects,
                                               boolean debugLogging) throws SrcMethodNotFound {
         Map<Handle, String> lambdaRedirects = new HashMap<>();
-        for (AbstractInsnNode instruction : method.instructions) {
-            if (instruction.getOpcode() == INVOKEDYNAMIC) {
-                InvokeDynamicInsnNode invoke = (InvokeDynamicInsnNode) instruction;
-                String bootstrapMethodName = invoke.bsm.getName();
-                String bootstrapMethodOwner = invoke.bsm.getOwner();
-                if (bootstrapMethodName.equals("metafactory") && bootstrapMethodOwner.equals("java/lang/invoke/LambdaMetafactory")) {
-                    for (Object bsmArg : invoke.bsmArgs) {
-                        if (!(bsmArg instanceof Handle)) {
-                            continue;
-                        }
-                        Handle handle = (Handle) bsmArg;
-                        String owner = handle.getOwner();
-                        if (!owner.equals(srcClass.name)) {
-                            continue;
-                        }
-                        String name = handle.getName();
-                        String desc = handle.getDesc();
-                        // ignore method references into own class
-                        MethodNode targetNode =
-                                srcClass.methods.stream().filter(m -> m.name.equals(name) && m.desc.equals(desc)).findFirst().orElse(null);
-                        if (targetNode == null || (targetNode.access & ACC_SYNTHETIC) == 0) {
-                            continue;
-                        }
-                        String newName = "dasm$redirect$" + name;
-                        lambdaRedirects.put(handle, newName);
-                        cloneAndApplyRedirects(
-                                srcClass,
-                                targetClass,
-                                new ClassMethod(Type.getObjectType(handle.getOwner()), new Method(name, desc)),
-                                newName,
-                                redirects,
-                                Collections.emptyList(),
-                                debugLogging
-                        );
-                    }
-                }
-            }
-        }
+
+        forEachLambdaInvocation(srcClass, method, (classMethod, handle) -> {
+            String newName = "dasm$redirect$" + classMethod.method().getName();
+            lambdaRedirects.put(handle, newName);
+            cloneAndApplyRedirects(
+                    srcClass,
+                    targetClass,
+                    classMethod,
+                    newName,
+                    redirects,
+                    Collections.emptyList(),
+                    debugLogging
+            );
+        });
 
         Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         for (Handle handle : lambdaRedirects.keySet()) {
@@ -318,6 +294,21 @@ public class Transformer {
 
     private void applyLambdaRedirects(ClassNode srcClass, MethodNode method, TransformRedirects redirects,
                                       boolean debugLogging) throws SrcMethodNotFound {
+        forEachLambdaInvocation(srcClass, method, (classMethod, handle) -> applyRedirects(
+                srcClass,
+                classMethod,
+                redirects,
+                Collections.emptyList(),
+                debugLogging
+        ));
+    }
+
+    @FunctionalInterface
+    interface RedirectLambdaFunction {
+        void call(ClassMethod srcMethod, Handle handle) throws SrcMethodNotFound;
+    }
+
+    private void forEachLambdaInvocation(ClassNode srcClass, MethodNode method, RedirectLambdaFunction f) throws SrcMethodNotFound {
         for (AbstractInsnNode instruction : method.instructions) {
             if (instruction.getOpcode() == INVOKEDYNAMIC) {
                 InvokeDynamicInsnNode invoke = (InvokeDynamicInsnNode) instruction;
@@ -341,13 +332,8 @@ public class Transformer {
                         if (targetNode == null || (targetNode.access & ACC_SYNTHETIC) == 0) {
                             continue;
                         }
-                        applyRedirects(
-                                srcClass,
-                                new ClassMethod(Type.getObjectType(handle.getOwner()), new Method(name, desc)),
-                                redirects,
-                                Collections.emptyList(),
-                                debugLogging
-                        );
+
+                        f.call(new ClassMethod(Type.getObjectType(handle.getOwner()), new Method(name, desc)), handle);
                     }
                 }
             }
