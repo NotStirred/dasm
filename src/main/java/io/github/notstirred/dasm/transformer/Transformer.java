@@ -138,7 +138,6 @@ public class Transformer {
             }
 
             // FIXME: synthetic accessor methods
-            // FIXME: add non-clone redirects
             TransformRedirects transformRedirects = new TransformRedirects(transform.redirectSets(), this.mappingsProvider);
             try {
                 if (transform.inPlace()) {

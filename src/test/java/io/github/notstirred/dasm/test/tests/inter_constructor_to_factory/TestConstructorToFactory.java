@@ -1,4 +1,4 @@
-package io.github.notstirred.dasm.test.tests.constructor_to_factory;
+package io.github.notstirred.dasm.test.tests.inter_constructor_to_factory;
 
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.ConstructorToFactoryRedirect;

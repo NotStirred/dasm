@@ -13,10 +13,6 @@ import io.github.notstirred.dasm.test.tests.BaseMethodTest;
 
 import static io.github.notstirred.dasm.test.tests.TestData.single;
 
-/**
- * Verify that method redirects work
- * String#hashCode() -> String#length()
- */
 @Dasm(TestIntraFieldToMethodRedirect.Set.class)
 public class TestIntraFieldToMethodRedirect extends BaseMethodTest {
     public TestIntraFieldToMethodRedirect() {

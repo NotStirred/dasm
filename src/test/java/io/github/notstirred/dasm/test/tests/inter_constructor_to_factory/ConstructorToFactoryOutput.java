@@ -1,4 +1,4 @@
-package io.github.notstirred.dasm.test.tests.constructor_to_factory;
+package io.github.notstirred.dasm.test.tests.inter_constructor_to_factory;
 
 import java.io.File;
 
