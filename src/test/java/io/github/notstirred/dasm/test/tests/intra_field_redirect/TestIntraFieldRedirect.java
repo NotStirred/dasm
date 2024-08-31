@@ -18,7 +18,7 @@ import static io.github.notstirred.dasm.test.tests.TestData.single;
  * Verify that method redirects work
  * String#hashCode() -> String#length()
  */
-@Dasm(TestIntraFieldRedirect.T3Set.class)
+@Dasm(TestIntraFieldRedirect.Set.class)
 public class TestIntraFieldRedirect extends BaseMethodTest {
     public TestIntraFieldRedirect() {
         super(single(IntraFieldRedirectInput.class, IntraFieldRedirectOutput.class, TestIntraFieldRedirect.class));
@@ -31,7 +31,7 @@ public class TestIntraFieldRedirect extends BaseMethodTest {
     native void method2out(int val);
 
     @RedirectSet
-    public interface T3Set {
+    public interface Set {
         @IntraOwnerContainer(owner = @Ref(Vec3i.class))
         abstract class Vec3i_NONSTATIC {
             @FieldRedirect(@FieldSig(type = @Ref(int.class), name = "x"))

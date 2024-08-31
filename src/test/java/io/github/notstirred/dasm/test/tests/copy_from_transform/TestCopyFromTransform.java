@@ -14,7 +14,7 @@ import static io.github.notstirred.dasm.test.tests.TestData.single;
  * Type/field/method redirects in a copyFrom method transform.
  * Object -> String
  */
-@Dasm(TestCopyFromTransform.T5Set.class)
+@Dasm(TestCopyFromTransform.Set.class)
 public class TestCopyFromTransform extends BaseMethodTest {
     public TestCopyFromTransform() {
         super(single(CopyFromTransformInput.class, CopyFromTransformOutput.class, TestCopyFromTransform.class));
@@ -27,12 +27,14 @@ public class TestCopyFromTransform extends BaseMethodTest {
     public native String methodOnAnotherClassTransformed(String param);
 
     @RedirectSet
-    public interface T5Set {
+    public interface Set {
         @TypeRedirect(from = @Ref(Object.class), to = @Ref(String.class))
-        abstract class A { }
+        abstract class Object_to_String_redirects {
+        }
 
         @TypeRedirect(from = @Ref(TestCopyFromTransform.class), to = @Ref(CopyFromTransformInput.class))
-        abstract class T5DasmToT5InputRedirect { }
+        abstract class TestCopyFromTransform_to_CopyFromTransformInput_redirects {
+        }
     }
 
     public Object methodOnAnotherClass(Object o) {

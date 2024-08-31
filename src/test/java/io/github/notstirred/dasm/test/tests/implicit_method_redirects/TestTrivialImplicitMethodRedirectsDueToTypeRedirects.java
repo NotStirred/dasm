@@ -14,7 +14,7 @@ import static io.github.notstirred.dasm.test.tests.TestData.single;
  * Verify that type redirects implicitly do self method redirects.
  * Object#hashCode() -> String#hashCode()
  */
-@Dasm(TestTrivialImplicitMethodRedirectsDueToTypeRedirects.T2Set.class)
+@Dasm(TestTrivialImplicitMethodRedirectsDueToTypeRedirects.Set.class)
 public class TestTrivialImplicitMethodRedirectsDueToTypeRedirects extends BaseMethodTest {
     public TestTrivialImplicitMethodRedirectsDueToTypeRedirects() {
         super(single(
@@ -27,7 +27,7 @@ public class TestTrivialImplicitMethodRedirectsDueToTypeRedirects extends BaseMe
     native String method1(String param);
 
     @RedirectSet
-    public interface T2Set {
+    public interface Set {
         @TypeRedirect(from = @Ref(Float.class), to = @Ref(String.class))
         abstract class A {
         }

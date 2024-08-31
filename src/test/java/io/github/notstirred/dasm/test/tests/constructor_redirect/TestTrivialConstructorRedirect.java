@@ -14,7 +14,7 @@ import static io.github.notstirred.dasm.test.tests.TestData.single;
  * Verify that constructors are properly redirected.
  * new Object() -> new String()
  */
-@Dasm(TestTrivialConstructorRedirect.T1Set.class)
+@Dasm(TestTrivialConstructorRedirect.Set.class)
 public class TestTrivialConstructorRedirect extends BaseMethodTest {
     public TestTrivialConstructorRedirect() {
         super(single(TrivialConstructorRedirectInput.class, TrivialConstructorRedirectOutput.class, TestTrivialConstructorRedirect.class));
@@ -24,7 +24,7 @@ public class TestTrivialConstructorRedirect extends BaseMethodTest {
     native String method2();
 
     @RedirectSet
-    public interface T1Set {
+    public interface Set {
         @TypeRedirect(from = @Ref(Object.class), to = @Ref(String.class))
         abstract class A { }
     }

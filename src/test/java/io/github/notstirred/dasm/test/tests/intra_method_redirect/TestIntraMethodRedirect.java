@@ -15,7 +15,7 @@ import static io.github.notstirred.dasm.test.tests.TestData.single;
  * Verify that method redirects work
  * String#hashCode() -> String#length()
  */
-@Dasm(TestIntraMethodRedirect.T3Set.class)
+@Dasm(TestIntraMethodRedirect.Set.class)
 public class TestIntraMethodRedirect extends BaseMethodTest {
     public TestIntraMethodRedirect() {
         super(single(IntraMethodRedirectInput.class, IntraMethodRedirectOutput.class, TestIntraMethodRedirect.class));
@@ -25,7 +25,7 @@ public class TestIntraMethodRedirect extends BaseMethodTest {
     native void method1out(String param);
 
     @RedirectSet
-    public interface T3Set {
+    public interface Set {
         @IntraOwnerContainer(owner = @Ref(String.class))
         abstract class A {
             @MethodRedirect(@MethodSig(ret = @Ref(int.class), name = "hashCode", args = { }))

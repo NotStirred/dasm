@@ -18,7 +18,7 @@ import static io.github.notstirred.dasm.test.tests.TestData.single;
 /**
  * Constructor to factory redirects with an additional different type redirect
  */
-@Dasm(TestConstructorToFactory.T6Set.class)
+@Dasm(TestConstructorToFactory.Set.class)
 public class TestConstructorToFactory extends BaseMethodTest {
     public TestConstructorToFactory() {
         super(single(ConstructorToFactoryInput.class, ConstructorToFactoryOutput.class, TestConstructorToFactory.class));
@@ -40,7 +40,7 @@ public class TestConstructorToFactory extends BaseMethodTest {
     public interface A { }
 
     @RedirectSet
-    public interface T6Set {
+    public interface Set {
         @TypeRedirect(from = @Ref(Object.class), to = @Ref(String.class))
         abstract class A { }
 

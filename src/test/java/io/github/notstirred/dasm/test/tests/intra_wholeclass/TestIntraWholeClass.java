@@ -21,14 +21,14 @@ import static io.github.notstirred.dasm.test.tests.TestData.single;
 /**
  * A trivial test for set inheritance
  */
-@TransformFromClass(value = @Ref(IntraWholeClassInput.class), sets = TestIntraWholeClass.IntraWholeClassSet.class)
+@TransformFromClass(value = @Ref(IntraWholeClassInput.class), sets = TestIntraWholeClass.Set.class)
 public class TestIntraWholeClass extends BaseClassTest {
     public TestIntraWholeClass() {
         super(single(IntraWholeClassInput.class, IntraWholeClassOutput.class, TestIntraWholeClass.class));
     }
 
     @RedirectSet
-    interface IntraWholeClassSet {
+    interface Set {
         @IntraOwnerContainer(owner = @Ref(IntraWholeClassInput.class))
         abstract class InputRedirects {
             @FieldRedirect(@FieldSig(type = @Ref(Vec3i.class), name = "field"))

@@ -17,7 +17,7 @@ import static io.github.notstirred.dasm.test.tests.TestData.single;
  * <p>
  * Currently, this <u>does not work</u> as javac always produces a DUP instruction.
  */
-@Dasm(TestMissingDupAfterNew.T3Set.class)
+@Dasm(TestMissingDupAfterNew.Set.class)
 public class TestMissingDupAfterNew extends BaseMethodTest {
     public TestMissingDupAfterNew() {
         super(single(MissingDupAfterNewInput.class, MissingDupAfterNewOutput.class, TestMissingDupAfterNew.class));
@@ -27,7 +27,7 @@ public class TestMissingDupAfterNew extends BaseMethodTest {
     native void method1out();
 
     @RedirectSet
-    public interface T3Set {
+    public interface Set {
         @TypeRedirect(from = @Ref(Vec3i.class), to = @Ref(CubePos.class))
         abstract class A {
         }

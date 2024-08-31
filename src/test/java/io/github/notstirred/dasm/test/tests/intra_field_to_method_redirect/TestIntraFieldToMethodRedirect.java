@@ -17,7 +17,7 @@ import static io.github.notstirred.dasm.test.tests.TestData.single;
  * Verify that method redirects work
  * String#hashCode() -> String#length()
  */
-@Dasm(TestIntraFieldToMethodRedirect.T3Set.class)
+@Dasm(TestIntraFieldToMethodRedirect.Set.class)
 public class TestIntraFieldToMethodRedirect extends BaseMethodTest {
     public TestIntraFieldToMethodRedirect() {
         super(single(IntraFieldToMethodRedirectInput.class, IntraFieldToMethodRedirectOutput.class, TestIntraFieldToMethodRedirect.class));
@@ -27,7 +27,7 @@ public class TestIntraFieldToMethodRedirect extends BaseMethodTest {
     native void method1out(Vec3i param);
 
     @RedirectSet
-    public interface T3Set {
+    public interface Set {
         @IntraOwnerContainer(owner = @Ref(Vec3i.class))
         abstract class A {
             @FieldToMethodRedirect(value = @FieldSig(type = @Ref(int.class), name = "x"), setter = "setX")
