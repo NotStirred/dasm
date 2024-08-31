@@ -4,8 +4,7 @@ import io.github.notstirred.dasm.annotation.AnnotationParser;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
-import io.github.notstirred.dasm.test.targets.CubePos;
-import io.github.notstirred.dasm.test.targets.Vec3i;
+import io.github.notstirred.dasm.test.targets.*;
 import io.github.notstirred.dasm.test.utils.ByteArrayClassLoader;
 import io.github.notstirred.dasm.transformer.Transformer;
 import io.github.notstirred.dasm.transformer.data.ClassTransform;
@@ -357,5 +356,9 @@ public class TestHarness {
         DUMMY_VALUES.put(String[].class, new String[]{ "b", "c", "d" });
         DUMMY_VALUES.put(Vec3i.class, new Vec3i(5, -15, 190));
         DUMMY_VALUES.put(CubePos.class, new CubePos(-9, 3, 128736));
+        DUMMY_VALUES.put(CubePosInterface.class, new CubePos(13, 341, -76));
+        DUMMY_VALUES.put(A.class, new A());
+        DUMMY_VALUES.put(B.class, new B());
+        DUMMY_VALUES.put(C.class, new C());
     }
 }

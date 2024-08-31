@@ -1,12 +1,12 @@
 package io.github.notstirred.dasm.test.targets;
 
-public class Soup {
+public class NewSoup {
     public int a;
     public int b;
 
-    public Soup() { }
+    public NewSoup() { }
 
-    public Soup(int foo) {
+    public NewSoup(int foo) {
     }
 
     public static int A = 1;
@@ -24,11 +24,11 @@ public class Soup {
     public static void static_foo2() {
     }
 
-    public static Soup create() {
-        return new Soup();
+    public static NewSoup create() {
+        return new NewSoup();
     }
 
-    public static Soup create(int foo) {
-        return new Soup(foo);
+    public static NewSoup create(int foo) {
+        return new NewSoup(foo);
     }
 }

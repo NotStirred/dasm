@@ -1,11 +1,14 @@
 package io.github.notstirred.dasm.test.targets;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Value;
+import lombok.Data;
+import lombok.Setter;
 
 @AllArgsConstructor
-@Value
-public class CubePos {
+@Data
+@Setter(AccessLevel.PRIVATE)
+public class CubePos implements CubePosInterface {
     public int x;
     public int y;
     public int z;
@@ -16,6 +19,18 @@ public class CubePos {
 
     public static CubePos of(int x, int y, int z) {
         return new CubePos(x, y, z);
+    }
+
+    public void setX(int x) {
+        this.x = x;
+    }
+
+    public void setY(int y) {
+        this.y = y;
+    }
+
+    public void setZ(int z) {
+        this.z = z;
     }
 
     public long asLong() {
