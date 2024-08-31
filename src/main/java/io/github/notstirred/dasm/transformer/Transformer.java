@@ -161,28 +161,55 @@ public class Transformer {
      */
     private MethodNode cloneAndApplyRedirects(ClassNode srcClass, ClassNode targetClass, ClassMethod srcMethod, String dstMethodName,
                                               TransformRedirects redirects, List<AddedParameter> addedParameters, boolean debugLogging) throws SrcMethodNotFound {
+        return redirects(srcClass, targetClass, srcMethod, dstMethodName, redirects, addedParameters, debugLogging,
+                (srcMethodNode, dstMethodNode, existingMethodNode) -> {
+                    cloneAndApplyLambdaRedirects(srcClass, targetClass, srcMethodNode, redirects, debugLogging);
+                    if (debugLogging && existingMethodNode != null && (existingMethodNode.access & ACC_NATIVE) == 0) {
+                        LOGGER.debug("Method transform overwriting existing method " + dstMethodNode.name + " " + dstMethodNode.desc);
+                    }
+                    dstMethodNode.name = dstMethodName;
+                    targetClass.methods.add(dstMethodNode);
+                }
+        );
+    }
+
+    private void applyRedirects(ClassNode srcClass, ClassMethod srcMethod, TransformRedirects redirects,
+                                List<AddedParameter> addedParameters, boolean debugLogging) throws SrcMethodNotFound {
+        redirects(srcClass, srcClass, srcMethod, srcMethod.method().getName(), redirects, addedParameters, debugLogging,
+                (srcMethodNode, dstMethodNode, existingMethodNode) -> {
+                    applyLambdaRedirects(srcClass, srcMethodNode, redirects, debugLogging);
+                    if (debugLogging && existingMethodNode != null && (existingMethodNode.access & ACC_NATIVE) == 0 && !srcMethodNode.desc.equals(dstMethodNode.desc)) {
+                        // in-place transforms must be overwriting a different method than the src one to log (otherwise every in-place transform would log)
+                        LOGGER.debug("Method transform overwriting existing method " + srcMethodNode.name + " " + dstMethodNode.desc);
+                    }
+                    srcClass.methods.remove(srcMethodNode);
+                    srcClass.methods.add(dstMethodNode);
+                }
+        );
+    }
+
+    @FunctionalInterface
+    interface RedirectsFunction {
+        void call(MethodNode srcMethodNode, MethodNode dstMethodNode, @Nullable MethodNode existingMethodNode) throws SrcMethodNotFound;
+    }
+
+    private MethodNode redirects(ClassNode srcClass, ClassNode targetClass, ClassMethod srcMethod, String dstMethodName,
+                                 TransformRedirects redirects, List<AddedParameter> addedParameters, boolean debugLogging, RedirectsFunction f) throws SrcMethodNotFound {
         Method existingMethod = srcMethod.remap(this.mappingsProvider).method();
 
         MethodNode srcMethodNode = srcClass.methods.stream()
                 .filter(method -> existingMethod.getName().equals(method.name) && existingMethod.getDescriptor().equals(method.desc))
                 .findAny().orElseThrow(() -> new SrcMethodNotFound(srcMethod, existingMethod));
 
-        cloneAndApplyLambdaRedirects(srcClass, targetClass, srcMethodNode, redirects, debugLogging);
 
         String dstMethodDescriptor = applyTransformsToMethodDescriptor(srcMethodNode.desc, redirects, addedParameters);
-
         MethodNode existingMethodNode = removeExistingMethod(targetClass, dstMethodName, dstMethodDescriptor);
-        if (existingMethodNode != null && (existingMethodNode.access & ACC_NATIVE) == 0) {
-            LOGGER.debug("Method transform overwriting existing method " + dstMethodName + " " + dstMethodDescriptor);
-        }
         // FIXME: transform exceptions
         MethodNode dstMethodNode = new MethodNode(srcMethodNode.access, dstMethodName, dstMethodDescriptor, null, srcMethodNode.exceptions.toArray(new String[0]));
 
+        f.call(srcMethodNode, dstMethodNode, existingMethodNode);
+
         srcMethodNode.accept(dasmTransformingVisitor(dstMethodDescriptor, Type.getObjectType(targetClass.name), srcMethodNode.desc, dstMethodNode, redirects, mappingsProvider, addedParameters));
-
-        dstMethodNode.name = dstMethodName;
-
-        targetClass.methods.add(dstMethodNode);
         return dstMethodNode;
     }
 
@@ -264,32 +291,6 @@ public class Transformer {
                     )
             );
         }
-    }
-
-    private void applyRedirects(ClassNode srcClass, ClassMethod srcMethod, TransformRedirects redirects,
-                                List<AddedParameter> addedParameters, boolean debugLogging) throws SrcMethodNotFound {
-        Method existingMethod = srcMethod.remap(this.mappingsProvider).method();
-
-        MethodNode originalMethod = srcClass.methods.stream()
-                .filter(method -> existingMethod.getName().equals(method.name) && existingMethod.getDescriptor().equals(method.desc))
-                .findAny().orElseThrow(() -> new SrcMethodNotFound(srcMethod, existingMethod));
-
-        applyLambdaRedirects(srcClass, originalMethod, redirects, debugLogging);
-
-        String dstMethodDescriptor = applyTransformsToMethodDescriptor(originalMethod.desc, redirects, addedParameters);
-
-        MethodNode existingMethodNode = removeExistingMethod(srcClass, originalMethod.name, dstMethodDescriptor);
-        if (existingMethodNode != null && (existingMethodNode.access & ACC_NATIVE) == 0 && !originalMethod.desc.equals(dstMethodDescriptor)) {
-            // in-place transforms must be overwriting a different method than the src one to log (otherwise every in-place transform would log)
-            LOGGER.debug("Method transform overwriting existing method " + originalMethod.name + " " + dstMethodDescriptor);
-        }
-
-        MethodNode dstMethodNode = new MethodNode(originalMethod.access, originalMethod.name, dstMethodDescriptor, null, originalMethod.exceptions.toArray(new String[0]));
-        originalMethod.accept(
-                dasmTransformingVisitor(dstMethodDescriptor, Type.getObjectType(srcClass.name), originalMethod.desc, dstMethodNode, redirects, mappingsProvider, addedParameters)
-        );
-        srcClass.methods.remove(originalMethod);
-        srcClass.methods.add(dstMethodNode);
     }
 
     private void applyLambdaRedirects(ClassNode srcClass, MethodNode method, TransformRedirects redirects,
