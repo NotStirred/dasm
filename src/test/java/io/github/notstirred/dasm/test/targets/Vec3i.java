@@ -2,12 +2,12 @@ package io.github.notstirred.dasm.test.targets;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
-import lombok.Value;
 
 @AllArgsConstructor
 @Getter(AccessLevel.PRIVATE)
-@Value
+@Data
 public class Vec3i {
     public int x;
     public int y;
@@ -31,6 +31,18 @@ public class Vec3i {
 
     public int getZ() {
         return z;
+    }
+
+    public void setX(int x) {
+        this.x = x;
+    }
+
+    public void setY(int y) {
+        this.y = y;
+    }
+
+    public void setZ(int z) {
+        this.z = z;
     }
 
     public long asLong() {

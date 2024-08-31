@@ -6,5 +6,6 @@ public class IntraFieldToMethodRedirectInput {
     public void method1(Vec3i a) {
         int val = a.x;
         System.out.printf("thing foo %d\n", val);
+        a.x = val + 1;
     }
 }

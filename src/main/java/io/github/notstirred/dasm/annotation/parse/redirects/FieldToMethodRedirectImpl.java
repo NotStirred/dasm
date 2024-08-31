@@ -9,6 +9,7 @@ import io.github.notstirred.dasm.data.ClassField;
 import io.github.notstirred.dasm.data.ClassMethod;
 import io.github.notstirred.dasm.data.Field;
 import lombok.Data;
+import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -48,9 +49,13 @@ public class FieldToMethodRedirectImpl {
         return Optional.of(new FieldToMethodRedirectImpl(
                 new ClassField(fieldOwner, mappingsOwner, srcField.type(), srcField.name()),
                 new ClassMethod(dstOwner, getter),
-                setter.isEmpty() ? Optional.empty() : Optional.of(new ClassMethod(dstOwner, new Method(setter, "()V"))),
+                setter.isEmpty() ? Optional.empty() : Optional.of(new ClassMethod(dstOwner, new Method(setter, setterDescriptorFor(getter)))),
                 (methodNode.access & ACC_STATIC) != 0,
                 dstOwnerIsInterface
         ));
+    }
+
+    private static @NotNull String setterDescriptorFor(Method getter) {
+        return "(" + getter.getReturnType().getDescriptor() + ")V";
     }
 }

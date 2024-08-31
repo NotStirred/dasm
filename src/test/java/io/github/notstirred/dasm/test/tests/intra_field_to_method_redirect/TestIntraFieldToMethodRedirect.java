@@ -30,7 +30,7 @@ public class TestIntraFieldToMethodRedirect extends BaseMethodTest {
     public interface T3Set {
         @IntraOwnerContainer(owner = @Ref(Vec3i.class))
         abstract class A {
-            @FieldToMethodRedirect(@FieldSig(type = @Ref(int.class), name = "x"))
+            @FieldToMethodRedirect(value = @FieldSig(type = @Ref(int.class), name = "x"), setter = "setX")
             public native int getX();
         }
     }
