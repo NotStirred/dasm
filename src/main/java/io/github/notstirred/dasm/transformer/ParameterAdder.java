@@ -111,9 +111,12 @@ public class ParameterAdder extends MethodVisitor {
 
     @Override
     public void visitEnd() {
-        super.visitMaxs(this.maxStack, this.maxLocals + this.addedParameterTypeSize);
+        // endLabel is only null if there is no code (an abstract method), in which case nothing else has been called
+        if (this.endLabel != null) {
+            super.visitMaxs(this.maxStack, this.maxLocals + this.addedParameterTypeSize);
 
-        super.visitLabel(this.endLabel);
+            super.visitLabel(this.endLabel);
+        }
         super.visitEnd();
     }
 }

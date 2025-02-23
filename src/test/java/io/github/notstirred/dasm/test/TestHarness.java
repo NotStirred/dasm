@@ -19,6 +19,7 @@ import org.objectweb.asm.tree.*;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.AccessFlag;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -230,6 +231,10 @@ public class TestHarness {
         // Create instances of test classes
         Object actualInstance;
         try {
+            // Can't test abstract classes
+            if (actualClassLoaded.accessFlags().contains(AccessFlag.ABSTRACT)) {
+                return;
+            }
             actualInstance = actualClassLoaded.getConstructor().newInstance();
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             throw new RuntimeException("Failed to create transformed class instance for " + actualClassLoaded.getName(), e);
@@ -251,6 +256,10 @@ public class TestHarness {
             try {
                 actualMethod = actualClassLoaded.getDeclaredMethod(expectedMethod.getName(), expectedMethod.getParameterTypes());
                 actualMethod.setAccessible(true);
+                // Can't test abstract methods
+                if (actualMethod.accessFlags().contains(AccessFlag.ABSTRACT)) {
+                    continue;
+                }
             } catch (NoSuchMethodException e) {
                 throw new RuntimeException("Transformed class missing expected method `" + expectedMethod + "`", e);
             }

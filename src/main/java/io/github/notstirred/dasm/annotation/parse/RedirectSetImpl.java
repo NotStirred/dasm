@@ -133,7 +133,7 @@ public class RedirectSetImpl {
                 // Verify that there are no non-static members
                 boolean nonStaticMembersExist = innerClassNode.methods.stream()
                         // filter the default constructor, it's not a valid redirect anyway.
-                        .filter(methodNode -> !(methodNode.name.equals("<init>") && methodNode.desc.equals("()V")))
+                        .filter(methodNode -> !((methodNode.name.equals("<init>") || methodNode.name.equals("<clinit>")) && methodNode.desc.equals("()V")))
                         .anyMatch(method -> (method.access & ACC_STATIC) == 0) |
                         innerClassNode.fields.stream().anyMatch(field -> (field.access & ACC_STATIC) == 0);
                 if (nonStaticMembersExist) {
@@ -174,7 +174,7 @@ public class RedirectSetImpl {
                                      Set<MethodRedirectImpl> methodRedirects, Set<FieldToMethodRedirectImpl> fieldToMethodRedirects,
                                      Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects, DasmClassExceptions exceptions) {
         for (MethodNode methodNode : innerClassNode.methods) {
-            if (methodNode.name.equals("<init>") && (methodNode.signature == null || methodNode.signature.equals("()V"))) {
+            if ((methodNode.name.equals("<init>") || methodNode.name.equals("<clinit>")) && (methodNode.signature == null || methodNode.signature.equals("()V"))) {
                 continue; // Skip default empty constructor
             }
 
