@@ -124,6 +124,13 @@ artifacts {
     archives javadocJar, sourcesJar, apiJar, apiJavadocJar, apiSourcesJar
 }
 
+tasks.withType(Jar) { task ->
+    task.doLast {
+        ant.checksum algorithm: 'md5', file: it.archivePath
+        ant.checksum algorithm: 'sha1', file: it.archivePath
+    }
+}
+
 publishing {
     publications {
         // Add additional publications (main and main-sources are added by the java plugin)
@@ -157,6 +164,10 @@ publishing {
     }
 
     repositories {
+        maven {
+            name = "PreDeploy"
+            url = uri(layout.buildDirectory.dir("pre-deploy"))
+        }
         maven {
             url "${url = version.endsWith('SNAPSHOT') ? "https://s01.oss.sonatype.org/content/repositories/snapshots/" : "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"}"
             credentials {
