@@ -14,9 +14,9 @@ import io.github.notstirred.dasm.data.ClassMethod;
 import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.exception.wrapped.DasmClassExceptions;
+import io.github.notstirred.dasm.exception.wrapped.DasmExceptionData;
 import io.github.notstirred.dasm.exception.wrapped.DasmFieldExceptions;
 import io.github.notstirred.dasm.exception.wrapped.DasmMethodExceptions;
-import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
 import io.github.notstirred.dasm.transformer.data.ClassTransform;
 import io.github.notstirred.dasm.transformer.data.MethodTransform;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
@@ -46,7 +46,7 @@ public class AnnotationParser {
         this.provider = provider;
     }
 
-    public void findRedirectSets(ClassNode targetClass) throws DasmWrappedExceptions {
+    public void findRedirectSets(ClassNode targetClass) throws DasmException {
         Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         boolean isTargetInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
 
@@ -88,7 +88,7 @@ public class AnnotationParser {
         classExceptions.throwIfHasWrapped();
     }
 
-    public Optional<ClassTransform> buildClassTarget(ClassNode targetClass) throws DasmWrappedExceptions {
+    public Optional<ClassTransform> buildClassTarget(ClassNode targetClass) throws DasmException {
         Type targetType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         DasmClassExceptions classExceptions = new DasmClassExceptions("An exception occurred when looking for transforms in", targetClass);
 
@@ -126,7 +126,7 @@ public class AnnotationParser {
         return Optional.empty();
     }
 
-    public Optional<Collection<MethodTransform>> buildMethodTargets(ClassNode targetClass, String methodPrefix) throws DasmWrappedExceptions {
+    public Optional<Collection<MethodTransform>> buildMethodTargets(ClassNode targetClass, String methodPrefix) throws DasmException {
         Type targetType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         boolean isTargetTypeInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
 
@@ -137,7 +137,14 @@ public class AnnotationParser {
             Map<String, Object> values = getAnnotationValues(dasmNode, Dasm.class);
             @SuppressWarnings("unchecked")
             List<RedirectSetImpl> defaultRedirectSets = unrollSets(((List<Type>) values.get("value")).stream()
-                    .map(this.redirectSetsByType::get).collect(Collectors.toList())
+                    .map(type -> {
+                        RedirectSetImpl redirectSet = this.redirectSetsByType.get(type);
+                        if (redirectSet == null) {
+                            classExceptions.addException(new NoSuchTypeExists(type));
+                        }
+                        return redirectSet;
+                    }).filter(Objects::nonNull)
+                    .collect(Collectors.toList())
             );
 
             List<MethodTransform> methodTransforms = new ArrayList<>();
@@ -257,7 +264,7 @@ public class AnnotationParser {
     }
 
     private void findRedirectSetsForAnnotation(List<AnnotationNode> annotations, Class<?> annotationClass, String setsAnnotationField,
-                                               DasmWrappedExceptions exceptions) {
+                                               DasmExceptionData exceptions) {
         AnnotationNode annotationNode = getAnnotationIfPresent(annotations, annotationClass);
         if (annotationNode != null) {
             Map<String, Object> values = getAnnotationValues(annotationNode, annotationClass);
@@ -269,18 +276,21 @@ public class AnnotationParser {
         }
     }
 
-    private void findRedirectSetsForType(Type redirectSetType, DasmWrappedExceptions exceptions) {
+    private void findRedirectSetsForType(Type redirectSetType, DasmExceptionData exceptions) {
         RedirectSetImpl existingSet = this.redirectSetsByType.get(redirectSetType);
         if (existingSet == null) {
             try {
                 ClassNode redirectSetClass = this.provider.classNode(redirectSetType);
-                existingSet = RedirectSetImpl.parse(redirectSetClass, this.provider);
-                this.redirectSetsByType.put(redirectSetType, existingSet);
+                Optional<RedirectSetImpl> parsed = RedirectSetImpl.parse(redirectSetClass, this.provider, exceptions);
+                if (parsed.isPresent()) {
+                    existingSet = parsed.get();
+                    this.redirectSetsByType.put(redirectSetType, existingSet);
+                } else {
+                    exceptions.addException(new NoSuchTypeExists(redirectSetType)); // FIXME: change this error to "NoValidRedirectSetExists" or something more clear. It's possible the set class exists but was not parsed as it's invalid
+                    return;
+                }
             } catch (NoSuchTypeExists e) {
                 exceptions.addException(e);
-                return;
-            } catch (DasmWrappedExceptions e) {
-                exceptions.addNested(e);
                 return;
             }
         }

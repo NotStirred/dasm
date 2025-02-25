@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.objectweb.asm.tree.ClassNode;
 
 @RequiredArgsConstructor
-public class DasmClassExceptions extends DasmWrappedExceptions {
+public class DasmClassExceptions extends DasmExceptionData {
     private final String message;
 
     public DasmClassExceptions(String message, ClassNode classNode) {

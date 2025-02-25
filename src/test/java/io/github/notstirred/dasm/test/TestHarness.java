@@ -2,8 +2,7 @@ package io.github.notstirred.dasm.test;
 
 import io.github.notstirred.dasm.annotation.AnnotationParser;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
-import io.github.notstirred.dasm.exception.NoSuchTypeExists;
-import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
+import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.test.targets.*;
 import io.github.notstirred.dasm.test.utils.ByteArrayClassLoader;
 import io.github.notstirred.dasm.transformer.Transformer;
@@ -52,7 +51,7 @@ public class TestHarness {
             Collection<MethodTransform> methodTransforms = annotationParser.buildMethodTargets(dasm, "").get();
 
             transformer.transform(actual, methodTransforms);
-        } catch (DasmWrappedExceptions e) {
+        } catch (DasmException e) {
             e.printStackTrace();
             throw new Error(e);
         }
@@ -96,7 +95,7 @@ public class TestHarness {
             ClassTransform methodTransforms = annotationParser.buildClassTarget(dasm).get();
 
             transformer.transform(actual, methodTransforms);
-        } catch (DasmWrappedExceptions | NoSuchTypeExists e) {
+        } catch (DasmException e) {
             e.printStackTrace();
             throw new Error(e);
         }

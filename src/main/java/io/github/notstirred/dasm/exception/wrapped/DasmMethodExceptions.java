@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.objectweb.asm.tree.MethodNode;
 
 @RequiredArgsConstructor
-public class DasmMethodExceptions extends DasmWrappedExceptions {
+public class DasmMethodExceptions extends DasmExceptionData {
     private final MethodNode methodNode;
 
     @Override protected String message() {

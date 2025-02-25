@@ -5,10 +5,10 @@ import io.github.notstirred.dasm.annotation.parse.redirects.FieldRedirectImpl;
 import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
 import io.github.notstirred.dasm.data.ClassMethod;
+import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.exception.DasmTransformException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.exception.wrapped.DasmClassExceptions;
-import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
 import io.github.notstirred.dasm.transformer.data.*;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
 import io.github.notstirred.dasm.util.TypeUtil;
@@ -118,7 +118,7 @@ public class Transformer {
         oldNode.accept(cv);
     }
 
-    public void transform(ClassNode targetClass, Collection<MethodTransform> transforms) throws DasmWrappedExceptions {
+    public void transform(ClassNode targetClass, Collection<MethodTransform> transforms) throws DasmException {
         DasmClassExceptions dasmClassExceptions = new DasmClassExceptions("An exception occurred when transforming", targetClass);
 
         Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));

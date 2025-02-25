@@ -7,9 +7,9 @@ import io.github.notstirred.dasm.exception.DasmAnnotationException;
 import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.exception.wrapped.DasmClassExceptions;
+import io.github.notstirred.dasm.exception.wrapped.DasmExceptionData;
 import io.github.notstirred.dasm.exception.wrapped.DasmFieldExceptions;
 import io.github.notstirred.dasm.exception.wrapped.DasmMethodExceptions;
-import io.github.notstirred.dasm.exception.wrapped.DasmWrappedExceptions;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
 import lombok.Getter;
 import org.objectweb.asm.Type;
@@ -44,7 +44,7 @@ public class RedirectSetImpl {
         this.typeRedirects = typeRedirects;
     }
 
-    public static RedirectSetImpl parse(ClassNode redirectSetClassNode, ClassNodeProvider provider) throws DasmWrappedExceptions {
+    public static Optional<RedirectSetImpl> parse(ClassNode redirectSetClassNode, ClassNodeProvider provider, DasmExceptionData exceptions) {
         List<Type> superRedirectSets = new ArrayList<>();
 
         Set<FieldToMethodRedirectImpl> fieldToMethodRedirects = new HashSet<>();
@@ -57,11 +57,11 @@ public class RedirectSetImpl {
 
         AnnotationNode annotationNode = getAnnotationIfPresent(redirectSetClassNode.invisibleAnnotations, RedirectSet.class);
         if (annotationNode == null) {
-            redirectSetExceptions.addSuppressed(new MissingRedirectSetAnnotationException(Type.getObjectType(redirectSetClassNode.name)));
+            redirectSetExceptions.addException(new MissingRedirectSetAnnotationException(Type.getObjectType(redirectSetClassNode.name)));
         }
 
         if ((redirectSetClassNode.access & ACC_INTERFACE) == 0) {
-            redirectSetExceptions.addSuppressed(new NonInterfaceIsUsedAsRedirectSetException(Type.getObjectType(redirectSetClassNode.name)));
+            redirectSetExceptions.addException(new NonInterfaceIsUsedAsRedirectSetException(Type.getObjectType(redirectSetClassNode.name)));
         }
 
         // Add inherited redirect sets
@@ -148,9 +148,12 @@ public class RedirectSetImpl {
             parseMethods(innerClassNode, srcType[0], dstType[0], methodRedirects, fieldToMethodRedirects, constructorToFactoryRedirects, innerClassExceptions);
         }
 
-        redirectSetExceptions.throwIfHasWrapped();
+        if (redirectSetExceptions.hasWrapped()) {
+            exceptions.addNested(redirectSetExceptions);
+            return Optional.empty();
+        }
 
-        return new RedirectSetImpl(superRedirectSets, fieldToMethodRedirects, constructorToFactoryRedirects, fieldRedirects, methodRedirects, typeRedirects);
+        return Optional.of(new RedirectSetImpl(superRedirectSets, fieldToMethodRedirects, constructorToFactoryRedirects, fieldRedirects, methodRedirects, typeRedirects));
     }
 
     private static void parseFields(ClassNode innerClassNode, Type srcType, Type dstType, Set<FieldRedirectImpl> fieldRedirects,
