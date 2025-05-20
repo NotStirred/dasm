@@ -16,6 +16,8 @@ public @interface TransformMethod {
 
     ApplicationStage stage() default ApplicationStage.PRE_APPLY;
 
+    Visibility visibility() default Visibility.SAME_AS_TARGET;
+
     // FIXME: add synthetic accessors
 //    boolean makeSyntheticAccessor() default false;
 

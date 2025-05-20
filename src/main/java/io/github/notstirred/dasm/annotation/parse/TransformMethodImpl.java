@@ -3,6 +3,7 @@ package io.github.notstirred.dasm.annotation.parse;
 import io.github.notstirred.dasm.annotation.AnnotationUtil;
 import io.github.notstirred.dasm.api.annotations.transform.ApplicationStage;
 import io.github.notstirred.dasm.api.annotations.transform.TransformMethod;
+import io.github.notstirred.dasm.api.annotations.transform.Visibility;
 import lombok.Data;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -17,6 +18,7 @@ public class TransformMethodImpl {
     private final Optional<Type> owner;
     private final Method srcMethod;
     private final ApplicationStage stage;
+    private final Visibility visibility;
     private final Optional<List<Type>> overriddenRedirectSets;
     private final boolean inPlace;
 
@@ -26,11 +28,17 @@ public class TransformMethodImpl {
 
         Method srcMethod = MethodSigImpl.parse((AnnotationNode) values.get("value"));
         ApplicationStage stage = (ApplicationStage) values.get("stage");
+        Visibility visibility;
+        if (values.get("visibility") instanceof String[]) {
+            visibility = Visibility.valueOf(Visibility.class, ((String[]) values.get("visibility"))[1]);
+        } else {
+            visibility = (Visibility) values.get("visibility");
+        }
 //        boolean makeSyntheticAccessor = (boolean) values.get("makeSyntheticAccessor");
         @SuppressWarnings("unchecked") List<Type> redirectSets = (List<Type>) values.get("useRedirectSets");
 
         Optional<List<Type>> overriddenRedirectSets = redirectSets.isEmpty() ? Optional.empty() : Optional.of(redirectSets);
 
-        return new TransformMethodImpl(Optional.empty(), srcMethod, stage, overriddenRedirectSets, true);
+        return new TransformMethodImpl(Optional.empty(), srcMethod, stage, visibility, overriddenRedirectSets, true);
     }
 }

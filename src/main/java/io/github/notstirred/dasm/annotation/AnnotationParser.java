@@ -20,6 +20,7 @@ import io.github.notstirred.dasm.exception.wrapped.DasmMethodExceptions;
 import io.github.notstirred.dasm.transformer.data.ClassTransform;
 import io.github.notstirred.dasm.transformer.data.MethodTransform;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
+import io.github.notstirred.dasm.util.Pair;
 import io.github.notstirred.dasm.util.TypeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -171,6 +172,8 @@ public class AnnotationParser {
 
                 List<AddedParameter> addedParameters = getAddedParameters(method, methodExceptions);
 
+                Pair<Visibility, Visibility> visibility = getRequestedVisibility(method, transformMethod.visibility(), methodExceptions);
+
                 MethodTransform transform = new MethodTransform(
                         new ClassMethod(methodOwner, methodOwner, transformMethod.srcMethod()),
                         prefixedMethodName // We have to rename constructors because we add a prefix, and mixin expects that anything with <> is either init, or clinit
@@ -179,7 +182,11 @@ public class AnnotationParser {
                         redirectSets,
                         transformMethod.stage(),
                         transformMethod.inPlace(),
-                        addedParameters
+                        new MethodTransform.TransformChanges(
+                                addedParameters,
+                                visibility.first,
+                                visibility.second
+                        )
                 );
 
                 AnnotationNode addToSetsAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, AddTransformToSets.class);
@@ -204,6 +211,14 @@ public class AnnotationParser {
 
         classExceptions.throwIfHasWrapped();
         return Optional.empty();
+    }
+
+    private Pair<Visibility, Visibility> getRequestedVisibility(MethodNode method, Visibility annotationVisibility, DasmMethodExceptions methodExceptions) {
+        Visibility methodVisibility = Visibility.fromAccess(method.access);
+        if (annotationVisibility != Visibility.SAME_AS_TARGET && methodVisibility != annotationVisibility) {
+            methodExceptions.addException(new TransformAndMethodVisibilityDiffer(method, annotationVisibility, methodVisibility));
+        }
+        return new Pair<>(methodVisibility, annotationVisibility);
     }
 
     /**
@@ -317,6 +332,12 @@ public class AnnotationParser {
     public static class BothTransformMethodAndTransformFromMethodPresent extends DasmException {
         public BothTransformMethodAndTransformFromMethodPresent(MethodNode methodNode) {
             super(String.format("Method %s has both TransformMethod and TransformFromMethod annotations.", methodNode.name));
+        }
+    }
+
+    public static class TransformAndMethodVisibilityDiffer extends DasmException {
+        public TransformAndMethodVisibilityDiffer(MethodNode methodNode, Visibility transformVisibility, Visibility methodVisibility) {
+            super(String.format("Method %s and its transform have different visibility, %s vs %s", methodNode.name, methodVisibility, transformVisibility));
         }
     }
 }
