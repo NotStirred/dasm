@@ -21,7 +21,7 @@ public class TestInterFieldToMethodRedirect extends BaseMethodTest {
     }
 
     @TransformFromMethod(value = @MethodSig("method1(Lio/github/notstirred/dasm/test/targets/Vec3i;)V"))
-    native void method1out(Vec3i param);
+    public native void method1out(Vec3i param);
 
     @RedirectSet
     public interface Set {

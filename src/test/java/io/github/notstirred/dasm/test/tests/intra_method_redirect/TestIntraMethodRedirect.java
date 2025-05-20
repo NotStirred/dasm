@@ -22,7 +22,7 @@ public class TestIntraMethodRedirect extends BaseMethodTest {
     }
 
     @TransformFromMethod(value = @MethodSig("method1(Ljava/lang/String;)V"))
-    native void method1out(String param);
+    public native void method1out(String param);
 
     @RedirectSet
     public interface Set {

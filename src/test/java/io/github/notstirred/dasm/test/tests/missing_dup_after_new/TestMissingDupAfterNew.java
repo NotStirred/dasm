@@ -24,7 +24,7 @@ public class TestMissingDupAfterNew extends BaseMethodTest {
     }
 
     @TransformFromMethod(value = @MethodSig("method1()V"))
-    native void method1out();
+    public native void method1out();
 
     @RedirectSet
     public interface Set {

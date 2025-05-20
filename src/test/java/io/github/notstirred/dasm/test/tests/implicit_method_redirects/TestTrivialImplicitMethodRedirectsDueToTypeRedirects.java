@@ -24,7 +24,7 @@ public class TestTrivialImplicitMethodRedirectsDueToTypeRedirects extends BaseMe
     }
 
     @TransformFromMethod(value = @MethodSig("method1(Ljava/lang/Float;)V"))
-    native String method1(String param);
+    public native String method1(String param);
 
     @RedirectSet
     public interface Set {

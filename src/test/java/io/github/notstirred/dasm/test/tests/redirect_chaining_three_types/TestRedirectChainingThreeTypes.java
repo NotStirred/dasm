@@ -20,7 +20,7 @@ public class TestRedirectChainingThreeTypes extends BaseMethodTest {
     }
 
     @TransformFromMethod(value = @MethodSig("method1(Lio/github/notstirred/dasm/test/targets/A;)V"))
-    native void method1out(A a);
+    public native void method1out(A a);
 
     @RedirectSet
     public interface Set {
