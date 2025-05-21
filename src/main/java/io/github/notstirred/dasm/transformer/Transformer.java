@@ -142,9 +142,9 @@ public class Transformer {
             TransformRedirects transformRedirects = new TransformRedirects(transform.redirectSets(), this.mappingsProvider);
             try {
                 if (transform.inPlace()) {
-                    applyRedirects(srcClass, transform.srcMethod(), transformRedirects, transform.transformChanges(), true);
+                    applyRedirects(srcClass, transform.srcMethod(), transformRedirects, transform.transformChanges(), transform.originalTransformData(), true);
                 } else {
-                    cloneAndApplyRedirects(srcClass, targetClass, transform.srcMethod(), transform.dstMethodName(), transformRedirects, transform.transformChanges(), true);
+                    cloneAndApplyRedirects(srcClass, targetClass, transform.srcMethod(), transform.dstMethodName(), transformRedirects, transform.transformChanges(), transform.originalTransformData(), true);
                 }
 
             } catch (SrcMethodNotFound e) {
@@ -163,8 +163,9 @@ public class Transformer {
                                               ClassMethod srcMethod, String dstMethodName,
                                               TransformRedirects redirects,
                                               MethodTransform.TransformChanges transformChanges,
+                                              MethodTransform.OriginalTransformData originalTransformData,
                                               boolean debugLogging) throws DasmTransformException {
-        return redirects(srcClass, targetClass, srcMethod, dstMethodName, redirects, transformChanges, debugLogging,
+        return redirects(srcClass, targetClass, srcMethod, dstMethodName, redirects, transformChanges, originalTransformData, debugLogging,
                 (srcMethodNode, dstMethodNode, existingMethodNode) -> {
                     cloneAndApplyLambdaRedirects(srcClass, targetClass, srcMethodNode, redirects, debugLogging);
                     if (debugLogging && existingMethodNode != null && (existingMethodNode.access & ACC_NATIVE) == 0) {
@@ -179,8 +180,9 @@ public class Transformer {
     private void applyRedirects(ClassNode srcClass, ClassMethod srcMethod,
                                 TransformRedirects redirects,
                                 MethodTransform.TransformChanges transformChanges,
+                                MethodTransform.OriginalTransformData originalTransformData,
                                 boolean debugLogging) throws DasmTransformException {
-        redirects(srcClass, srcClass, srcMethod, srcMethod.method().getName(), redirects, transformChanges, debugLogging,
+        redirects(srcClass, srcClass, srcMethod, srcMethod.method().getName(), redirects, transformChanges, originalTransformData, debugLogging,
                 (srcMethodNode, dstMethodNode, existingMethodNode) -> {
                     applyLambdaRedirects(srcClass, srcMethodNode, redirects, debugLogging);
                     if (debugLogging && existingMethodNode != null && (existingMethodNode.access & ACC_NATIVE) == 0 && !srcMethodNode.desc.equals(dstMethodNode.desc)) {
@@ -202,6 +204,7 @@ public class Transformer {
                                  ClassMethod srcMethod, String dstMethodName,
                                  TransformRedirects redirects,
                                  MethodTransform.TransformChanges transformChanges,
+                                 MethodTransform.OriginalTransformData originalTransformData,
                                  boolean debugLogging,
                                  RedirectsFunction f) throws DasmTransformException {
         Method existingMethod = srcMethod.remap(this.mappingsProvider).method();
@@ -213,7 +216,7 @@ public class Transformer {
         String dstMethodDescriptor = applyTransformsToMethodDescriptor(srcMethodNode.desc, redirects, transformChanges.addedParameters());
         MethodNode existingMethodNode = removeExistingMethod(targetClass, dstMethodName, dstMethodDescriptor);
 
-        transformChanges.throwIfInvalidAccess(Visibility.fromAccess(srcMethodNode.access));
+        transformChanges.throwIfInvalidAccess(originalTransformData, Visibility.fromAccess(srcMethodNode.access));
         // FIXME: transform exceptions
         int access = transformChanges.dstMethodVisibility().access | (srcMethodNode.access & ~(ACC_PUBLIC | ACC_PROTECTED | ACC_PRIVATE));
         MethodNode dstMethodNode = new MethodNode(access, dstMethodName, dstMethodDescriptor, null, srcMethodNode.exceptions.toArray(new String[0]));
@@ -287,6 +290,7 @@ public class Transformer {
                     newName,
                     redirects,
                     new MethodTransform.TransformChanges(Collections.emptyList(), Visibility.PRIVATE, Visibility.SAME_AS_TARGET),
+                    new MethodTransform.OriginalTransformData(srcClass.name, method),
                     debugLogging
             );
         });
@@ -311,6 +315,7 @@ public class Transformer {
                 classMethod,
                 redirects,
                 new MethodTransform.TransformChanges(Collections.emptyList(), Visibility.PRIVATE, Visibility.SAME_AS_TARGET),
+                new MethodTransform.OriginalTransformData(srcClass.name, method), // Assume lambas are always private, the passed in method here is therefore irrelevant
                 debugLogging
         ));
     }

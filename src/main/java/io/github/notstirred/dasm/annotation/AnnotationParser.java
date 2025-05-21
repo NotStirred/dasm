@@ -186,7 +186,8 @@ public class AnnotationParser {
                                 addedParameters,
                                 visibility.first,
                                 visibility.second
-                        )
+                        ),
+                        new MethodTransform.OriginalTransformData(targetClass.name, method)
                 );
 
                 AnnotationNode addToSetsAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, AddTransformToSets.class);
