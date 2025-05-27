@@ -11,6 +11,7 @@ import io.github.notstirred.dasm.exception.wrapped.DasmExceptionData;
 import io.github.notstirred.dasm.exception.wrapped.DasmFieldExceptions;
 import io.github.notstirred.dasm.exception.wrapped.DasmMethodExceptions;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
+import lombok.Data;
 import lombok.Getter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
@@ -47,12 +48,6 @@ public class RedirectSetImpl {
     public static Optional<RedirectSetImpl> parse(ClassNode redirectSetClassNode, ClassNodeProvider provider, DasmExceptionData exceptions) {
         List<Type> superRedirectSets = new ArrayList<>();
 
-        Set<FieldToMethodRedirectImpl> fieldToMethodRedirects = new HashSet<>();
-        Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects = new HashSet<>();
-        Set<FieldRedirectImpl> fieldRedirects = new HashSet<>();
-        Set<MethodRedirectImpl> methodRedirects = new HashSet<>();
-        Set<TypeRedirectImpl> typeRedirects = new HashSet<>();
-
         DasmClassExceptions redirectSetExceptions = new DasmClassExceptions("An exception occurred when parsing redirect set", redirectSetClassNode);
 
         AnnotationNode annotationNode = getAnnotationIfPresent(redirectSetClassNode.invisibleAnnotations, RedirectSet.class);
@@ -68,6 +63,8 @@ public class RedirectSetImpl {
         for (String itf : redirectSetClassNode.interfaces) {
             superRedirectSets.add(Type.getObjectType(itf));
         }
+
+        Map<String, InnerClassParsedData> innerClassData = new HashMap<>();
 
         // Discover type/field/method redirects in innerClass
         for (InnerClassNode innerClass : redirectSetClassNode.innerClasses) {
@@ -86,66 +83,9 @@ public class RedirectSetImpl {
             DasmClassExceptions innerClassExceptions = redirectSetExceptions.addNested(new DasmClassExceptions(
                     "An exception occurred when parsing inner class of redirect set", innerClassNode));
 
-            Optional<TypeRedirectImpl> typeRedirect = TypeRedirectImpl.parse(innerClassNode, innerClassExceptions);
-            Optional<InterOwnerContainerImpl> interOwnerContainer = InterOwnerContainerImpl.parse(innerClassNode, innerClassExceptions);
-            Optional<IntraOwnerContainerImpl> intraOwnerContainer = IntraOwnerContainerImpl.parse(innerClassNode, innerClassExceptions);
-
-            if (innerClassExceptions.hasWrapped()) {
-                continue; // If creating the typeRedirect/interOwnerContainer has errored, we should exit now otherwise more errors caused by this will show from below
-            }
-
-            if (!(typeRedirect.isPresent() | interOwnerContainer.isPresent() | intraOwnerContainer.isPresent())) {
-                // The inner class must have one of @TypeRedirect, @InterOwnerContainer, @IntraOwnerContainer, but does not.
-                innerClassExceptions.addException(new MissingContainerException(Type.getObjectType(innerClassNode.name)));
-                // We don't know what the src/dst owners are, we can't continue parsing this inner class.
-                continue;
-            } else if (atLeastTwoOf(typeRedirect.isPresent(), interOwnerContainer.isPresent(), intraOwnerContainer.isPresent())) {
-                // If the inner class has more than one of @TypeRedirect, @InterOwnerContainer, @IntraOwnerContainer.
-                innerClassExceptions.addException(new MoreThanOneContainerException(Type.getObjectType(innerClassNode.name)));
-                // We don't know what the src/dst owners are, we can't continue parsing this inner class.
-                continue;
-            }
-
-            Type[] srcType = new Type[1]; // java is dumb
-            Type[] dstType = new Type[1];
-            boolean[] nonStaticRedirectsAllowed = new boolean[1];
-
-            typeRedirect.ifPresent(redirect -> {
-                srcType[0] = redirect.srcType();
-                dstType[0] = redirect.dstType();
-                nonStaticRedirectsAllowed[0] = true;
-                typeRedirects.add(redirect);
+            parseInnerClass(innerClassNode, innerClassExceptions).ifPresent(data -> {
+                innerClassData.put(innerClass.name, data);
             });
-
-            interOwnerContainer.ifPresent(container -> {
-                srcType[0] = container.srcType();
-                dstType[0] = container.dstType();
-                nonStaticRedirectsAllowed[0] = false;
-            });
-
-            intraOwnerContainer.ifPresent(container -> {
-                srcType[0] = container.type();
-                dstType[0] = container.type();
-                nonStaticRedirectsAllowed[0] = true;
-            });
-
-            if (!nonStaticRedirectsAllowed[0]) {
-                // Verify that there are no non-static members
-                boolean nonStaticMembersExist = innerClassNode.methods.stream()
-                        // filter the default constructor, it's not a valid redirect anyway.
-                        .filter(methodNode -> !((methodNode.name.equals("<init>") || methodNode.name.equals("<clinit>")) && methodNode.desc.equals("()V")))
-                        .anyMatch(method -> (method.access & ACC_STATIC) == 0) |
-                        innerClassNode.fields.stream().anyMatch(field -> (field.access & ACC_STATIC) == 0);
-                if (nonStaticMembersExist) {
-                    innerClassExceptions.addException(new InterOwnerContainerHasNonStaticRedirects(Type.getObjectType(innerClassNode.name)));
-                    // The layout is illegal, we can't continue parsing this inner class.
-                    continue;
-                }
-            }
-
-            parseFields(innerClassNode, srcType[0], dstType[0], fieldRedirects, fieldToMethodRedirects, innerClassExceptions);
-
-            parseMethods(innerClassNode, srcType[0], dstType[0], methodRedirects, fieldToMethodRedirects, constructorToFactoryRedirects, innerClassExceptions);
         }
 
         if (redirectSetExceptions.hasWrapped()) {
@@ -153,7 +93,106 @@ public class RedirectSetImpl {
             return Optional.empty();
         }
 
+        Set<FieldToMethodRedirectImpl> fieldToMethodRedirects = new HashSet<>();
+        Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects = new HashSet<>();
+        Set<FieldRedirectImpl> fieldRedirects = new HashSet<>();
+        Set<MethodRedirectImpl> methodRedirects = new HashSet<>();
+        Set<TypeRedirectImpl> typeRedirects = new HashSet<>();
+
+        innerClassData.forEach((name, data) -> {
+            fieldToMethodRedirects.addAll(data.fieldToMethodRedirects);
+            constructorToFactoryRedirects.addAll(data.constructorToFactoryRedirects);
+            fieldRedirects.addAll(data.fieldRedirects);
+            methodRedirects.addAll(data.methodRedirects);
+            typeRedirects.addAll(data.typeRedirects);
+        });
+
         return Optional.of(new RedirectSetImpl(superRedirectSets, fieldToMethodRedirects, constructorToFactoryRedirects, fieldRedirects, methodRedirects, typeRedirects));
+    }
+
+    @Data
+    private static class InnerClassParsedData {
+        Set<FieldToMethodRedirectImpl> fieldToMethodRedirects = new HashSet<>();
+        Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects = new HashSet<>();
+        Set<FieldRedirectImpl> fieldRedirects = new HashSet<>();
+        Set<MethodRedirectImpl> methodRedirects = new HashSet<>();
+        Set<TypeRedirectImpl> typeRedirects = new HashSet<>();
+    }
+
+    private static Optional<InnerClassParsedData> parseInnerClass(ClassNode innerClassNode, DasmClassExceptions innerClassExceptions) {
+        InnerClassParsedData data = new InnerClassParsedData();
+
+        Optional<TypeRedirectImpl> typeRedirect = TypeRedirectImpl.parse(innerClassNode, innerClassExceptions);
+        Optional<InterOwnerContainerImpl> interOwnerContainer = InterOwnerContainerImpl.parse(innerClassNode, innerClassExceptions);
+        Optional<IntraOwnerContainerImpl> intraOwnerContainer = IntraOwnerContainerImpl.parse(innerClassNode, innerClassExceptions);
+
+        if (innerClassExceptions.hasWrapped()) {
+            return Optional.empty();
+        }
+
+        if (!(typeRedirect.isPresent() | interOwnerContainer.isPresent() | intraOwnerContainer.isPresent())) {
+            // The inner class must have one of @TypeRedirect, @InterOwnerContainer, @IntraOwnerContainer, but does not.
+            innerClassExceptions.addException(new MissingContainerException(Type.getObjectType(innerClassNode.name)));
+            // We don't know what the src/dst owners are, we can't continue parsing this inner class.
+            return Optional.empty();
+        } else if (atLeastTwoOf(typeRedirect.isPresent(), interOwnerContainer.isPresent(), intraOwnerContainer.isPresent())) {
+            // If the inner class has more than one of @TypeRedirect, @InterOwnerContainer, @IntraOwnerContainer.
+            innerClassExceptions.addException(new MoreThanOneContainerException(Type.getObjectType(innerClassNode.name)));
+            // We don't know what the src/dst owners are, we can't continue parsing this inner class.
+            return Optional.empty();
+        }
+
+        Type[] srcType = new Type[1]; // java is dumb
+        Type[] dstType = new Type[1];
+        boolean[] nonStaticRedirectsAllowed = new boolean[1];
+
+        typeRedirect.ifPresent(redirect -> {
+            srcType[0] = redirect.srcType();
+            dstType[0] = redirect.dstType();
+            nonStaticRedirectsAllowed[0] = true;
+            data.typeRedirects.add(redirect);
+        });
+
+        interOwnerContainer.ifPresent(container -> {
+            srcType[0] = container.srcType();
+            dstType[0] = container.dstType();
+            nonStaticRedirectsAllowed[0] = false;
+        });
+
+        intraOwnerContainer.ifPresent(container -> {
+            srcType[0] = container.type();
+            dstType[0] = container.type();
+            nonStaticRedirectsAllowed[0] = true;
+        });
+
+        if (!nonStaticRedirectsAllowed[0]) {
+            // Verify that there are no non-static members
+            boolean nonStaticMembersExist = innerClassNode.methods.stream()
+                    // filter the default constructor, it's not a valid redirect anyway.
+                    .filter(methodNode -> !((methodNode.name.equals("<init>") || methodNode.name.equals("<clinit>")) && methodNode.desc.equals("()V")))
+                    .anyMatch(method -> (method.access & ACC_STATIC) == 0) |
+                    innerClassNode.fields.stream().anyMatch(field -> (field.access & ACC_STATIC) == 0);
+            if (nonStaticMembersExist) {
+                innerClassExceptions.addException(new InterOwnerContainerHasNonStaticRedirects(Type.getObjectType(innerClassNode.name)));
+                // The layout is illegal, we can't continue parsing this inner class.
+                return Optional.empty();
+            }
+        }
+
+        parseFields(innerClassNode, srcType[0], dstType[0],
+                data.fieldRedirects,
+                data.fieldToMethodRedirects,
+                innerClassExceptions
+        );
+
+        parseMethods(innerClassNode, srcType[0], dstType[0],
+                data.methodRedirects,
+                data.fieldToMethodRedirects,
+                data.constructorToFactoryRedirects,
+                innerClassExceptions
+        );
+
+        return Optional.of(data);
     }
 
     private static void parseFields(ClassNode innerClassNode, Type srcType, Type dstType, Set<FieldRedirectImpl> fieldRedirects,
