@@ -1,0 +1,13 @@
+package io.github.notstirred.dasm.test.tests.integration.add_to_sets;
+
+import io.github.notstirred.dasm.test.targets.CubePos;
+
+public class AddToSetsOutput {
+    void method1() {
+        CubePos.from(0);
+    }
+
+    void method1out() {
+        TestAddToSets.testFoo(0);
+    }
+}
