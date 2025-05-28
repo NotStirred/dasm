@@ -6,6 +6,7 @@ import io.github.notstirred.dasm.api.annotations.transform.ApplicationStage;
 import io.github.notstirred.dasm.api.annotations.transform.Visibility;
 import io.github.notstirred.dasm.data.ClassMethod;
 import io.github.notstirred.dasm.exception.DasmTransformException;
+import io.github.notstirred.dasm.exception.EKind;
 import io.github.notstirred.dasm.exception.wrapped.DasmMethodExceptions;
 import lombok.Data;
 import org.objectweb.asm.tree.MethodNode;
@@ -47,7 +48,9 @@ public class MethodTransform {
         public static class InvalidVisibility extends DasmTransformException {
             public InvalidVisibility(OriginalTransformData originalTransformData, Visibility has, Visibility expected) {
                 super("Transform " + originalTransformData.className.substring(originalTransformData.className.lastIndexOf('/') + 1)
-                        + "#" + originalTransformData.methodNode.name + " has invalid visibility. Has `" + has + "`, expected `" + expected + "`");
+                                + "#" + originalTransformData.methodNode.name + " has invalid visibility. Has `" + has + "`, expected `" + expected + "`",
+                        EKind.WARNING
+                );
             }
         }
     }
