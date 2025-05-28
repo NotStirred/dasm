@@ -1,12 +1,13 @@
 package io.github.notstirred.dasm.exception.wrapped;
 
 import io.github.notstirred.dasm.exception.DasmException;
+import io.github.notstirred.dasm.exception.EKind;
 import io.github.notstirred.dasm.util.IndentingStringBuilder;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public abstract class DasmExceptionData {
     private final List<DasmExceptionData> nested = new ArrayList<>();
@@ -24,7 +25,12 @@ public abstract class DasmExceptionData {
     }
 
     public boolean hasWrapped() {
-        return !this.exceptions.isEmpty() || this.nested.stream().anyMatch(DasmExceptionData::hasWrapped);
+        return this.hasWrapped(EKind.ERROR);
+    }
+
+    public boolean hasWrapped(EKind minimumKind) {
+        return this.exceptions.stream().anyMatch(e -> e.kind.isAtLeast(minimumKind))
+                || this.nested.stream().anyMatch(nested -> nested.hasWrapped(minimumKind));
     }
 
     /**
@@ -49,29 +55,31 @@ public abstract class DasmExceptionData {
 
     public void throwIfHasWrapped() throws DasmException {
         if (this.removeEmpty()) {
-            DasmException dasmException = new DasmException(exceptionMessage(new IndentingStringBuilder(4)));
-            this.forAllCauses(dasmException::addSuppressed);
-            throw dasmException;
+            if (this.hasWrapped(EKind.ERROR)) {
+                DasmException dasmException = new DasmException(exceptionMessage(new IndentingStringBuilder(4), EKind.ERROR));
+                this.getCauses().forEach(dasmException::addSuppressed);
+                throw dasmException;
+            } else {
+                System.err.println(exceptionMessage(new IndentingStringBuilder(4), EKind.INFO));
+            }
         }
     }
 
-    private void forAllCauses(Consumer<DasmException> consumer) {
-        this.nested.forEach(nested -> nested.forAllCauses(consumer));
-        this.exceptions.forEach(consumer);
+    private Stream<DasmException> getCauses() {
+        return Stream.concat(this.nested.stream().flatMap(DasmExceptionData::getCauses), this.exceptions.stream());
     }
 
-    private String exceptionMessage(IndentingStringBuilder builder) {
+    private String exceptionMessage(IndentingStringBuilder builder, EKind minimumKind) {
         builder.appendLine(this.message()).indent();
 
         this.nested.forEach(nested -> {
-            if (nested.hasWrapped()) {
-                nested.exceptionMessage(builder);
+            if (nested.hasWrapped(minimumKind)) {
+                nested.exceptionMessage(builder, minimumKind);
             }
         });
 
-        this.exceptions.forEach(exception ->
-                builder.appendLine(exception.getMessage())
-        );
+        this.exceptions.stream().filter(e -> e.kind.isAtLeast(minimumKind))
+                .forEach(exception -> builder.appendLine(exception.getMessage()));
 
         builder.unindent();
         return builder.toString();
