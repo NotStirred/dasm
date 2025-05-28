@@ -2,6 +2,7 @@ package io.github.notstirred.dasm.data;
 
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
 import lombok.Data;
+import lombok.NonNull;
 import org.objectweb.asm.Type;
 
 @Data
@@ -11,6 +12,7 @@ public class ClassField {
     /**
      * The owner to be used when remapping the method using the {@link MappingsProvider}
      */
+    @NonNull
     private final Type mappingsOwner;
     private final Type type;
     private final String name;

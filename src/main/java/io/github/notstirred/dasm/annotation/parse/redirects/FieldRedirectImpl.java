@@ -40,7 +40,7 @@ public class FieldRedirectImpl {
             throw new FieldRedirectHasEmptySrcName(fieldNode);
         }
 
-        Type mappingsOwner = parseOptionalRefAnnotation((AnnotationNode) values.get("mappingsOwner")).orElse(null);
+        Type mappingsOwner = parseOptionalRefAnnotation((AnnotationNode) values.get("mappingsOwner")).orElse(fieldOwner);
 
         return Optional.of(new FieldRedirectImpl(
                 new ClassField(fieldOwner, mappingsOwner, field.type(), field.name()),
