@@ -10,6 +10,7 @@ import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.exception.DasmTransformException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.exception.wrapped.DasmClassExceptions;
+import io.github.notstirred.dasm.exception.wrapped.DasmMethodExceptions;
 import io.github.notstirred.dasm.transformer.data.*;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
 import io.github.notstirred.dasm.util.TypeUtil;
@@ -82,7 +83,8 @@ public class Transformer {
 
         // TODO: could type redirects be better accomplished by a remapper that skips method bodies (bc redirect chaining)?
         ClassVisitor cv = new ClassVisitor(ASM9, targetClass) {
-            @Override public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+            @Override
+            public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
                 String redirectedDescriptor = builtRedirects.typeRedirectsDescriptors().getOrDefault(descriptor, descriptor);
                 String key = sourceClass.name + "." + name;
 
@@ -94,7 +96,8 @@ public class Transformer {
                 }
             }
 
-            @Override public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
                 String key = sourceClass.name + "." + name + descriptor;
                 // here we manually get the redirect, as the remappers only look within a method, not at the definition
                 MethodRedirectImpl methodRedirect = builtRedirects.methodRedirects().get(key);
@@ -124,6 +127,7 @@ public class Transformer {
 
         Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         for (MethodTransform transform : transforms) {
+            DasmMethodExceptions methodExceptions = dasmClassExceptions.addNested(new DasmMethodExceptions(transform.originalTransformData().methodNode()));
             Type methodSrcOwner = transform.srcMethod().owner();
 
             ClassNode srcClass;
@@ -133,23 +137,17 @@ public class Transformer {
                 try {
                     srcClass = this.classNodeProvider.classNode(methodSrcOwner);
                 } catch (NoSuchTypeExists e) {
-                    dasmClassExceptions.addException(e);
+                    methodExceptions.addException(e);
                     continue;
                 }
             }
 
-            // FIXME: synthetic accessor methods
             TransformRedirects transformRedirects = new TransformRedirects(transform.redirectSets(), this.mappingsProvider);
-            try {
-                if (transform.inPlace()) {
-                    applyRedirects(srcClass, transform.srcMethod(), transformRedirects, transform.transformChanges(), transform.originalTransformData(), true);
-                } else {
-                    cloneAndApplyRedirects(srcClass, targetClass, transform.srcMethod(), transform.dstMethodName(), transformRedirects, transform.transformChanges(), transform.originalTransformData(), true);
-                }
-
-            } catch (SrcMethodNotFound e) {
-                dasmClassExceptions.addException(e);
-                continue;
+            if (transform.inPlace()) {
+                applyRedirects(srcClass, transform.srcMethod(), transformRedirects, transform.transformChanges(), transform.originalTransformData(), methodExceptions, true);
+            } else {
+                // FIXME: java 8 synthetic accessor methods
+                cloneAndApplyRedirects(srcClass, targetClass, transform.srcMethod(), transform.dstMethodName(), transformRedirects, transform.transformChanges(), transform.originalTransformData(), methodExceptions, true);
             }
         }
 
@@ -159,15 +157,16 @@ public class Transformer {
     /**
      * @param redirects lambda redirects are implicitly added, so the parameter is modified.
      */
-    private MethodNode cloneAndApplyRedirects(ClassNode srcClass, ClassNode targetClass,
-                                              ClassMethod srcMethod, String dstMethodName,
-                                              TransformRedirects redirects,
-                                              MethodTransform.TransformChanges transformChanges,
-                                              MethodTransform.OriginalTransformData originalTransformData,
-                                              boolean debugLogging) throws DasmTransformException {
-        return redirects(srcClass, targetClass, srcMethod, dstMethodName, redirects, transformChanges, originalTransformData, debugLogging,
+    private Optional<MethodNode> cloneAndApplyRedirects(ClassNode srcClass, ClassNode targetClass,
+                                                        ClassMethod srcMethod, String dstMethodName,
+                                                        TransformRedirects redirects,
+                                                        MethodTransform.TransformChanges transformChanges,
+                                                        MethodTransform.OriginalTransformData originalTransformData,
+                                                        DasmMethodExceptions methodExceptions,
+                                                        boolean debugLogging) {
+        return redirects(srcClass, targetClass, srcMethod, dstMethodName, redirects, transformChanges, originalTransformData, methodExceptions, debugLogging,
                 (srcMethodNode, dstMethodNode, existingMethodNode) -> {
-                    cloneAndApplyLambdaRedirects(srcClass, targetClass, srcMethodNode, redirects, debugLogging);
+                    cloneAndApplyLambdaRedirects(srcClass, targetClass, srcMethodNode, redirects, methodExceptions, debugLogging);
                     if (debugLogging && existingMethodNode != null && (existingMethodNode.access & ACC_NATIVE) == 0) {
                         LOGGER.debug("Method transform overwriting existing method " + dstMethodNode.name + " " + dstMethodNode.desc);
                     }
@@ -181,10 +180,11 @@ public class Transformer {
                                 TransformRedirects redirects,
                                 MethodTransform.TransformChanges transformChanges,
                                 MethodTransform.OriginalTransformData originalTransformData,
-                                boolean debugLogging) throws DasmTransformException {
-        redirects(srcClass, srcClass, srcMethod, srcMethod.method().getName(), redirects, transformChanges, originalTransformData, debugLogging,
+                                DasmMethodExceptions methodExceptions,
+                                boolean debugLogging) {
+        redirects(srcClass, srcClass, srcMethod, srcMethod.method().getName(), redirects, transformChanges, originalTransformData, methodExceptions, debugLogging,
                 (srcMethodNode, dstMethodNode, existingMethodNode) -> {
-                    applyLambdaRedirects(srcClass, srcMethodNode, redirects, debugLogging);
+                    applyLambdaRedirects(srcClass, srcMethodNode, redirects, methodExceptions, debugLogging);
                     if (debugLogging && existingMethodNode != null && (existingMethodNode.access & ACC_NATIVE) == 0 && !srcMethodNode.desc.equals(dstMethodNode.desc)) {
                         // in-place transforms must be overwriting a different method than the src one to log (otherwise every in-place transform would log)
                         LOGGER.debug("Method transform overwriting existing method " + srcMethodNode.name + " " + dstMethodNode.desc);
@@ -197,26 +197,39 @@ public class Transformer {
 
     @FunctionalInterface
     interface RedirectsFunction {
-        void call(MethodNode srcMethodNode, MethodNode dstMethodNode, @Nullable MethodNode existingMethodNode) throws DasmTransformException;
+        void call(MethodNode srcMethodNode, MethodNode dstMethodNode, @Nullable MethodNode existingMethodNode);
     }
 
-    private MethodNode redirects(ClassNode srcClass, ClassNode targetClass,
-                                 ClassMethod srcMethod, String dstMethodName,
-                                 TransformRedirects redirects,
-                                 MethodTransform.TransformChanges transformChanges,
-                                 MethodTransform.OriginalTransformData originalTransformData,
-                                 boolean debugLogging,
-                                 RedirectsFunction f) throws DasmTransformException {
+    /**
+     * @return Returns empty if the source method could not be found
+     */
+    private Optional<MethodNode> redirects(ClassNode srcClass, ClassNode targetClass,
+                                           ClassMethod srcMethod, String dstMethodName,
+                                           TransformRedirects redirects,
+                                           MethodTransform.TransformChanges transformChanges,
+                                           MethodTransform.OriginalTransformData originalTransformData,
+                                           DasmMethodExceptions methodExceptions,
+                                           boolean debugLogging,
+                                           RedirectsFunction f) {
         Method existingMethod = srcMethod.remap(this.mappingsProvider).method();
 
-        MethodNode srcMethodNode = srcClass.methods.stream()
+        Optional<MethodNode> srcMethodNodeOptional = srcClass.methods.stream()
                 .filter(method -> existingMethod.getName().equals(method.name) && existingMethod.getDescriptor().equals(method.desc))
-                .findAny().orElseThrow(() -> new SrcMethodNotFound(srcMethod, existingMethod));
+                .findAny();
+        if (!srcMethodNodeOptional.isPresent()) {
+            methodExceptions.addException(new SrcMethodNotFound(srcMethod, existingMethod));
+            return Optional.empty();
+        }
+        MethodNode srcMethodNode = srcMethodNodeOptional.get();
 
         String dstMethodDescriptor = applyTransformsToMethodDescriptor(srcMethodNode.desc, redirects, transformChanges.addedParameters());
         MethodNode existingMethodNode = removeExistingMethod(targetClass, dstMethodName, dstMethodDescriptor);
 
-        transformChanges.throwIfInvalidAccess(originalTransformData, Visibility.fromAccess(srcMethodNode.access));
+        transformChanges.checkAccess(originalTransformData, Visibility.fromAccess(srcMethodNode.access), methodExceptions);
+        if (methodExceptions.hasWrapped()) {
+            return Optional.empty();
+        }
+
         // FIXME: transform exceptions
         int access = transformChanges.dstMethodVisibility().access | (srcMethodNode.access & ~(ACC_PUBLIC | ACC_PROTECTED | ACC_PRIVATE));
         MethodNode dstMethodNode = new MethodNode(access, dstMethodName, dstMethodDescriptor, null, srcMethodNode.exceptions.toArray(new String[0]));
@@ -224,7 +237,7 @@ public class Transformer {
         f.call(srcMethodNode, dstMethodNode, existingMethodNode);
 
         srcMethodNode.accept(dasmTransformingVisitor(dstMethodDescriptor, Type.getObjectType(targetClass.name), srcMethodNode.desc, dstMethodNode, redirects, mappingsProvider, transformChanges.addedParameters()));
-        return dstMethodNode;
+        return Optional.of(dstMethodNode);
     }
 
     /**
@@ -277,10 +290,10 @@ public class Transformer {
     }
 
     private void cloneAndApplyLambdaRedirects(ClassNode srcClass, ClassNode targetClass, MethodNode method, TransformRedirects redirects,
-                                              boolean debugLogging) throws DasmTransformException {
+                                              DasmMethodExceptions methodExceptions, boolean debugLogging) {
         Map<Handle, String> lambdaRedirects = new HashMap<>();
 
-        forEachLambdaInvocation(srcClass, method, (classMethod, handle) -> {
+        forEachLambdaInvocation(srcClass, method, (classMethod, handle, lambdaNode) -> {
             String newName = "dasm$redirect$" + classMethod.method().getName();
             lambdaRedirects.put(handle, newName);
             cloneAndApplyRedirects(
@@ -291,6 +304,7 @@ public class Transformer {
                     redirects,
                     new MethodTransform.TransformChanges(Collections.emptyList(), Visibility.PRIVATE, Visibility.SAME_AS_TARGET),
                     new MethodTransform.OriginalTransformData(srcClass.name, method),
+                    methodExceptions.addNested(new DasmMethodExceptions(lambdaNode)),
                     debugLogging
             );
         });
@@ -309,23 +323,24 @@ public class Transformer {
     }
 
     private void applyLambdaRedirects(ClassNode srcClass, MethodNode method, TransformRedirects redirects,
-                                      boolean debugLogging) throws DasmTransformException {
-        forEachLambdaInvocation(srcClass, method, (classMethod, handle) -> applyRedirects(
+                                      DasmMethodExceptions methodExceptions, boolean debugLogging) {
+        forEachLambdaInvocation(srcClass, method, (classMethod, handle, lambdaNode) -> applyRedirects(
                 srcClass,
                 classMethod,
                 redirects,
                 new MethodTransform.TransformChanges(Collections.emptyList(), Visibility.PRIVATE, Visibility.SAME_AS_TARGET),
                 new MethodTransform.OriginalTransformData(srcClass.name, method), // Assume lambas are always private, the passed in method here is therefore irrelevant
+                methodExceptions.addNested(new DasmMethodExceptions(lambdaNode)),
                 debugLogging
         ));
     }
 
     @FunctionalInterface
     interface RedirectLambdaFunction {
-        void call(ClassMethod srcMethod, Handle handle) throws DasmTransformException;
+        void call(ClassMethod srcMethod, Handle handle, MethodNode lambdaMethodNode);
     }
 
-    private void forEachLambdaInvocation(ClassNode srcClass, MethodNode method, RedirectLambdaFunction f) throws DasmTransformException {
+    private void forEachLambdaInvocation(ClassNode srcClass, MethodNode method, RedirectLambdaFunction f) {
         for (AbstractInsnNode instruction : method.instructions) {
             if (instruction.getOpcode() == INVOKEDYNAMIC) {
                 InvokeDynamicInsnNode invoke = (InvokeDynamicInsnNode) instruction;
@@ -350,7 +365,7 @@ public class Transformer {
                             continue;
                         }
 
-                        f.call(new ClassMethod(Type.getObjectType(handle.getOwner()), new Method(name, desc)), handle);
+                        f.call(new ClassMethod(Type.getObjectType(handle.getOwner()), new Method(name, desc)), handle, targetNode);
                     }
                 }
             }
