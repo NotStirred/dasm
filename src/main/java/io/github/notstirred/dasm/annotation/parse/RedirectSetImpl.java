@@ -93,7 +93,7 @@ public class RedirectSetImpl {
             parseInnerClass(innerClassNode, innerClassExceptions).ifPresent(data -> innerClassData.put(innerClass.name, data));
         }
 
-        List<Node<InnerClassParsedData>> roots = createTopDownTree(innerClassData);
+        List<Node<InnerClassParsedData>> roots = createTopDownTree(innerClassData, redirectSetExceptions);
 
         roots.forEach(root ->
                 root.children.forEach(child ->
@@ -122,9 +122,10 @@ public class RedirectSetImpl {
     }
 
     /**
-     * Takes all of the inner classes of a redirect set and arranges them in a tree by their class hierarchy
+     * Takes all of the inner classes of a redirect set and arranges them in a tree by their class hierarchy.<br/>
+     * This is for type redirect inheritance etc.
      */
-    private static @NotNull List<Node<InnerClassParsedData>> createTopDownTree(Map<String, InnerClassParsedData> innerClassData) {
+    private static @NotNull List<Node<InnerClassParsedData>> createTopDownTree(Map<String, InnerClassParsedData> innerClassData, DasmClassExceptions setExceptions) {
         List<Node<InnerClassParsedData>> roots = new ArrayList<>();
         List<Node<InnerClassParsedData>> remaining = new ArrayList<>();
         Map<String, Node<InnerClassParsedData>> nodes = new HashMap<>();
@@ -144,17 +145,24 @@ public class RedirectSetImpl {
         while (!remaining.isEmpty()) {
             for (Iterator<Node<InnerClassParsedData>> iterator = remaining.iterator(); iterator.hasNext(); ) {
                 Node<InnerClassParsedData> node = iterator.next();
+                iterator.remove();
 
                 Node<InnerClassParsedData> superNode = nodes.get(node.value.superDataName);
-                if (superNode != null) {
-                    superNode.children.add(node);
-                    iterator.remove();
+                if (superNode == null) {
+                    setExceptions.addNested(new DasmClassExceptions("In " + node.value.name))
+                            .addException(new SuperTypeInInvalidRedirectSet(node.value.name, node.value.superDataName));
+                    continue;
                 }
+                superNode.children.add(node);
             }
         }
         return roots;
     }
 
+    /**
+     * Every redirect a parent has is added to every child with the src and dst types replaced with the child's ones.
+     * This is done recursively.
+     */
     private static void createInheritedRedirectsForTree(InnerClassParsedData parent, Node<InnerClassParsedData> data) {
         // FIXME: how should mappings owner interact with inheritance changing the owner?
         //        is the current approach fine? the mappings owner never gets changed assuming it's a super type. feels weird but maybe correct.
@@ -187,6 +195,7 @@ public class RedirectSetImpl {
         Type srcType;
         Type dstType;
 
+        String name;
         String superDataName;
 
         Set<FieldToMethodRedirectImpl> fieldToMethodRedirects = new HashSet<>();
@@ -256,17 +265,22 @@ public class RedirectSetImpl {
             }
         }
 
+        // Redirect set itself is valid beyond this point, so we always return the real object.
+        // This allows set inheritance and other errors to work properly for any valid set even if its contents are invalid.
+        // If the methods/fields error it will still be reported by the caller.
+
+        data.name = innerClassNode.name;
+        data.superDataName = innerClassNode.superName;
         data.srcType = srcType[0];
         data.dstType = dstType[0];
-        data.superDataName = innerClassNode.superName;
 
-        parseFields(innerClassNode, srcType[0], dstType[0],
+        parseFields(innerClassNode, data.srcType, data.dstType,
                 data.fieldRedirects,
                 data.fieldToMethodRedirects,
                 innerClassExceptions
         );
 
-        parseMethods(innerClassNode, srcType[0], dstType[0],
+        parseMethods(innerClassNode, data.srcType, data.dstType,
                 data.methodRedirects,
                 data.fieldToMethodRedirects,
                 data.constructorToFactoryRedirects,
@@ -431,6 +445,12 @@ public class RedirectSetImpl {
                     this.remapType(redirect.dstType()),
                     redirect.isDstInterface()
             );
+        }
+    }
+
+    public static class SuperTypeInInvalidRedirectSet extends DasmException {
+        public SuperTypeInInvalidRedirectSet(String containerName, String superContainerName) {
+            super("`" + containerName + "` extends redirect `" + superContainerName + "` which is not within the same RedirectSet");
         }
     }
 

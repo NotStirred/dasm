@@ -11,6 +11,7 @@ import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
 import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
+import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.test.TestHarness;
 import io.github.notstirred.dasm.test.targets.inherited_transforms.Bar;
 import io.github.notstirred.dasm.test.targets.inherited_transforms.BarBaz;
@@ -29,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Dasm(TestUnitInheritedTransforms.A.class)
 public class TestUnitInheritedTransforms {
     @Test
-    public void testInheritedTransformsArePresent() {
+    public void testInheritedTransformsArePresent() throws DasmException {
         var redirects = TestHarness.getRedirectsFor(TestUnitInheritedTransforms.class);
         Set<MethodRedirectImpl> methodRedirects = redirects.get().stream().findFirst().get().redirectSets().get(0).methodRedirects();
         assertEquals(2, methodRedirects.size(), "Missing inherited method redirects");
