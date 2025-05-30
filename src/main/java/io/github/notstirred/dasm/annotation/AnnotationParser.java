@@ -302,7 +302,7 @@ public class AnnotationParser {
                     existingSet = parsed.get();
                     this.redirectSetsByType.put(redirectSetType, existingSet);
                 } else {
-                    exceptions.addException(new NoSuchTypeExists(redirectSetType)); // FIXME: change this error to "NoValidRedirectSetExists" or something more clear. It's possible the set class exists but was not parsed as it's invalid
+                    exceptions.addException(new NoValidRedirectSetExists(redirectSetType));
                     return;
                 }
             } catch (NoSuchTypeExists e) {
@@ -328,6 +328,12 @@ public class AnnotationParser {
     private void unrollSetsInner(RedirectSetImpl redirectSet, Collection<RedirectSetImpl> out) {
         redirectSet.superRedirectSets().stream().map(this.redirectSetsByType::get).forEach(set -> unrollSetsInner(set, out));
         out.add(redirectSet);
+    }
+
+    public static class NoValidRedirectSetExists extends DasmException {
+        public NoValidRedirectSetExists(Type redirectSetType) {
+            super(String.format("No valid redirect set exists matching `" + redirectSetType.getClassName() + "`"));
+        }
     }
 
     public static class BothTransformMethodAndTransformFromMethodPresent extends DasmException {
