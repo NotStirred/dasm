@@ -10,7 +10,7 @@ plugins {
 
 group 'io.github.notstirred'
 archivesBaseName = "dasm"
-version '2.3.1'
+version '2.4.0'
 
 ext.ossrhUsername = project.findProperty("ossrhUsername") ?: "" // Enter in ~/.gradle/gradle.properties, not here.
 ext.ossrhPassword = project.findProperty("ossrhPassword") ?: "" // Enter in ~/.gradle/gradle.properties, not here.
