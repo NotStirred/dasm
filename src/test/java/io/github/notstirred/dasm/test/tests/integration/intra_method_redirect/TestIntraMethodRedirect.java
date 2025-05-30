@@ -26,9 +26,9 @@ public class TestIntraMethodRedirect extends BaseMethodTest {
 
     @RedirectSet
     public interface Set {
-        @IntraOwnerContainer(owner = @Ref(String.class))
+        @IntraOwnerContainer(@Ref(String.class))
         abstract class A {
-            @MethodRedirect(@MethodSig(ret = @Ref(int.class), name = "hashCode", args = { }))
+            @MethodRedirect(@MethodSig(ret = @Ref(int.class), name = "hashCode", args = {}))
             public native int length();
         }
     }

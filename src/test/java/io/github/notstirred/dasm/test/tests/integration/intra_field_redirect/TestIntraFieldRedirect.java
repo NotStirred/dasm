@@ -28,13 +28,13 @@ public class TestIntraFieldRedirect extends BaseMethodTest {
 
     @RedirectSet
     public interface Set {
-        @IntraOwnerContainer(owner = @Ref(Vec3i.class))
+        @IntraOwnerContainer(@Ref(Vec3i.class))
         abstract class Vec3i_NONSTATIC {
             @FieldRedirect(@FieldSig(type = @Ref(int.class), name = "x"))
             public int y;
         }
 
-        @IntraOwnerContainer(owner = @Ref(Soup.class))
+        @IntraOwnerContainer(@Ref(Soup.class))
         abstract class Soup_STATIC {
             @FieldRedirect(@FieldSig(type = @Ref(int.class), name = "A"))
             public static int B;

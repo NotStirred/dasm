@@ -22,10 +22,10 @@ import java.lang.annotation.Target;
  * A destination type is defined as a type <i>after</i> dasm redirects are applied eg:
  * <ul>
  *     <li>A {@link TypeRedirect}'s dst type is {@link TypeRedirect#to()}</li>
- *     <li>A {@link InterOwnerContainer}'s dst type is {@link InterOwnerContainer#newOwner()}</li>
- *     <li>A {@link IntraOwnerContainer}'s dst type is {@link IntraOwnerContainer#owner()}</li>
+ *     <li>A {@link InterOwnerContainer}'s dst type is {@link InterOwnerContainer#to()}</li>
+ *     <li>A {@link IntraOwnerContainer}'s dst type is {@link IntraOwnerContainer#value()}</li>
  * </ul>
- *
+ * <p>
  * <br/><br/>
  * <h2>Example</h2>
  * <pre>{@code
