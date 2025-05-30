@@ -28,9 +28,12 @@ import java.lang.annotation.Target;
  * <h2>Redirect Set Inheritance</h2>
  * A {@link RedirectSet} may inherit from one or more {@link RedirectSet}s using java's {@code extends} syntax as normal.
  * This results in a derived type inheriting all the redirects from the super type(s).<br/>
- * <li>Redirects from an inherited {@link RedirectSet} can be overridden by redefining them within the derived type.</li>
- * <li>If {@link RedirectSet} {@code A extends B, C} the redirects from {@code C} will override those in {@code B};
- * the resulting redirects will then be overridden by those in {@code A}</li>
+ * <ul>
+ *   <li>Redirects from an inherited {@link RedirectSet} can be overridden by redefining them within the derived type.</li>
+ *   <li>If {@link RedirectSet} {@code A extends B, C} the redirects from {@code C} will override those in {@code B};
+ *       the resulting redirects will then be overridden by those in {@code A}
+ *   </li>
+ * </ul>
  *
  * <h2>Redirect Chaining</h2>
  * All redirects within a {@link RedirectSet} (including all inheritance) apply as a single atomic step. For example if
