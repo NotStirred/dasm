@@ -68,8 +68,10 @@ public class RedirectSetImpl {
 
         // Discover type/field/method redirects in innerClass
         for (InnerClassNode innerClass : redirectSetClassNode.innerClasses) {
-            if (innerClass.name.equals(redirectSetClassNode.name)) {
-                continue; // `innerClasses` seems to contain the outer class too.
+            if (!innerClass.outerName.equals(redirectSetClassNode.name) || innerClass.name.equals(redirectSetClassNode.name)) {
+                // `innerClasses` contains a list of all inner classes of the root class, exclude any not a direct child
+                //                also seems to contain the outer class too.
+                continue;
             }
 
             ClassNode innerClassNode;
