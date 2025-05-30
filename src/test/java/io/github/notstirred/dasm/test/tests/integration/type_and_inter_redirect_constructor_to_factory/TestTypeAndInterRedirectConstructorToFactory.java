@@ -40,7 +40,7 @@ public class TestTypeAndInterRedirectConstructorToFactory extends BaseMethodTest
             native void doBThings();
         }
 
-        @InterOwnerContainer(owner = @Ref(A.class), newOwner = @Ref(BFactory.class))
+        @InterOwnerContainer(from = @Ref(A.class), to = @Ref(BFactory.class))
         abstract class A_to_BFactory_redirects {
             @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = {}))
             public static native B createB();

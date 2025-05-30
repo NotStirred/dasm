@@ -37,23 +37,25 @@ public class TestConstructorToFactory extends BaseMethodTest {
     public native void method3out();
 
     @RedirectSet
-    public interface A { }
+    public interface A {
+    }
 
     @RedirectSet
     public interface Set {
         @TypeRedirect(from = @Ref(Object.class), to = @Ref(String.class))
-        abstract class A { }
+        abstract class A {
+        }
 
-        @InterOwnerContainer(owner = @Ref(Object.class), newOwner = @Ref(TestConstructorToFactory.class))
+        @InterOwnerContainer(from = @Ref(Object.class), to = @Ref(TestConstructorToFactory.class))
         abstract class B {
-            @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = { }))
+            @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = {}))
             static native String createString();
         }
     }
 
     @RedirectSet
     public interface InnerConstructorSet {
-        @InterOwnerContainer(owner = @Ref(File.class), newOwner = @Ref(TestConstructorToFactory.class))
+        @InterOwnerContainer(from = @Ref(File.class), to = @Ref(TestConstructorToFactory.class))
         abstract class B {
             @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = @Ref(String.class)))
             static native File fromString(String s);
@@ -62,9 +64,9 @@ public class TestConstructorToFactory extends BaseMethodTest {
 
     @RedirectSet
     public interface OuterConstructorSet {
-        @InterOwnerContainer(owner = @Ref(File.class), newOwner = @Ref(TestConstructorToFactory.class))
+        @InterOwnerContainer(from = @Ref(File.class), to = @Ref(TestConstructorToFactory.class))
         abstract class B {
-            @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = { @Ref(File.class), @Ref(String.class) }))
+            @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = {@Ref(File.class), @Ref(String.class)}))
             static native File fromParentWithChild(File parent, String s);
         }
     }
