@@ -12,6 +12,10 @@ public class TypeUtil {
         return typeNameToDescriptor(clazz.getName());
     }
 
+    public static String classToInternalName(Class<?> clazz) {
+        return classNameToInternalName(clazz.getName());
+    }
+
     public static String typeNameToDescriptor(String className) {
         return Method.getMethod(className.replace('/', '.') + " x()").getReturnType().getDescriptor();
     }
