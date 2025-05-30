@@ -114,19 +114,15 @@ public class TestHarness {
         callAllMethodsWithDummies(actualClass, expectedClass, reparsedClassNode);
     }
 
-    public static Optional<Collection<MethodTransform>> getRedirectsFor(Class<?> dasmClass) {
+    public static Optional<Collection<MethodTransform>> getRedirectsFor(Class<?> dasmClass) throws DasmException {
         ClassNode dasm = classNodeFromClass(dasmClass);
 
         CachingClassProvider classProvider = new CachingClassProvider(TestHarness::getBytesForClassName);
 
         AnnotationParser annotationParser = new AnnotationParser(classProvider);
 
-        try {
-            annotationParser.findRedirectSets(dasm);
-            return annotationParser.buildMethodTargets(dasm, "");
-        } catch (DasmException e) {
-            throw new Error("", e);
-        }
+        annotationParser.findRedirectSets(dasm);
+        return annotationParser.buildMethodTargets(dasm, "");
     }
 
     private static byte[] classNodeToBytes(ClassNode actual) {
