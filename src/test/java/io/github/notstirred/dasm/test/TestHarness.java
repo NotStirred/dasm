@@ -52,8 +52,7 @@ public class TestHarness {
 
             transformer.transform(actual, methodTransforms);
         } catch (DasmException e) {
-            e.printStackTrace();
-            throw new Error(e);
+            throw new Error("", e);
         }
 
         // Write and re-read class bytes to fix issues with label nodes being wonky
@@ -96,8 +95,7 @@ public class TestHarness {
 
             transformer.transform(actual, methodTransforms);
         } catch (DasmException e) {
-            e.printStackTrace();
-            throw new Error(e);
+            throw new Error("foo", e);
         }
 
         // Write and re-read class bytes to fix issues with label nodes being wonky
