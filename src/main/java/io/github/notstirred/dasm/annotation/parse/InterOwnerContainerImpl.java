@@ -32,12 +32,12 @@ public class InterOwnerContainerImpl {
 
         Type owner;
         try {
-            owner = parseRefAnnotation("owner", values);
+            owner = parseRefAnnotation("from", values);
         } catch (RefImpl.RefAnnotationGivenNoArguments e) {
             classExceptions.addException(e);
             return Optional.empty();
         }
-        Type newOwner = RefImpl.parseOptionalRefAnnotation(((AnnotationNode) values.get("newOwner"))).orElse(owner);
+        Type newOwner = RefImpl.parseOptionalRefAnnotation(((AnnotationNode) values.get("to"))).orElse(owner);
 
         return Optional.of(new InterOwnerContainerImpl(owner, newOwner));
     }
