@@ -114,6 +114,21 @@ public class TestHarness {
         callAllMethodsWithDummies(actualClass, expectedClass, reparsedClassNode);
     }
 
+    public static Optional<Collection<MethodTransform>> getRedirectsFor(Class<?> dasmClass) {
+        ClassNode dasm = classNodeFromClass(dasmClass);
+
+        CachingClassProvider classProvider = new CachingClassProvider(TestHarness::getBytesForClassName);
+
+        AnnotationParser annotationParser = new AnnotationParser(classProvider);
+
+        try {
+            annotationParser.findRedirectSets(dasm);
+            return annotationParser.buildMethodTargets(dasm, "");
+        } catch (DasmException e) {
+            throw new Error("", e);
+        }
+    }
+
     private static byte[] classNodeToBytes(ClassNode actual) {
         ClassWriter classWriter = new ClassWriter(0);
         actual.accept(classWriter);
@@ -233,13 +248,15 @@ public class TestHarness {
                 return;
             }
             actualInstance = actualClassLoaded.getConstructor().newInstance();
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                 NoSuchMethodException e) {
             throw new RuntimeException("Failed to create transformed class instance for " + actualClassLoaded.getName(), e);
         }
         Object expectedInstance;
         try {
             expectedInstance = expectedClass.getConstructor().newInstance();
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                 NoSuchMethodException e) {
             throw new RuntimeException("Failed to create transformed class instance for " + actualClassLoaded.getName(), e);
         }
 
@@ -335,31 +352,31 @@ public class TestHarness {
 
     static {
         DUMMY_VALUES.put(int.class, 1);
-        DUMMY_VALUES.put(int[].class, new int[]{ 1, 1, 1 });
+        DUMMY_VALUES.put(int[].class, new int[]{1, 1, 1});
         DUMMY_VALUES.put(Integer.class, Integer.valueOf(2));
         DUMMY_VALUES.put(float.class, 3.0f);
-        DUMMY_VALUES.put(float[].class, new float[]{ 3.0f, 3.0f, 3.0f });
+        DUMMY_VALUES.put(float[].class, new float[]{3.0f, 3.0f, 3.0f});
         DUMMY_VALUES.put(float[][].class, new float[][]{new float[]{3.0f, 3.0f, 3.0f}});
         DUMMY_VALUES.put(Float.class, Float.valueOf(4.0f));
         DUMMY_VALUES.put(boolean.class, true);
-        DUMMY_VALUES.put(boolean[].class, new boolean[]{ true, true, true });
+        DUMMY_VALUES.put(boolean[].class, new boolean[]{true, true, true});
         DUMMY_VALUES.put(Boolean.class, Boolean.valueOf(false));
         DUMMY_VALUES.put(long.class, 7L);
-        DUMMY_VALUES.put(long[].class, new long[]{ 7L, 7L, 7L });
+        DUMMY_VALUES.put(long[].class, new long[]{7L, 7L, 7L});
         DUMMY_VALUES.put(Long.class, Long.valueOf(8));
         DUMMY_VALUES.put(double.class, 9.0);
-        DUMMY_VALUES.put(double[].class, new double[]{ 9.0, 9.0, 9.0 });
+        DUMMY_VALUES.put(double[].class, new double[]{9.0, 9.0, 9.0});
         DUMMY_VALUES.put(Double.class, Double.valueOf(10.0));
         DUMMY_VALUES.put(byte.class, (byte) 11);
-        DUMMY_VALUES.put(byte[].class, new byte[]{ (byte) 11, (byte) 11, (byte) 11 });
+        DUMMY_VALUES.put(byte[].class, new byte[]{(byte) 11, (byte) 11, (byte) 11});
         DUMMY_VALUES.put(Byte.class, Byte.valueOf((byte) 12));
         DUMMY_VALUES.put(short.class, (short) 13);
-        DUMMY_VALUES.put(short[].class, new short[]{ (short) 13, (short) 13, (short) 13 });
+        DUMMY_VALUES.put(short[].class, new short[]{(short) 13, (short) 13, (short) 13});
         DUMMY_VALUES.put(Short.class, Short.valueOf((short) 14));
         DUMMY_VALUES.put(Object.class, new Object());
-        DUMMY_VALUES.put(Object[].class, new Object[]{ new Object(), new Object(), new Object() });
+        DUMMY_VALUES.put(Object[].class, new Object[]{new Object(), new Object(), new Object()});
         DUMMY_VALUES.put(String.class, "a");
-        DUMMY_VALUES.put(String[].class, new String[]{ "b", "c", "d" });
+        DUMMY_VALUES.put(String[].class, new String[]{"b", "c", "d"});
         DUMMY_VALUES.put(Vec3i.class, new Vec3i(5, -15, 190));
         DUMMY_VALUES.put(CubePos.class, new CubePos(-9, 3, 128736));
         DUMMY_VALUES.put(CubePosInterface.class, new CubePos(13, 341, -76));
