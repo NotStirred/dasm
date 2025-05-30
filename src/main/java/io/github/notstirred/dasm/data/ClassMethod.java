@@ -9,18 +9,18 @@ import org.objectweb.asm.commons.Method;
 @Data
 public class ClassMethod {
     private final Type owner;
-    private final Type mappingOwner;
+    private final Type mappingsOwner;
     private final Method method;
 
-    public ClassMethod(Type owner, @NonNull Type mappingOwner, Method method) {
+    public ClassMethod(Type owner, @NonNull Type mappingsOwner, Method method) {
         this.owner = owner;
-        this.mappingOwner = mappingOwner;
+        this.mappingsOwner = mappingsOwner;
         this.method = method;
     }
 
     public ClassMethod(Type owner, Method method) {
         this.owner = owner;
-        this.mappingOwner = owner;
+        this.mappingsOwner = owner;
         this.method = method;
     }
 
@@ -29,7 +29,7 @@ public class ClassMethod {
         Type returnType = Type.getReturnType(this.method.getDescriptor());
 
         Type mappedType = mappingsProvider.remapType(this.owner);
-        String mappedName = mappingsProvider.mapMethodName(this.mappingOwner.getClassName(), this.method.getName(), this.method.getDescriptor());
+        String mappedName = mappingsProvider.mapMethodName(this.mappingsOwner.getClassName(), this.method.getName(), this.method.getDescriptor());
         Type[] mappedParams = new Type[params.length];
         for (int i = 0; i < params.length; i++) {
             mappedParams[i] = mappingsProvider.remapDescType(params[i]);
