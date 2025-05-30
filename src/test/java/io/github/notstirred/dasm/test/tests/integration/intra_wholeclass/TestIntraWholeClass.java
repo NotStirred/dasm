@@ -29,7 +29,7 @@ public class TestIntraWholeClass extends BaseClassTest {
 
     @RedirectSet
     interface Set {
-        @IntraOwnerContainer(owner = @Ref(IntraWholeClassInput.class))
+        @IntraOwnerContainer(@Ref(IntraWholeClassInput.class))
         abstract class InputRedirects {
             @FieldRedirect(@FieldSig(type = @Ref(Vec3i.class), name = "field"))
             float field1;
@@ -38,7 +38,7 @@ public class TestIntraWholeClass extends BaseClassTest {
             native Soup method3();
         }
 
-        @IntraOwnerContainer(owner = @Ref(Soup.class))
+        @IntraOwnerContainer(@Ref(Soup.class))
         abstract class SoupToStringRedirects {
             @FieldRedirect(@FieldSig(type = @Ref(int.class), name = "a"))
             float b;

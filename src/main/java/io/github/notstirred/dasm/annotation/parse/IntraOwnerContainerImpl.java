@@ -31,7 +31,7 @@ public class IntraOwnerContainerImpl {
 
         Type owner;
         try {
-            owner = parseRefAnnotation("owner", values);
+            owner = parseRefAnnotation("value", values);
         } catch (RefImpl.RefAnnotationGivenNoArguments e) {
             classExceptions.addException(e);
             return Optional.empty();

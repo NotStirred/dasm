@@ -9,9 +9,11 @@ import java.lang.annotation.Target;
 
 /**
  * Does not redirect anything itself, but provides owner information to inner redirects
+ * <h2>Valid Redirects</h2>
+ * <li>All redirects are valid within an {@link IntraOwnerContainer}</li>
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.CLASS)
 public @interface IntraOwnerContainer {
-    Ref owner();
+    Ref value();
 }

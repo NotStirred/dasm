@@ -27,7 +27,7 @@ public class TestIntraOneArgConstructorToFactory extends BaseMethodTest {
 
     @RedirectSet
     public interface Set {
-        @IntraOwnerContainer(owner = @Ref(Soup.class))
+        @IntraOwnerContainer(@Ref(Soup.class))
         abstract class Soup_redirects {
             @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = {@Ref(int.class)}))
             static native Soup create(int foo);
