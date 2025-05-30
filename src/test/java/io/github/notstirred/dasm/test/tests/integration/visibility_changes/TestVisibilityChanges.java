@@ -16,7 +16,7 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
 /**
  * A trivial test for changing method visibility
  */
-@Dasm(TestVisibilityChanges.Set.class)
+@Dasm(value = TestVisibilityChanges.Set.class, target = @Ref(VisibilityChangesInput.class))
 public class TestVisibilityChanges extends BaseMethodTest {
     public TestVisibilityChanges() {
         super(single(VisibilityChangesInput.class, VisibilityChangesOutput.class, TestVisibilityChanges.class));

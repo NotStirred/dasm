@@ -15,7 +15,7 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
  * Verify that method redirects work
  * String#hashCode() -> String#length()
  */
-@Dasm(TestIntraMethodRedirect.Set.class)
+@Dasm(value = TestIntraMethodRedirect.Set.class, target = @Ref(IntraMethodRedirectInput.class))
 public class TestIntraMethodRedirect extends BaseMethodTest {
     public TestIntraMethodRedirect() {
         super(single(IntraMethodRedirectInput.class, IntraMethodRedirectOutput.class, TestIntraMethodRedirect.class));

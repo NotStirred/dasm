@@ -14,7 +14,7 @@ import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
 
 import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
 
-@Dasm(TestAddParameterAbstract.Set.class)
+@Dasm(value = TestAddParameterAbstract.Set.class, target = @Ref(AddParameterAbstractInput.class))
 public class TestAddParameterAbstract extends BaseMethodTest {
     public TestAddParameterAbstract() {
         super(single(AddParameterAbstractInput.class, AddParameterAbstractOutput.class, TestAddParameterAbstract.class));

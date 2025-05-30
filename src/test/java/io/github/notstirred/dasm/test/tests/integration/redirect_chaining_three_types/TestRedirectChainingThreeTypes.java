@@ -13,7 +13,7 @@ import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
 
 import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
 
-@Dasm(TestRedirectChainingThreeTypes.Set.class)
+@Dasm(value = TestRedirectChainingThreeTypes.Set.class, target = @Ref(RedirectChainingThreeTypesInput.class))
 public class TestRedirectChainingThreeTypes extends BaseMethodTest {
     public TestRedirectChainingThreeTypes() {
         super(single(RedirectChainingThreeTypesInput.class, RedirectChainingThreeTypesOutput.class, TestRedirectChainingThreeTypes.class));

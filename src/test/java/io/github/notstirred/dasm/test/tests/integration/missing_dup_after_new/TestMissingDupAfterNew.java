@@ -17,7 +17,7 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
  * <p>
  * Currently, this <u>does not work</u> as javac always produces a DUP instruction.
  */
-@Dasm(TestMissingDupAfterNew.Set.class)
+@Dasm(value = TestMissingDupAfterNew.Set.class, target = @Ref(MissingDupAfterNewInput.class))
 public class TestMissingDupAfterNew extends BaseMethodTest {
     public TestMissingDupAfterNew() {
         super(single(MissingDupAfterNewInput.class, MissingDupAfterNewOutput.class, TestMissingDupAfterNew.class));

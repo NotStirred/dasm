@@ -14,7 +14,7 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
  * Verify that type redirects work for method parameters and return types.
  * Object -> String
  */
-@Dasm(TestTrivialTypeRedirect.Set.class)
+@Dasm(value = TestTrivialTypeRedirect.Set.class, target = @Ref(TrivialTypeRedirectInput.class))
 public class TestTrivialTypeRedirect extends BaseMethodTest {
     public TestTrivialTypeRedirect() {
         super(single(TrivialTypeRedirectInput.class, TrivialTypeRedirectOutput.class, TestTrivialTypeRedirect.class));

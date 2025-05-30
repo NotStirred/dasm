@@ -11,7 +11,7 @@ import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
 
 import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
 
-@Dasm(TestAddParameterMultipleStatic.Set.class)
+@Dasm(value = TestAddParameterMultipleStatic.Set.class, target = @Ref(AddParameterMultipleStaticInput.class))
 public class TestAddParameterMultipleStatic extends BaseMethodTest {
     public TestAddParameterMultipleStatic() {
         super(single(AddParameterMultipleStaticInput.class, AddParameterMultipleStaticOutput.class, TestAddParameterMultipleStatic.class));

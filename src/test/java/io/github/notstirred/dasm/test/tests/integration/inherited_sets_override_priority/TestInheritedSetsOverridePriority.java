@@ -19,7 +19,7 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
  * Verify that inherited redirects are overridden correctly.
  * Essentially the later sets in the inheritance tree have the last say.
  */
-@Dasm(TestInheritedSetsOverridePriority.HasOverride.class)
+@Dasm(value = TestInheritedSetsOverridePriority.HasOverride.class, target = @Ref(InheritedSetsOverridePriorityInput.class))
 public class TestInheritedSetsOverridePriority extends BaseMethodTest {
     public TestInheritedSetsOverridePriority() {
         super(single(InheritedSetsOverridePriorityInput.class, InheritedSetsOverridePriorityOutput.class, TestInheritedSetsOverridePriority.class));

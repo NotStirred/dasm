@@ -23,7 +23,7 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
  * The {@link InterOwnerContainer} contains a {@link ConstructorToFactoryRedirect} that changes the owner to a <b><u>different
  * type</u></b> to the type redirect {@link TypeRedirect#to() to} type.
  */
-@Dasm(TestTypeAndInterRedirectConstructorToFactory.Set.class)
+@Dasm(value = TestTypeAndInterRedirectConstructorToFactory.Set.class, target = @Ref(TypeAndInterRedirectConstructorToFactoryInput.class))
 public class TestTypeAndInterRedirectConstructorToFactory extends BaseMethodTest {
     public TestTypeAndInterRedirectConstructorToFactory() {
         super(single(TypeAndInterRedirectConstructorToFactoryInput.class, TypeAndInterRedirectConstructorToFactoryOutput.class, TestTypeAndInterRedirectConstructorToFactory.class));

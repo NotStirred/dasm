@@ -14,7 +14,7 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
  * Type/field/method redirects in a copyFrom method transform.
  * Object -> String
  */
-@Dasm(TestCopyFromTransform.Set.class)
+@Dasm(value = TestCopyFromTransform.Set.class, target = @Ref(CopyFromTransformInput.class))
 public class TestCopyFromTransform extends BaseMethodTest {
     public TestCopyFromTransform() {
         super(single(CopyFromTransformInput.class, CopyFromTransformOutput.class, TestCopyFromTransform.class));

@@ -127,15 +127,18 @@ public class AnnotationParser {
         return Optional.empty();
     }
 
-    public Optional<Collection<MethodTransform>> buildMethodTargets(ClassNode targetClass, String methodPrefix) throws DasmException {
-        Type targetType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
-        boolean isTargetTypeInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
+    public Optional<Collection<MethodTransform>> buildMethodTargets(ClassNode dasmClass, String methodPrefix) throws DasmException {
+        boolean isTargetTypeInterface = (dasmClass.access & Opcodes.ACC_INTERFACE) != 0;
 
-        DasmClassExceptions classExceptions = new DasmClassExceptions("An exception occurred when looking for transforms in", targetClass);
+        DasmClassExceptions classExceptions = new DasmClassExceptions("An exception occurred when looking for transforms in", dasmClass);
 
-        AnnotationNode dasmNode = getAnnotationIfPresent(targetClass.invisibleAnnotations, Dasm.class);
+        AnnotationNode dasmNode = getAnnotationIfPresent(dasmClass.invisibleAnnotations, Dasm.class);
         if (dasmNode != null) {
             Map<String, Object> values = getAnnotationValues(dasmNode, Dasm.class);
+            Type targetType = RefImpl.parseOptionalRefAnnotation((AnnotationNode) values.get("target"))
+                    .map(type -> type.getClassName().equals(Dasm.SELF_TARGET.class.getName()) ? null : type)
+                    .orElseGet(() -> Type.getType(TypeUtil.typeNameToDescriptor(dasmClass.name)));
+
             @SuppressWarnings("unchecked")
             List<RedirectSetImpl> defaultRedirectSets = unrollSets(((List<Type>) values.get("value")).stream()
                     .map(type -> {
@@ -150,7 +153,7 @@ public class AnnotationParser {
 
             List<MethodTransform> methodTransforms = new ArrayList<>();
 
-            for (MethodNode method : targetClass.methods) {
+            for (MethodNode method : dasmClass.methods) {
                 DasmMethodExceptions methodExceptions = classExceptions.addNested(new DasmMethodExceptions(method));
 
                 TransformMethodImpl transformMethod = parseTransformMethod(method, methodExceptions);
@@ -187,7 +190,7 @@ public class AnnotationParser {
                                 visibility.first,
                                 visibility.second
                         ),
-                        new MethodTransform.OriginalTransformData(targetClass.name, method)
+                        new MethodTransform.OriginalTransformData(targetType.getInternalName(), method)
                 );
 
                 AnnotationNode addToSetsAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, AddTransformToSets.class);

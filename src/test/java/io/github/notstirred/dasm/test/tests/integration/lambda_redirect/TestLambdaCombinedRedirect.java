@@ -16,7 +16,7 @@ import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
 
 import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
 
-@Dasm(TestLambdaCombinedRedirect.Set.class)
+@Dasm(value = TestLambdaCombinedRedirect.Set.class, target = @Ref(LambdaCombinedRedirectInput.class))
 public class TestLambdaCombinedRedirect extends BaseMethodTest {
     public TestLambdaCombinedRedirect() {
         super(single(LambdaCombinedRedirectInput.class, LambdaCombinedRedirectOutput.class, TestLambdaCombinedRedirect.class));

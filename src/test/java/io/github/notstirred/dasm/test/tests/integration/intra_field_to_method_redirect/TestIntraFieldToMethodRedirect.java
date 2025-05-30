@@ -13,7 +13,7 @@ import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
 
 import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
 
-@Dasm(TestIntraFieldToMethodRedirect.Set.class)
+@Dasm(value = TestIntraFieldToMethodRedirect.Set.class, target = @Ref(IntraFieldToMethodRedirectInput.class))
 public class TestIntraFieldToMethodRedirect extends BaseMethodTest {
     public TestIntraFieldToMethodRedirect() {
         super(single(IntraFieldToMethodRedirectInput.class, IntraFieldToMethodRedirectOutput.class, TestIntraFieldToMethodRedirect.class));

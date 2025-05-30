@@ -19,7 +19,7 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
 /**
  * //TODO
  */
-@Dasm(TestInheritedTransforms.Set.class)
+@Dasm(value = TestInheritedTransforms.Set.class, target = @Ref(InheritedTransformsInput.class))
 public class TestInheritedTransforms extends BaseMethodTest {
     public TestInheritedTransforms() {
         super(single(InheritedTransformsInput.class, InheritedTransformsOutput.class, TestInheritedTransforms.class));

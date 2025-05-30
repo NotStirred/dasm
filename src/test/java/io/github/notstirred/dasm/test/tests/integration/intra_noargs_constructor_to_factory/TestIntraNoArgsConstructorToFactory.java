@@ -16,7 +16,7 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
 /**
  * Constructor to factory redirects with an additional different type redirect
  */
-@Dasm(TestIntraNoArgsConstructorToFactory.Set.class)
+@Dasm(value = TestIntraNoArgsConstructorToFactory.Set.class, target = @Ref(IntraNoArgsConstructorToFactoryInput.class))
 public class TestIntraNoArgsConstructorToFactory extends BaseMethodTest {
     public TestIntraNoArgsConstructorToFactory() {
         super(single(IntraNoArgsConstructorToFactoryInput.class, IntraNoArgsConstructorToFactoryOutput.class, TestIntraNoArgsConstructorToFactory.class));

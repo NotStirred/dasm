@@ -11,7 +11,7 @@ import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
 
 import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
 
-@Dasm(TestTrivialAddUnusedParam.Set.class)
+@Dasm(value = TestTrivialAddUnusedParam.Set.class, target = @Ref(TrivialAddUnusedParamInput.class))
 public class TestTrivialAddUnusedParam extends BaseMethodTest {
     public TestTrivialAddUnusedParam() {
         super(single(TrivialAddUnusedParamInput.class, TrivialAddUnusedParamOutput.class, TestTrivialAddUnusedParam.class));

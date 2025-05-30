@@ -20,7 +20,7 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
 /**
  * A trivial test for a static {@link AddMethodToSets}
  */
-@Dasm(TestCombinedFieldMethodRedirects.Set.class)
+@Dasm(value = TestCombinedFieldMethodRedirects.Set.class, target = @Ref(CombinedFieldMethodRedirectsInput.class))
 public class TestCombinedFieldMethodRedirects extends BaseMethodTest {
     public TestCombinedFieldMethodRedirects() {
         super(single(CombinedFieldMethodRedirectsInput.class, CombinedFieldMethodRedirectsOutput.class, TestCombinedFieldMethodRedirects.class));
@@ -36,21 +36,21 @@ public class TestCombinedFieldMethodRedirects extends BaseMethodTest {
     public interface Set {
         @TypeRedirect(from = @Ref(Vec3i.class), to = @Ref(CubePos.class))
         abstract class A {
-            @MethodRedirect(@MethodSig(name = "getX", args = { }, ret = @Ref(int.class)))
+            @MethodRedirect(@MethodSig(name = "getX", args = {}, ret = @Ref(int.class)))
             native int x();
 
-            @MethodRedirect(@MethodSig(name = "getY", args = { }, ret = @Ref(int.class)))
+            @MethodRedirect(@MethodSig(name = "getY", args = {}, ret = @Ref(int.class)))
             native int y();
 
-            @MethodRedirect(@MethodSig(name = "getZ", args = { }, ret = @Ref(int.class)))
+            @MethodRedirect(@MethodSig(name = "getZ", args = {}, ret = @Ref(int.class)))
             native int z();
 
-            @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = { @Ref(long.class) }))
+            @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = {@Ref(long.class)}))
             native CubePos from();
         }
     }
 
-    @AddMethodToSets(owner = @Ref(CubePos.class), method = @MethodSig(name = "fromLong", ret = @Ref(CubePos.class), args = { @Ref(long.class) }), sets = Set.class)
+    @AddMethodToSets(owner = @Ref(CubePos.class), method = @MethodSig(name = "fromLong", ret = @Ref(CubePos.class), args = {@Ref(long.class)}), sets = Set.class)
     public static CubePos testFoo(long l) {
         return null;
     }

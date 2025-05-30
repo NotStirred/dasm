@@ -13,18 +13,19 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
 /**
  * TODO
  */
-@Dasm(TestInplaceMethodTransformTest.Set.class)
+@Dasm(value = TestInplaceMethodTransformTest.Set.class, target = @Ref(InplaceMethodTransformTestInput.class))
 public class TestInplaceMethodTransformTest extends BaseMethodTest {
     public TestInplaceMethodTransformTest() {
         super(single(InplaceMethodTransformTestInput.class, InplaceMethodTransformTestOutput.class, TestInplaceMethodTransformTest.class));
     }
 
-    @TransformMethod(@MethodSig(name = "method1", args = { @Ref(Float.class) }, ret = @Ref(void.class)))
+    @TransformMethod(@MethodSig(name = "method1", args = {@Ref(Float.class)}, ret = @Ref(void.class)))
     public native void method1(String a);
 
     @RedirectSet
     interface Set {
         @TypeRedirect(from = @Ref(Float.class), to = @Ref(String.class))
-        class Float_to_String_redirects {}
+        class Float_to_String_redirects {
+        }
     }
 }

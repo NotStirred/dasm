@@ -15,7 +15,7 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
 /**
  * A trivial test for a static {@link AddMethodToSets}
  */
-@Dasm(TestAddToSets.Set.class)
+@Dasm(value = TestAddToSets.Set.class, target = @Ref(AddToSetsInput.class))
 public class TestAddToSets extends BaseMethodTest {
     public TestAddToSets() {
         super(single(AddToSetsInput.class, AddToSetsOutput.class, TestAddToSets.class));
@@ -27,10 +27,11 @@ public class TestAddToSets extends BaseMethodTest {
     @RedirectSet
     public interface Set {
         @TypeRedirect(from = @Ref(Object.class), to = @Ref(String.class))
-        abstract class A { }
+        abstract class A {
+        }
     }
 
-    @AddMethodToSets(owner = @Ref(CubePos.class), method = @MethodSig(name = "from", ret = @Ref(CubePos.class), args = { @Ref(long.class) }), sets = Set.class)
+    @AddMethodToSets(owner = @Ref(CubePos.class), method = @MethodSig(name = "from", ret = @Ref(CubePos.class), args = {@Ref(long.class)}), sets = Set.class)
     public static CubePos testFoo(long l) {
         return null;
     }
