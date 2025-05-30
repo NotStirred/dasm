@@ -157,7 +157,7 @@ public class RedirectSetImpl {
 
     private static void createInheritedRedirectsForTree(InnerClassParsedData parent, Node<InnerClassParsedData> data) {
         // FIXME: how should mappings owner interact with inheritance changing the owner?
-        //        is the current approach fine? eventually in the super hierarchy mappings owner will match owner and get transformed too.
+        //        is the current approach fine? the mappings owner never gets changed assuming it's a super type. feels weird but maybe correct.
         OwnerChanger ownerChanger = new OwnerChanger(
                 parent.srcType.getClassName(), data.value.srcType.getClassName(),
                 parent.dstType.getClassName(), data.value.dstType.getClassName()
