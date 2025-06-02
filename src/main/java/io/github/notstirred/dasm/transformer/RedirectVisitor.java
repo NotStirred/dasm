@@ -14,6 +14,7 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
 
 import static io.github.notstirred.dasm.transformer.TypeRemapper.SKIP_TYPE_REDIRECT_PREFIX;
 import static org.objectweb.asm.Opcodes.*;
@@ -88,6 +89,7 @@ public class RedirectVisitor extends MethodVisitor {
             for (int i = 0; i < bsmArgs.length; i++) {
                 Object bsmArg = bsmArgs[i];
                 if (bsmArg instanceof Handle) {
+                    // This is the actual lambda method that gets called, eg: lambda$method$0
                     Handle handle = (Handle) bsmArg;
                     String lambdaOrReferenceMethodOwner = handle.getOwner();
                     String lambdaOrReferenceMethodName = handle.getName();
@@ -95,16 +97,29 @@ public class RedirectVisitor extends MethodVisitor {
 
                     String key = lambdaOrReferenceMethodOwner + "." + lambdaOrReferenceMethodName + lambdaOrReferenceMethodDesc;
                     MethodRedirectImpl redirectedMethod = this.redirects.methodRedirects().get(key);
-                    if (redirectedMethod == null) {
+
+                    // This is the type that the lambda implicitly implements
+                    Type functionalInterfaceType = new Method(name, descriptor).getReturnType();
+                    String functionalInterfaceKey = functionalInterfaceType.getInternalName() + '.' + name + lambdaOrReferenceMethodDesc;
+                    // If the implicitly implemented interface is redirected we should also look for a method redirect for the implicit name of the lambda
+                    MethodRedirectImpl functionalInterfaceMethodRedirect = this.redirects.methodRedirects().get(functionalInterfaceKey);
+
+                    if (redirectedMethod == null && functionalInterfaceMethodRedirect == null) {
                         break; // done, no redirect
                     }
-                    Handle newHandle = new Handle(handle.getTag(), SKIP_TYPE_REDIRECT_PREFIX + redirectedMethod.dstOwner().getInternalName(),
-                            redirectedMethod.dstName(),
-                            lambdaOrReferenceMethodDesc, redirectedMethod.isDstOwnerInterface()
-                    );
+
                     Object[] newBsmArgs = bsmArgs.clone();
-                    newBsmArgs[i] = newHandle;
-                    super.visitInvokeDynamicInsn(name, descriptor, bsm, newBsmArgs);
+                    if (redirectedMethod != null) {
+                        Handle newHandle = new Handle(handle.getTag(), SKIP_TYPE_REDIRECT_PREFIX + redirectedMethod.dstOwner().getInternalName(),
+                                redirectedMethod.dstName(),
+                                lambdaOrReferenceMethodDesc, redirectedMethod.isDstOwnerInterface()
+                        );
+                        newBsmArgs[i] = newHandle;
+                    }
+
+                    String redirectedFunctionalInterfaceMethodName = functionalInterfaceMethodRedirect == null ? name : functionalInterfaceMethodRedirect.dstName();
+
+                    super.visitInvokeDynamicInsn(redirectedFunctionalInterfaceMethodName, descriptor, bsm, newBsmArgs);
                     return; // done, redirected
                 }
             }

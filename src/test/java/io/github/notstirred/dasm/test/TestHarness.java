@@ -4,6 +4,8 @@ import io.github.notstirred.dasm.annotation.AnnotationParser;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
 import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.test.targets.*;
+import io.github.notstirred.dasm.test.targets.inherited_transforms.Bar;
+import io.github.notstirred.dasm.test.targets.inherited_transforms.Foo;
 import io.github.notstirred.dasm.test.utils.ByteArrayClassLoader;
 import io.github.notstirred.dasm.transformer.Transformer;
 import io.github.notstirred.dasm.transformer.data.ClassTransform;
@@ -383,5 +385,7 @@ public class TestHarness {
         DUMMY_VALUES.put(A.class, new A());
         DUMMY_VALUES.put(B.class, new B());
         DUMMY_VALUES.put(C.class, new C());
+        DUMMY_VALUES.put(Bar.class, new Bar());
+        DUMMY_VALUES.put(Foo.class, new Foo());
     }
 }
