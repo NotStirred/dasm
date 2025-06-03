@@ -1,5 +1,6 @@
 package io.github.notstirred.dasm.test;
 
+import com.google.common.collect.Lists;
 import io.github.notstirred.dasm.annotation.AnnotationParser;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
 import io.github.notstirred.dasm.exception.DasmException;
@@ -47,9 +48,7 @@ public class TestHarness {
         AnnotationParser annotationParser = new AnnotationParser(classProvider);
 
         try {
-            annotationParser.findRedirectSets(dasm);
-            annotationParser.findRedirectSets(actual);
-            //dasm.name = actual.name;
+            annotationParser.parseDasmClassNodes(Lists.newArrayList(dasm, actual));
             Collection<MethodTransform> methodTransforms = annotationParser.buildMethodTargets(dasm, "").get();
 
             transformer.transform(actual, methodTransforms);
@@ -90,8 +89,7 @@ public class TestHarness {
         AnnotationParser annotationParser = new AnnotationParser(classProvider);
 
         try {
-            annotationParser.findRedirectSets(dasm);
-            annotationParser.findRedirectSets(actual);
+            annotationParser.parseDasmClassNodes(Lists.newArrayList(dasm, actual));
             dasm.name = actual.name;
             ClassTransform methodTransforms = annotationParser.buildClassTarget(dasm).get();
 
@@ -119,15 +117,15 @@ public class TestHarness {
     public static Optional<Collection<MethodTransform>> getRedirectsFor(Class<?> dasmClass, Class<?>... extraDasmClasses) throws DasmException {
         CachingClassProvider classProvider = new CachingClassProvider(TestHarness::getBytesForClassName);
         AnnotationParser annotationParser = new AnnotationParser(classProvider);
-
         ClassNode dasm = classNodeFromClass(dasmClass);
-        annotationParser.findRedirectSets(dasm);
 
+        List<ClassNode> dasmClasses = new ArrayList<>();
+        dasmClasses.add(dasm);
         for (Class<?> clazz : extraDasmClasses) {
-            ClassNode extraDasm = classNodeFromClass(clazz);
-            annotationParser.findRedirectSets(extraDasm);
+            dasmClasses.add(classNodeFromClass(clazz));
         }
 
+        annotationParser.parseDasmClassNodes(dasmClasses);
         return annotationParser.buildMethodTargets(dasm, "");
     }
 

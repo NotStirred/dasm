@@ -47,7 +47,22 @@ public class AnnotationParser {
         this.provider = provider;
     }
 
-    public void findRedirectSets(ClassNode targetClass) throws DasmException {
+    public void parseDasmClasses(Collection<Class<?>> dasmClasses) throws DasmException {
+        List<ClassNode> collect = new ArrayList<>();
+        for (Class<?> clazz : dasmClasses) {
+            ClassNode classNode = provider.classNode(Type.getType(clazz));
+            collect.add(classNode);
+        }
+        parseDasmClassNodes(collect);
+    }
+
+    public void parseDasmClassNodes(Collection<ClassNode> dasmClasses) throws DasmException {
+        for (ClassNode dasmClass : dasmClasses) {
+            findRedirectSets(dasmClass);
+        }
+    }
+
+    private void findRedirectSets(ClassNode targetClass) throws DasmException {
         Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         boolean isTargetInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
 
