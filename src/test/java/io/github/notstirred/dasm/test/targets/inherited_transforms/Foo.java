@@ -5,6 +5,7 @@ import io.github.notstirred.dasm.test.targets.functional_interface.IFoo;
 public class Foo implements IFoo {
     public int fooField;
     public int fooField2;
+    public int fooField3;
 
     public void foo() {
     }
@@ -14,5 +15,8 @@ public class Foo implements IFoo {
 
     @Override
     public void foo(Foo foo) {
+    }
+
+    public void fooRedirected() {
     }
 }
