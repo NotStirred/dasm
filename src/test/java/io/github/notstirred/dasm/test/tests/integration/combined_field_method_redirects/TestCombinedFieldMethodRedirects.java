@@ -50,7 +50,7 @@ public class TestCombinedFieldMethodRedirects extends BaseMethodTest {
         }
     }
 
-    @AddMethodToSets(containers = Set.A.class, owner = @Ref(CubePos.class), method = @MethodSig(name = "fromLong", ret = @Ref(CubePos.class), args = {@Ref(long.class)}))
+    @AddMethodToSets(containers = Set.A.class, method = @MethodSig(name = "fromLong", ret = @Ref(CubePos.class), args = {@Ref(long.class)}))
     public static CubePos testFoo(long l) {
         return null;
     }

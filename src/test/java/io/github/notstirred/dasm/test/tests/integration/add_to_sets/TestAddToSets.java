@@ -4,6 +4,7 @@ import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddFieldToSets;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddMethodToSets;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
+import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
 import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
 import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
@@ -31,12 +32,16 @@ public class TestAddToSets extends BaseMethodTest {
         @TypeRedirect(from = @Ref(Object.class), to = @Ref(String.class))
         abstract class A {
         }
+
+        @InterOwnerContainer(from = @Ref(CubePos.class), to = @Ref(TestAddToSets.class))
+        abstract class CubePos_to_TestAddToSets_redirects {
+        }
     }
 
-    @AddFieldToSets(containers = Set.A.class, owner = @Ref(CubePos.class), field = @FieldSig(type = @Ref(int.class), name = "MASK"))
+    @AddFieldToSets(containers = Set.CubePos_to_TestAddToSets_redirects.class, field = @FieldSig(type = @Ref(int.class), name = "MASK"))
     public static int TEST_MASK = 123;
 
-    @AddMethodToSets(containers = Set.A.class, owner = @Ref(CubePos.class), method = @MethodSig(name = "from", ret = @Ref(CubePos.class), args = {@Ref(long.class)}))
+    @AddMethodToSets(containers = Set.CubePos_to_TestAddToSets_redirects.class, method = @MethodSig(name = "from", ret = @Ref(CubePos.class), args = {@Ref(long.class)}))
     public static CubePos testFoo(long l) {
         return null;
     }

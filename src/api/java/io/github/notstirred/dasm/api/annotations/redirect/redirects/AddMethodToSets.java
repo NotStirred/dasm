@@ -26,7 +26,6 @@ import java.lang.annotation.Target;
  * public class Foo {
  *     @AddMethodToSets(
  *         containers = Bar_to_Foo_redirects
- *         owner = @Ref(Bar.class)
  *         method = @MethodSig(name = "getBarX", ret = int.class, args = { }),
  *     )
  *     private int getX();
@@ -41,14 +40,6 @@ public @interface AddMethodToSets {
      * <p>Valid container classes are {@link TypeRedirect}, {@link InterOwnerContainer}, {@link IntraOwnerContainer}</p>
      */
     Class<?>[] containers();
-
-
-    /**
-     * The class that has the method to replace as a member method.
-     * <br/><br/>
-     * For example: {@link String#hashCode()}, {@link String} is the owner.
-     */
-    Ref owner();
 
     /**
      * The method to replace

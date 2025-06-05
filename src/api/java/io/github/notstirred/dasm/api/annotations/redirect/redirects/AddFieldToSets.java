@@ -26,7 +26,6 @@ import java.lang.annotation.Target;
  * public class Foo {
  *     @AddFieldToSets(
  *         containers = Bar_to_Foo_redirects.class,
- *         owner = @Ref(Bar.class)
  *         field = @FieldSig(type = int.class, name = "barX"),
  *     )
  *     private final int x;
@@ -41,13 +40,6 @@ public @interface AddFieldToSets {
      * <p>Valid container classes are {@link TypeRedirect}, {@link InterOwnerContainer}, {@link IntraOwnerContainer}</p>
      */
     Class<?>[] containers();
-
-    /**
-     * The class that has the field to replace as a member field.
-     * <br/><br/>
-     * For example: {@link String}'s hash field, {@link String} is the owner.
-     */
-    Ref owner();
 
     /**
      * The field to replace

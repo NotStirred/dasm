@@ -3,10 +3,8 @@ package io.github.notstirred.dasm.annotation.parse.addtosets;
 import io.github.notstirred.dasm.annotation.AnnotationUtil;
 import io.github.notstirred.dasm.annotation.parse.MethodSigImpl;
 import io.github.notstirred.dasm.annotation.parse.RefImpl;
-import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddMethodToSets;
-import io.github.notstirred.dasm.data.ClassMethod;
-import io.github.notstirred.dasm.util.Pair;
+import lombok.Data;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -17,11 +15,22 @@ import java.util.Map;
 import java.util.Optional;
 
 import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseOptionalRefAnnotation;
-import static io.github.notstirred.dasm.annotation.parse.RefImpl.parseRefAnnotation;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
+@Data
 public class AddMethodToSetsImpl {
-    public static Optional<Pair<List<Type>, MethodRedirectImpl>> parse(Type dstOwner, boolean isDstInterface, MethodNode methodNode)
+    private final List<Type> containers;
+
+    private final Method srcMethod;
+    private final Optional<Type> mappingsOwner;
+
+    private final Type dstOwner;
+    private final String dstMethodName;
+    private final boolean isDstInterface;
+
+    private final boolean isStatic;
+
+    public static Optional<AddMethodToSetsImpl> parse(Type dstOwner, boolean isDstInterface, MethodNode methodNode)
             throws RefImpl.RefAnnotationGivenNoArguments, MethodSigImpl.InvalidMethodSignature, MethodSigImpl.EmptySrcName {
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(methodNode.invisibleAnnotations, AddMethodToSets.class);
         if (annotation == null) {
@@ -30,20 +39,14 @@ public class AddMethodToSetsImpl {
 
         Map<String, Object> values = AnnotationUtil.getAnnotationValues(annotation, AddMethodToSets.class);
 
-        Type methodOwner = parseRefAnnotation("owner", values);
-
         Method srcMethod = MethodSigImpl.parse((AnnotationNode) values.get("method"));
 
-        Type mappingsOwner = parseOptionalRefAnnotation((AnnotationNode) values.get("mappingsOwner")).orElse(methodOwner);
+        Optional<Type> mappingsOwner = parseOptionalRefAnnotation((AnnotationNode) values.get("mappingsOwner"));
 
-        List<Type> sets = (List<Type>) values.get("containers");
+        List<Type> containers = (List<Type>) values.get("containers");
 
-        return Optional.of(new Pair<>(sets, new MethodRedirectImpl(
-                new ClassMethod(methodOwner, mappingsOwner, srcMethod),
-                dstOwner,
-                methodNode.name,
-                (methodNode.access & ACC_STATIC) != 0,
-                isDstInterface
-        )));
+        boolean isStatic = (methodNode.access & ACC_STATIC) != 0;
+
+        return Optional.of(new AddMethodToSetsImpl(containers, srcMethod, mappingsOwner, dstOwner, methodNode.name, isDstInterface, isStatic));
     }
 }

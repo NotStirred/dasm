@@ -5,6 +5,8 @@ import io.github.notstirred.dasm.annotation.parse.RedirectSetImpl;
 import io.github.notstirred.dasm.annotation.parse.RefImpl;
 import io.github.notstirred.dasm.annotation.parse.addtosets.AddFieldToSetsImpl;
 import io.github.notstirred.dasm.annotation.parse.addtosets.AddMethodToSetsImpl;
+import io.github.notstirred.dasm.annotation.parse.redirects.FieldRedirectImpl;
+import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddFieldToSets;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddMethodToSets;
@@ -12,6 +14,8 @@ import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddTransform
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromClass;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
+import io.github.notstirred.dasm.data.ClassField;
+import io.github.notstirred.dasm.data.ClassMethod;
 import io.github.notstirred.dasm.data.DasmContext;
 import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
@@ -83,9 +87,17 @@ public class AnnotationParser {
             findOuterRedirectSetsForAnnotation(fieldNode.invisibleAnnotations, AddFieldToSets.class, "containers", fieldExceptions);
 
             try {
-                AddFieldToSetsImpl.parse(targetClassType, fieldNode).ifPresent(containersRedirectPair -> {
+                AddFieldToSetsImpl.parse(targetClassType, fieldNode).ifPresent(addToSets -> {
                     // All containers for this method must already exist, so we can just use the map
-                    containersRedirectPair.first().forEach(containerType -> this.containers.get(containerType).fieldRedirects().add(containersRedirectPair.second()));
+                    addToSets.containers().forEach(containerType -> {
+                        RedirectSetImpl.Container container = this.containers.get(containerType);
+                        FieldRedirectImpl fieldRedirect = new FieldRedirectImpl(
+                                new ClassField(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcField().type(), addToSets.srcField().name()),
+                                addToSets.dstOwner(),
+                                addToSets.dstMethodName()
+                        );
+                        container.fieldRedirects().add(fieldRedirect);
+                    });
                 });
             } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
                      MethodSigImpl.EmptySrcName e) {
@@ -100,9 +112,19 @@ public class AnnotationParser {
             findOuterRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddMethodToSets.class, "containers", methodExceptions);
 
             try {
-                AddMethodToSetsImpl.parse(targetClassType, isTargetInterface, methodNode).ifPresent(containersRedirectPair -> {
+                AddMethodToSetsImpl.parse(targetClassType, isTargetInterface, methodNode).ifPresent(addToSets -> {
                     // All containers for this method must already exist, so we can just use the map
-                    containersRedirectPair.first().forEach(container -> this.containers.get(container).methodRedirects().add(containersRedirectPair.second()));
+                    addToSets.containers().forEach(containerType -> {
+                        RedirectSetImpl.Container container = this.containers.get(containerType);
+                        MethodRedirectImpl methodRedirect = new MethodRedirectImpl(
+                                new ClassMethod(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcMethod()),
+                                addToSets.dstOwner(),
+                                addToSets.dstMethodName(),
+                                addToSets.isStatic(),
+                                addToSets.isDstInterface()
+                        );
+                        container.methodRedirects().add(methodRedirect);
+                    });
                 });
             } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
                      MethodSigImpl.EmptySrcName e) {
