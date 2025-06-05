@@ -9,6 +9,8 @@ import lombok.Setter;
 @Data
 @Setter(AccessLevel.PRIVATE)
 public class CubePos implements CubePosInterface {
+    public static int MASK = 0;
+
     public int x;
     public int y;
     public int z;

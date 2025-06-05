@@ -1,9 +1,11 @@
 package io.github.notstirred.dasm.test.tests.integration.add_to_sets;
 
 import io.github.notstirred.dasm.api.annotations.Dasm;
+import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddFieldToSets;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddMethodToSets;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
+import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
 import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
@@ -30,6 +32,9 @@ public class TestAddToSets extends BaseMethodTest {
         abstract class A {
         }
     }
+
+    @AddFieldToSets(containers = Set.A.class, owner = @Ref(CubePos.class), field = @FieldSig(type = @Ref(int.class), name = "MASK"))
+    public static int TEST_MASK = 123;
 
     @AddMethodToSets(containers = Set.A.class, owner = @Ref(CubePos.class), method = @MethodSig(name = "from", ret = @Ref(CubePos.class), args = {@Ref(long.class)}))
     public static CubePos testFoo(long l) {
