@@ -1,6 +1,8 @@
 package io.github.notstirred.dasm.test.targets.inherited_transforms;
 
-public class Bar {
+import io.github.notstirred.dasm.test.targets.functional_interface.IBar;
+
+public class Bar implements IBar {
     public static Bar instance;
 
     public int barField;
@@ -18,5 +20,9 @@ public class Bar {
 
     public int getBarField2() {
         return barField2;
+    }
+
+    @Override
+    public void bar(Bar bar) {
     }
 }

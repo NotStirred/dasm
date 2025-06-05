@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.lang.reflect.AccessFlag;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -63,8 +64,12 @@ public class TestHarness {
 
         try {
             Path path = Path.of(".dasm.out/method_transforms/" + reparsedClassNode.name.replace('.', '/') + ".class").toAbsolutePath();
-            Files.createDirectories(path.getParent());
-            Files.write(path, bytecode);
+            Path actualPath = path.getParent().resolve("ACTUAL").resolve(path.getFileName());
+            createDirectoriesIfNotExists(actualPath.getParent());
+            Files.write(actualPath, bytecode);
+            Path expectedPath = path.getParent().resolve("EXPECTED").resolve(expectedClass.getSimpleName() + ".class");
+            createDirectoriesIfNotExists(expectedPath.getParent());
+            Files.write(expectedPath, classNodeToBytes(expected));
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -105,14 +110,26 @@ public class TestHarness {
 
         try {
             Path path = Path.of(".dasm.out/class_transforms/" + reparsedClassNode.name.replace('.', '/') + ".class").toAbsolutePath();
-            Files.createDirectories(path.getParent());
-            Files.write(path, bytecode);
+            Path actualPath = path.getParent().resolve("ACTUAL").resolve(path.getFileName());
+            createDirectoriesIfNotExists(actualPath.getParent());
+            Files.write(actualPath, bytecode);
+            Path expectedPath = path.getParent().resolve("EXPECTED").resolve(expectedClass.getSimpleName());
+            createDirectoriesIfNotExists(expectedPath.getParent());
+            Files.write(expectedPath, classNodeToBytes(expected));
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
 
         assertClassNodesEqual(reparsedClassNode, expected);
         callAllMethodsWithDummies(actualClass, expectedClass, reparsedClassNode);
+    }
+
+    private static void createDirectoriesIfNotExists(Path path) throws IOException {
+        try {
+            Files.createDirectories(path);
+        } catch (FileAlreadyExistsException e) {
+            // ignored
+        }
     }
 
     public static Optional<Collection<MethodTransform>> getRedirectsFor(Class<?> dasmClass, Class<?>... extraDasmClasses) throws DasmException {

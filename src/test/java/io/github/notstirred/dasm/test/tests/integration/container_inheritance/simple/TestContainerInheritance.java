@@ -1,4 +1,4 @@
-package io.github.notstirred.dasm.test.tests.integration.inherited_transforms.simple;
+package io.github.notstirred.dasm.test.tests.integration.container_inheritance.simple;
 
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.*;
@@ -19,10 +19,10 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
 /**
  * //TODO
  */
-@Dasm(value = TestInheritedTransforms.Set.class, target = @Ref(InheritedTransformsInput.class))
-public class TestInheritedTransforms extends BaseMethodTest {
-    public TestInheritedTransforms() {
-        super(single(InheritedTransformsInput.class, InheritedTransformsOutput.class, TestInheritedTransforms.class));
+@Dasm(value = TestContainerInheritance.Set.class, target = @Ref(ContainerInheritanceInput.class))
+public class TestContainerInheritance extends BaseMethodTest {
+    public TestContainerInheritance() {
+        super(single(ContainerInheritanceInput.class, ContainerInheritanceOutput.class, TestContainerInheritance.class));
     }
 
     @TransformFromMethod(value = @MethodSig("method1()V"))
@@ -56,6 +56,8 @@ public class TestInheritedTransforms extends BaseMethodTest {
 
         @TypeRedirect(from = @Ref(FooBaz.class), to = @Ref(BarBaz.class))
         abstract class FooBaz_to_BarBaz_redirects extends Foo_to_Bar_redirects {
+            @MethodRedirect(@MethodSig(name = "foobaz", ret = @Ref(void.class)))
+            public native void barbaz();
         }
     }
 }
