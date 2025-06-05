@@ -41,7 +41,9 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
 @Target(METHOD)
 @Retention(CLASS)
 public @interface MethodRedirect {
-    /** The method to replace */
+    /**
+     * The method to replace
+     */
     MethodSig value();
 
     /**

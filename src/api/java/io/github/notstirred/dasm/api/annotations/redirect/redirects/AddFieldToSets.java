@@ -18,8 +18,7 @@ import java.lang.annotation.Target;
  * definition inside the containers.
  * <br/><br/>
  * <h2>Important notes:</h2>
- * Changing the type of a field is only valid with a corresponding {@link TypeRedirect} from the old->new type.
- * <br/><br/>
+ * See {@link FieldRedirect}'s important notes for more information.
  * <h2>Example:</h2>
  * This adds a {@link FieldRedirect} from {@code barX} -> {@code x} to {@code Bar_to_Foo_redirects} which is a {@link TypeRedirect}
  * <pre>{@code

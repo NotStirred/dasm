@@ -30,7 +30,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.CLASS)
 public @interface FieldRedirect {
-    /** The field to replace */
+    /**
+     * The field to replace
+     */
     FieldSig value();
 
     /**

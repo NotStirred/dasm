@@ -18,11 +18,7 @@ import java.lang.annotation.Target;
  * definition inside a containers.
  * <br/><br/>
  * <h2>Important notes:</h2>
- * Changing the signature of a method is only valid with corresponding {@link TypeRedirect}s from the old->new types.
- * <br/><br/>
- * Changing the owner of a <b><u>non-static</u></b> method is only valid with a corresponding {@link TypeRedirect}.<br/>
- * In almost all cases with {@link AddMethodToSets} this means having a {@link TypeRedirect} from the {@link AddMethodToSets#owner} to the owner of the annotated method.
- * <br/><br/>
+ * See {@link MethodRedirect}'s important notes for more information.
  * <h2>Example:</h2>
  * This adds a {@link MethodRedirect} from {@code Bar.getBarX()} -> {@code Foo.getX()} to {@code Bar_to_Foo_redirects} which is a {@link TypeRedirect}
  * <pre>{@code

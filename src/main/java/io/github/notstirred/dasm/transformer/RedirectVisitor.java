@@ -27,10 +27,11 @@ public class RedirectVisitor extends MethodVisitor {
         this.redirects = new BuiltRedirects(redirects, mappingsProvider);
     }
 
-    @SneakyThrows({ FieldToMethodPutFieldWithoutSetterMethod.class, FieldRedirectingToFieldAndMethod.class,
+    @SneakyThrows({FieldToMethodPutFieldWithoutSetterMethod.class, FieldRedirectingToFieldAndMethod.class,
             RedirectChangesOwnerWithIncompatibleTypeRedirect.class, RedirectChangesOwnerWithoutTypeRedirect.class,
-            FieldToMethodRedirectInvalidStaticity.class })
-    @Override public void visitFieldInsn(int opcode, String currentOwner, String name, String descriptor) {
+            FieldToMethodRedirectInvalidStaticity.class})
+    @Override
+    public void visitFieldInsn(int opcode, String currentOwner, String name, String descriptor) {
         String key = currentOwner + "." + name;
         FieldRedirectImpl fieldRedirect = this.redirects.fieldRedirects().get(key);
         FieldToMethodRedirectImpl fieldToMethodRedirect = this.redirects.fieldToMethodRedirects().get(key);
@@ -49,9 +50,10 @@ public class RedirectVisitor extends MethodVisitor {
         doFieldRedirect(opcode, currentOwner, descriptor, fieldRedirect);
     }
 
-    @SneakyThrows({ MethodRedirectingToMethodAndFactory.class, RedirectChangesOwnerWithoutTypeRedirect.class,
-            RedirectChangesOwnerWithIncompatibleTypeRedirect.class })
-    @Override public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+    @SneakyThrows({MethodRedirectingToMethodAndFactory.class, RedirectChangesOwnerWithoutTypeRedirect.class,
+            RedirectChangesOwnerWithIncompatibleTypeRedirect.class})
+    @Override
+    public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
         String key = owner + "." + name + descriptor;
         MethodRedirectImpl methodRedirect = this.redirects.methodRedirects().get(key);
         ConstructorToFactoryRedirectImpl constructorToFactoryRedirect = this.redirects.constructorToFactoryRedirects().get(key);
