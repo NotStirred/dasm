@@ -36,7 +36,7 @@ public class AddFieldToSetsImpl {
 
         Type mappingsOwner = parseOptionalRefAnnotation((AnnotationNode) values.get("mappingsOwner")).orElse(methodOwner);
 
-        List<Type> sets = (List<Type>) values.get("sets");
+        List<Type> sets = (List<Type>) values.get("containers");
 
         return Optional.of(new Pair<>(sets, new FieldRedirectImpl(
                 new ClassField(methodOwner, mappingsOwner, srcField.type(), srcField.name()),

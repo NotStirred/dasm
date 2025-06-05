@@ -11,17 +11,19 @@ import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
 import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
+import io.github.notstirred.dasm.api.provider.MappingsProvider;
 import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.test.TestHarness;
 import io.github.notstirred.dasm.test.targets.inherited_transforms.Bar;
 import io.github.notstirred.dasm.test.targets.inherited_transforms.BarBaz;
 import io.github.notstirred.dasm.test.targets.inherited_transforms.Foo;
 import io.github.notstirred.dasm.test.targets.inherited_transforms.FooBaz;
+import io.github.notstirred.dasm.transformer.data.TransformRedirects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.objectweb.asm.Type;
 
-import java.util.Set;
+import java.util.Collection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,7 +34,8 @@ public class TestUnitInheritedTransforms {
     @Test
     public void testInheritedTransformsArePresent() throws DasmException {
         var redirects = TestHarness.getRedirectsFor(TestUnitInheritedTransforms.class);
-        Set<MethodRedirectImpl> methodRedirects = redirects.get().stream().findFirst().get().redirectSets().get(0).methodRedirects();
+        TransformRedirects transformRedirects = new TransformRedirects(redirects.get().stream().findFirst().get().redirectSets(), MappingsProvider.IDENTITY);
+        Collection<MethodRedirectImpl> methodRedirects = transformRedirects.methodRedirects().values();
         assertEquals(2, methodRedirects.size(), "Missing inherited method redirects");
         assertTrue(methodRedirects.stream().anyMatch(redirect ->
                 redirect.srcMethod().owner().equals(Type.getType(Foo.class))
@@ -47,7 +50,7 @@ public class TestUnitInheritedTransforms {
                         && !redirect.isStatic()
                         && !redirect.isDstOwnerInterface()));
 
-        Set<FieldRedirectImpl> fieldRedirects = redirects.get().stream().findFirst().get().redirectSets().get(0).fieldRedirects();
+        Collection<FieldRedirectImpl> fieldRedirects = transformRedirects.fieldRedirects().values();
         assertEquals(2, fieldRedirects.size(), "Missing inherited field redirects");
         assertTrue(fieldRedirects.stream().anyMatch(redirect ->
                 redirect.srcField().owner().equals(Type.getType(Foo.class))

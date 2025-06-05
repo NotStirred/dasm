@@ -36,7 +36,7 @@ public class AddMethodToSetsImpl {
 
         Type mappingsOwner = parseOptionalRefAnnotation((AnnotationNode) values.get("mappingsOwner")).orElse(methodOwner);
 
-        List<Type> sets = (List<Type>) values.get("sets");
+        List<Type> sets = (List<Type>) values.get("containers");
 
         return Optional.of(new Pair<>(sets, new MethodRedirectImpl(
                 new ClassMethod(methodOwner, mappingsOwner, srcMethod),

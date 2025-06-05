@@ -3,6 +3,7 @@ package io.github.notstirred.dasm.test;
 import com.google.common.collect.Lists;
 import io.github.notstirred.dasm.annotation.AnnotationParser;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
+import io.github.notstirred.dasm.data.DasmContext;
 import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.test.targets.*;
 import io.github.notstirred.dasm.test.targets.inherited_transforms.Bar;
@@ -48,8 +49,8 @@ public class TestHarness {
         AnnotationParser annotationParser = new AnnotationParser(classProvider);
 
         try {
-            annotationParser.parseDasmClassNodes(Lists.newArrayList(dasm, actual));
-            Collection<MethodTransform> methodTransforms = annotationParser.buildMethodTargets(dasm, "").get();
+            Collection<MethodTransform> methodTransforms = annotationParser.parseDasmClassNodes(Lists.newArrayList(dasm, actual))
+                    .buildMethodTargets(dasm, "").get();
 
             transformer.transform(actual, methodTransforms);
         } catch (DasmException e) {
@@ -89,9 +90,9 @@ public class TestHarness {
         AnnotationParser annotationParser = new AnnotationParser(classProvider);
 
         try {
-            annotationParser.parseDasmClassNodes(Lists.newArrayList(dasm, actual));
+            DasmContext context = annotationParser.parseDasmClassNodes(Lists.newArrayList(dasm, actual));
             dasm.name = actual.name;
-            ClassTransform methodTransforms = annotationParser.buildClassTarget(dasm).get();
+            ClassTransform methodTransforms = context.buildClassTarget(dasm).get();
 
             transformer.transform(actual, methodTransforms);
         } catch (DasmException e) {
@@ -125,8 +126,7 @@ public class TestHarness {
             dasmClasses.add(classNodeFromClass(clazz));
         }
 
-        annotationParser.parseDasmClassNodes(dasmClasses);
-        return annotationParser.buildMethodTargets(dasm, "");
+        return annotationParser.parseDasmClassNodes(dasmClasses).buildMethodTargets(dasm, "");
     }
 
     private static byte[] classNodeToBytes(ClassNode actual) {

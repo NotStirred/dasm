@@ -1,7 +1,8 @@
 package io.github.notstirred.dasm.api.annotations.redirect.redirects;
 
 import io.github.notstirred.dasm.api.annotations.Dasm;
-import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
+import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
+import io.github.notstirred.dasm.api.annotations.redirect.sets.IntraOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 
@@ -13,7 +14,8 @@ import java.lang.annotation.Target;
 /**
  * May be added to a method within a {@link Dasm} class.
  * <br/><br/>
- * Add a {@link MethodRedirect} to multiple {@link RedirectSet}s inline at method definition, rather than duplicating the method definition inside a {@link RedirectSet}.
+ * Add a {@link MethodRedirect} to multiple containers inline at method definition, rather than duplicating the method
+ * definition inside a containers.
  * <br/><br/>
  * <h2>Important notes:</h2>
  * Changing the signature of a method is only valid with corresponding {@link TypeRedirect}s from the old->new types.
@@ -22,14 +24,14 @@ import java.lang.annotation.Target;
  * In almost all cases with {@link AddMethodToSets} this means having a {@link TypeRedirect} from the {@link AddMethodToSets#owner} to the owner of the annotated method.
  * <br/><br/>
  * <h2>Example:</h2>
- * This redirects {@code Bar.getBarX()} -> {@code Foo.getX()}. Due to the owner change a {@link TypeRedirect} from {@code Bar} to {@code Foo} is <b><u>required</u></b>.
+ * This adds a {@link MethodRedirect} from {@code Bar.getBarX()} -> {@code Foo.getX()} to {@code Bar_to_Foo_redirects} which is a {@link TypeRedirect}
  * <pre>{@code
  * @Dasm
  * public class Foo {
  *     @AddMethodToSets(
- *         owner = @Ref(Bar.class),
+ *         containers = Bar_to_Foo_redirects
+ *         owner = @Ref(Bar.class)
  *         method = @MethodSig(name = "getBarX", ret = int.class, args = { }),
- *         sets = SomeSet.class
  *     )
  *     private int getX();
  * }
@@ -39,11 +41,23 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 public @interface AddMethodToSets {
     /**
+     * The containers to add the {@link MethodRedirect} to.
+     * <p>Valid container classes are {@link TypeRedirect}, {@link InterOwnerContainer}, {@link IntraOwnerContainer}</p>
+     */
+    Class<?>[] containers();
+
+
+    /**
      * The class that has the method to replace as a member method.
      * <br/><br/>
      * For example: {@link String#hashCode()}, {@link String} is the owner.
      */
     Ref owner();
+
+    /**
+     * The method to replace
+     */
+    MethodSig method();
 
     /**
      * The source method's mapping owner.
@@ -52,10 +66,4 @@ public @interface AddMethodToSets {
      * Allows specifying the class which owns the method in the mappings
      */
     Ref mappingsOwner() default @Ref;
-
-    /** The method to replace */
-    MethodSig method();
-
-    /** The {@link RedirectSet}s to add the {@link MethodRedirect} to. */
-    Class<?>[] sets();
 }

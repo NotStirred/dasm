@@ -3,9 +3,6 @@ package io.github.notstirred.dasm.annotation.parse;
 import io.github.notstirred.dasm.annotation.parse.redirects.*;
 import io.github.notstirred.dasm.annotation.parse.redirects.FieldRedirectImpl.FieldMissingFieldRedirectAnnotationException;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.provider.MappingsProvider;
-import io.github.notstirred.dasm.data.ClassField;
-import io.github.notstirred.dasm.data.ClassMethod;
 import io.github.notstirred.dasm.exception.DasmAnnotationException;
 import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
@@ -14,14 +11,15 @@ import io.github.notstirred.dasm.exception.wrapped.DasmExceptionData;
 import io.github.notstirred.dasm.exception.wrapped.DasmFieldExceptions;
 import io.github.notstirred.dasm.exception.wrapped.DasmMethodExceptions;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
-import io.github.notstirred.dasm.util.TypeUtil;
+import io.github.notstirred.dasm.util.Pair;
+import lombok.Data;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationIfPresent;
 import static io.github.notstirred.dasm.util.TypeUtil.simpleClassNameOf;
@@ -29,31 +27,39 @@ import static io.github.notstirred.dasm.util.Util.atLeastTwoOf;
 import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
-@Getter
+@Data
 public class RedirectSetImpl {
     private final List<Type> superRedirectSets;
 
-    private final Set<FieldToMethodRedirectImpl> fieldToMethodRedirects;
-    private final Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects;
-    private final Set<FieldRedirectImpl> fieldRedirects;
-    private final Set<MethodRedirectImpl> methodRedirects;
-    private final Set<TypeRedirectImpl> typeRedirects;
+    private final List<Container> containers;
 
-    public RedirectSetImpl(List<Type> superRedirectSets, Set<FieldToMethodRedirectImpl> fieldToMethodRedirects,
-                           Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects, Set<FieldRedirectImpl> fieldRedirects,
-                           Set<MethodRedirectImpl> methodRedirects, Set<TypeRedirectImpl> typeRedirects) {
-        this.superRedirectSets = superRedirectSets;
-        this.fieldToMethodRedirects = fieldToMethodRedirects;
-        this.constructorToFactoryRedirects = constructorToFactoryRedirects;
-        this.fieldRedirects = fieldRedirects;
-        this.methodRedirects = methodRedirects;
-        this.typeRedirects = typeRedirects;
+    @Getter
+    public static class Container {
+        private Type type;
+        private Type srcType;
+        private Type dstType;
+
+        private @Nullable Container superContainer;
+        private Kind kind;
+
+        private final Set<FieldToMethodRedirectImpl> fieldToMethodRedirects = new HashSet<>();
+        private final Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects = new HashSet<>();
+        private final Set<FieldRedirectImpl> fieldRedirects = new HashSet<>();
+        private final Set<MethodRedirectImpl> methodRedirects = new HashSet<>();
+
+        private final Set<TypeRedirectImpl> typeRedirects = new HashSet<>();
+    }
+
+    public enum Kind {
+        TYPE_REDIRECT,
+        INTER_OWNER_CONTAINER,
+        INTRA_OWNER_CONTAINER
     }
 
     public static Optional<RedirectSetImpl> parse(ClassNode redirectSetClassNode, ClassNodeProvider provider, DasmExceptionData exceptions) {
         List<Type> superRedirectSets = new ArrayList<>();
 
-        DasmClassExceptions redirectSetExceptions = new DasmClassExceptions("An exception occurred when parsing redirect set", redirectSetClassNode);
+        DasmClassExceptions redirectSetExceptions = exceptions.addNested(new DasmClassExceptions("An exception occurred when parsing redirect set", redirectSetClassNode));
 
         AnnotationNode annotationNode = getAnnotationIfPresent(redirectSetClassNode.invisibleAnnotations, RedirectSet.class);
         if (annotationNode == null) {
@@ -69,7 +75,7 @@ public class RedirectSetImpl {
             superRedirectSets.add(Type.getObjectType(itf));
         }
 
-        Map<String, InnerClassParsedData> innerClassData = new HashMap<>();
+        Map<Type, Pair<String, Container>> innerClassData = new HashMap<>();
 
         // Discover type/field/method redirects in innerClass
         for (InnerClassNode innerClass : redirectSetClassNode.innerClasses) {
@@ -90,123 +96,33 @@ public class RedirectSetImpl {
             DasmClassExceptions innerClassExceptions = redirectSetExceptions.addNested(new DasmClassExceptions(
                     "An exception occurred when parsing inner class of redirect set", innerClassNode));
 
-            parseInnerClass(innerClassNode, innerClassExceptions).ifPresent(data -> innerClassData.put(innerClass.name, data));
+            parseInnerClass(innerClassNode, innerClassExceptions).ifPresent(superNameContainerPair ->
+                    innerClassData.put(superNameContainerPair.second().type(), superNameContainerPair)
+            );
         }
 
-        List<Node<InnerClassParsedData>> roots = createTopDownTree(innerClassData, redirectSetExceptions);
-
-        roots.forEach(root ->
-                root.children.forEach(child ->
-                        createInheritedRedirectsForTree(root.value, child)));
-
-        Set<FieldToMethodRedirectImpl> fieldToMethodRedirects = new HashSet<>();
-        Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects = new HashSet<>();
-        Set<FieldRedirectImpl> fieldRedirects = new HashSet<>();
-        Set<MethodRedirectImpl> methodRedirects = new HashSet<>();
-        Set<TypeRedirectImpl> typeRedirects = new HashSet<>();
-
-        innerClassData.forEach((name, data) -> {
-            fieldToMethodRedirects.addAll(data.fieldToMethodRedirects);
-            constructorToFactoryRedirects.addAll(data.constructorToFactoryRedirects);
-            fieldRedirects.addAll(data.fieldRedirects);
-            methodRedirects.addAll(data.methodRedirects);
-            typeRedirects.addAll(data.typeRedirects);
+        innerClassData.values().forEach(pair -> {
+            Type superContainerType = Type.getObjectType(pair.first);
+            if (superContainerType.equals(Type.getType(Object.class))) { // having no super type is always OK
+                return;
+            }
+            Pair<String, Container> stringContainerPair = innerClassData.get(superContainerType);
+            if (stringContainerPair == null) {
+                redirectSetExceptions.addException(new SuperTypeInInvalidRedirectSet(pair.second.type.getClassName(), superContainerType.getClassName()));
+                return;
+            }
+            pair.second().superContainer = stringContainerPair.second();
         });
 
-        if (redirectSetExceptions.hasWrapped()) {
-            exceptions.addNested(redirectSetExceptions);
-            return Optional.empty();
-        }
-
-        return Optional.of(new RedirectSetImpl(superRedirectSets, fieldToMethodRedirects, constructorToFactoryRedirects, fieldRedirects, methodRedirects, typeRedirects));
+        return Optional.of(new RedirectSetImpl(superRedirectSets, innerClassData.values().stream().map(Pair::second).collect(Collectors.toList())));
     }
 
     /**
-     * Takes all of the inner classes of a redirect set and arranges them in a tree by their class hierarchy.<br/>
-     * This is for type redirect inheritance etc.
+     * @return A pair of the SUPER CONTAINER's name and the container.
+     * This is very confusing and should be changed.
      */
-    private static @NotNull List<Node<InnerClassParsedData>> createTopDownTree(Map<String, InnerClassParsedData> innerClassData, DasmClassExceptions setExceptions) {
-        List<Node<InnerClassParsedData>> roots = new ArrayList<>();
-        List<Node<InnerClassParsedData>> remaining = new ArrayList<>();
-        Map<String, Node<InnerClassParsedData>> nodes = new HashMap<>();
-
-        // Create initial data
-        innerClassData.forEach((name, data) -> {
-            Node<InnerClassParsedData> node = new Node<>(data);
-            nodes.put(name, node);
-            if (data.superDataName == null || data.superDataName.equals(TypeUtil.classToInternalName(Object.class))) {
-                roots.add(node);
-            } else {
-                remaining.add(node);
-            }
-        });
-
-        // Arrange into tree
-        while (!remaining.isEmpty()) {
-            for (Iterator<Node<InnerClassParsedData>> iterator = remaining.iterator(); iterator.hasNext(); ) {
-                Node<InnerClassParsedData> node = iterator.next();
-                iterator.remove();
-
-                Node<InnerClassParsedData> superNode = nodes.get(node.value.superDataName);
-                if (superNode == null) {
-                    setExceptions.addNested(new DasmClassExceptions("In " + node.value.name))
-                            .addException(new SuperTypeInInvalidRedirectSet(node.value.name, node.value.superDataName));
-                    continue;
-                }
-                superNode.children.add(node);
-            }
-        }
-        return roots;
-    }
-
-    /**
-     * Every redirect a parent has is added to every child with the src and dst types replaced with the child's ones.
-     * This is done recursively.
-     */
-    private static void createInheritedRedirectsForTree(InnerClassParsedData parent, Node<InnerClassParsedData> data) {
-        // FIXME: how should mappings owner interact with inheritance changing the owner?
-        //        is the current approach fine? the mappings owner never gets changed assuming it's a super type. feels weird but maybe correct.
-        OwnerChanger ownerChanger = new OwnerChanger(
-                parent.srcType.getClassName(), data.value.srcType.getClassName(),
-                parent.dstType.getClassName(), data.value.dstType.getClassName()
-        );
-        parent.fieldToMethodRedirects.stream().map(ownerChanger::remap).forEach(r -> data.value.fieldToMethodRedirects.add(r));
-        parent.constructorToFactoryRedirects.stream().map(ownerChanger::remap).forEach(r -> data.value.constructorToFactoryRedirects.add(r));
-        parent.fieldRedirects.stream().map(ownerChanger::remap).forEach(r -> data.value.fieldRedirects.add(r));
-        parent.methodRedirects.stream().map(ownerChanger::remap).forEach(r -> data.value.methodRedirects.add(r));
-        parent.typeRedirects.stream().map(ownerChanger::remap).forEach(r -> data.value.typeRedirects.add(r));
-
-        data.value.fieldToMethodRedirects.addAll(parent.fieldToMethodRedirects);
-        data.value.constructorToFactoryRedirects.addAll(parent.constructorToFactoryRedirects);
-        data.value.fieldRedirects.addAll(parent.fieldRedirects);
-        data.value.methodRedirects.addAll(parent.methodRedirects);
-        data.value.typeRedirects.addAll(parent.typeRedirects);
-
-        data.children.forEach(child -> createInheritedRedirectsForTree(data.value, child));
-    }
-
-    @RequiredArgsConstructor
-    private static class Node<T> {
-        final T value;
-        final List<Node<T>> children = new ArrayList<>();
-    }
-
-    private static class InnerClassParsedData {
-        Type srcType;
-        Type dstType;
-
-        String name;
-        String superDataName;
-
-        Set<FieldToMethodRedirectImpl> fieldToMethodRedirects = new HashSet<>();
-        Set<ConstructorToFactoryRedirectImpl> constructorToFactoryRedirects = new HashSet<>();
-        Set<FieldRedirectImpl> fieldRedirects = new HashSet<>();
-        Set<MethodRedirectImpl> methodRedirects = new HashSet<>();
-        Set<TypeRedirectImpl> typeRedirects = new HashSet<>();
-    }
-
-    private static Optional<InnerClassParsedData> parseInnerClass(ClassNode innerClassNode, DasmClassExceptions innerClassExceptions) {
-        InnerClassParsedData data = new InnerClassParsedData();
+    private static Optional<Pair<String, Container>> parseInnerClass(ClassNode innerClassNode, DasmClassExceptions innerClassExceptions) {
+        Container data = new Container();
 
         Optional<TypeRedirectImpl> typeRedirect = TypeRedirectImpl.parse(innerClassNode, innerClassExceptions);
         Optional<InterOwnerContainerImpl> interOwnerContainer = InterOwnerContainerImpl.parse(innerClassNode, innerClassExceptions);
@@ -237,18 +153,21 @@ public class RedirectSetImpl {
             dstType[0] = redirect.dstType();
             nonStaticRedirectsAllowed[0] = true;
             data.typeRedirects.add(redirect);
+            data.kind = Kind.TYPE_REDIRECT;
         });
 
         interOwnerContainer.ifPresent(container -> {
             srcType[0] = container.srcType();
             dstType[0] = container.dstType();
             nonStaticRedirectsAllowed[0] = false;
+            data.kind = Kind.INTER_OWNER_CONTAINER;
         });
 
         intraOwnerContainer.ifPresent(container -> {
             srcType[0] = container.type();
             dstType[0] = container.type();
             nonStaticRedirectsAllowed[0] = true;
+            data.kind = Kind.INTRA_OWNER_CONTAINER;
         });
 
         if (!nonStaticRedirectsAllowed[0]) {
@@ -269,8 +188,7 @@ public class RedirectSetImpl {
         // This allows set inheritance and other errors to work properly for any valid set even if its contents are invalid.
         // If the methods/fields error it will still be reported by the caller.
 
-        data.name = innerClassNode.name;
-        data.superDataName = innerClassNode.superName;
+        data.type = Type.getObjectType(innerClassNode.name);
         data.srcType = srcType[0];
         data.dstType = dstType[0];
 
@@ -287,7 +205,7 @@ public class RedirectSetImpl {
                 innerClassExceptions
         );
 
-        return Optional.of(data);
+        return Optional.of(new Pair<>(innerClassNode.superName, data));
     }
 
     private static void parseFields(ClassNode innerClassNode, Type srcType, Type dstType, Set<FieldRedirectImpl> fieldRedirects,
@@ -368,83 +286,6 @@ public class RedirectSetImpl {
             methodRedirect.ifPresent(methodRedirects::add);
             fieldToMethodRedirect.ifPresent(fieldToMethodRedirects::add);
             constructorToFactoryRedirect.ifPresent(constructorToFactoryRedirects::add);
-        }
-    }
-
-    private static class OwnerChanger implements MappingsProvider {
-        private final Map<String, String> typeMapping = new HashMap<>();
-
-        OwnerChanger(String oldSrc, String newSrc, String oldDst, String newDst) {
-            this.typeMapping.put(oldSrc, newSrc);
-            this.typeMapping.put(oldDst, newDst);
-        }
-
-        @Override
-        public String mapFieldName(String owner, String fieldName, String descriptor) {
-            return fieldName;
-        }
-
-        @Override
-        public String mapMethodName(String owner, String methodName, String descriptor) {
-            return methodName;
-        }
-
-        @Override
-        public String mapClassName(String className) {
-            return typeMapping.getOrDefault(className, className);
-        }
-
-        private ClassField remap(ClassField classField) {
-            return new ClassField(this.remapType(classField.owner()), this.remapType(classField.mappingsOwner()), classField.type(), classField.name());
-        }
-
-        private ClassMethod remap(ClassMethod classMethod) {
-            return new ClassMethod(this.remapType(classMethod.owner()), this.remapType(classMethod.mappingsOwner()), classMethod.method());
-        }
-
-        public FieldToMethodRedirectImpl remap(FieldToMethodRedirectImpl redirect) {
-            return new FieldToMethodRedirectImpl(
-                    this.remap(redirect.srcField()),
-                    this.remap(redirect.getterDstMethod()),
-                    redirect.setterDstMethod().map(this::remap),
-                    redirect.isStatic(),
-                    redirect.isDstOwnerInterface()
-            );
-        }
-
-        public ConstructorToFactoryRedirectImpl remap(ConstructorToFactoryRedirectImpl redirect) {
-            return new ConstructorToFactoryRedirectImpl(
-                    this.remap(redirect.srcConstructor()),
-                    this.remapType(redirect.dstOwner()),
-                    redirect.dstName(),
-                    redirect.isDstOwnerInterface()
-            );
-        }
-
-        public FieldRedirectImpl remap(FieldRedirectImpl redirect) {
-            return new FieldRedirectImpl(
-                    this.remap(redirect.srcField()),
-                    this.remapType(redirect.dstOwner()),
-                    redirect.dstName()
-            );
-        }
-
-        public MethodRedirectImpl remap(MethodRedirectImpl redirect) {
-            return new MethodRedirectImpl(
-                    this.remap(redirect.srcMethod()),
-                    this.remapType(redirect.dstOwner()),
-                    redirect.dstName(),
-                    redirect.isStatic(),
-                    redirect.isDstOwnerInterface()
-            );
-        }
-
-        public TypeRedirectImpl remap(TypeRedirectImpl redirect) {
-            return new TypeRedirectImpl(
-                    this.remapType(redirect.srcType()),
-                    this.remapType(redirect.dstType()),
-                    redirect.isDstInterface()
-            );
         }
     }
 

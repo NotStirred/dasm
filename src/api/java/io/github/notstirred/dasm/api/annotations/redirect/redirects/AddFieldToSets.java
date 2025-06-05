@@ -1,7 +1,8 @@
 package io.github.notstirred.dasm.api.annotations.redirect.redirects;
 
 import io.github.notstirred.dasm.api.annotations.Dasm;
-import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
+import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
+import io.github.notstirred.dasm.api.annotations.redirect.sets.IntraOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 
@@ -13,23 +14,21 @@ import java.lang.annotation.Target;
 /**
  * May be added to a field within a {@link Dasm} class.
  * <br/><br/>
- * Add a {@link FieldRedirect} to multiple {@link RedirectSet}s inline at field definition, rather than duplicating the field definition inside a {@link RedirectSet}.
+ * Add a {@link FieldRedirect} to multiple containers inline at field definition, rather than duplicating the field
+ * definition inside the containers.
  * <br/><br/>
  * <h2>Important notes:</h2>
  * Changing the type of a field is only valid with a corresponding {@link TypeRedirect} from the old->new type.
  * <br/><br/>
- * Changing the owner of a <b><u>non-static</u></b> field is only valid with a corresponding {@link TypeRedirect}.<br/>
- * In almost all cases with {@link AddFieldToSets} this means having a {@link TypeRedirect} from the {@link AddFieldToSets#owner} to the owner of the annotated field.
- * <br/><br/>
  * <h2>Example:</h2>
- * This redirects {@code Bar.barX} -> {@code Foo.x}. Due to the owner change a {@link TypeRedirect} from {@code Bar} to {@code Foo} is <b><u>required</u></b>.
+ * This adds a {@link FieldRedirect} from {@code barX} -> {@code x} to {@code Bar_to_Foo_redirects} which is a {@link TypeRedirect}
  * <pre>{@code
  * @Dasm
  * public class Foo {
  *     @AddFieldToSets(
- *         owner = @Ref(Bar.class),
+ *         containers = Bar_to_Foo_redirects.class,
+ *         owner = @Ref(Bar.class)
  *         field = @FieldSig(type = int.class, name = "barX"),
- *         sets = SomeSet.class
  *     )
  *     private final int x;
  * }
@@ -39,11 +38,22 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 public @interface AddFieldToSets {
     /**
+     * The containers to add the {@link FieldRedirect} to.
+     * <p>Valid container classes are {@link TypeRedirect}, {@link InterOwnerContainer}, {@link IntraOwnerContainer}</p>
+     */
+    Class<?>[] containers();
+
+    /**
      * The class that has the field to replace as a member field.
      * <br/><br/>
      * For example: {@link String}'s hash field, {@link String} is the owner.
      */
     Ref owner();
+
+    /**
+     * The field to replace
+     */
+    FieldSig field();
 
     /**
      * The source field's mapping owner.
@@ -52,10 +62,4 @@ public @interface AddFieldToSets {
      * Allows specifying the class which owns the field in the mappings
      */
     Ref mappingsOwner() default @Ref;
-
-    /** The field to replace */
-    FieldSig field();
-
-    /** The {@link RedirectSet}s to add the {@link FieldRedirect} to. */
-    Class<?>[] sets();
 }
