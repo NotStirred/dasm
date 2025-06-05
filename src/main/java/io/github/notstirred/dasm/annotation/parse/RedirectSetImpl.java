@@ -11,7 +11,6 @@ import io.github.notstirred.dasm.exception.wrapped.DasmExceptionData;
 import io.github.notstirred.dasm.exception.wrapped.DasmFieldExceptions;
 import io.github.notstirred.dasm.exception.wrapped.DasmMethodExceptions;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
-import io.github.notstirred.dasm.util.Pair;
 import lombok.Data;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
@@ -20,6 +19,7 @@ import org.objectweb.asm.tree.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationIfPresent;
 import static io.github.notstirred.dasm.util.TypeUtil.simpleClassNameOf;
@@ -75,7 +75,7 @@ public class RedirectSetImpl {
             superRedirectSets.add(Type.getObjectType(itf));
         }
 
-        Map<Type, Pair<String, Container>> innerClassData = new HashMap<>();
+        Map<Type, InnerClassInfo> innerClassData = new HashMap<>();
 
         // Discover type/field/method redirects in innerClass
         for (InnerClassNode innerClass : redirectSetClassNode.innerClasses) {
@@ -97,31 +97,39 @@ public class RedirectSetImpl {
                     "An exception occurred when parsing inner class of redirect set", innerClassNode));
 
             parseInnerClass(innerClassNode, innerClassExceptions).ifPresent(superNameContainerPair ->
-                    innerClassData.put(superNameContainerPair.second().type(), superNameContainerPair)
+                    innerClassData.put(superNameContainerPair.container().type(), superNameContainerPair)
             );
         }
 
-        innerClassData.values().forEach(pair -> {
-            Type superContainerType = Type.getObjectType(pair.first);
-            if (superContainerType.equals(Type.getType(Object.class))) { // having no super type is always OK
-                return;
-            }
-            Pair<String, Container> stringContainerPair = innerClassData.get(superContainerType);
-            if (stringContainerPair == null) {
-                redirectSetExceptions.addException(new SuperTypeInInvalidRedirectSet(pair.second.type.getClassName(), superContainerType.getClassName()));
-                return;
-            }
-            pair.second().superContainer = stringContainerPair.second();
+        innerClassData.values().forEach(innerClassInfo -> {
+            innerClassInfo.superNames.forEach(superName -> {
+                Type superContainerType = Type.getObjectType(superName);
+                if (superContainerType.equals(Type.getType(Object.class))) { // having no super type is always OK
+                    return;
+                }
+                InnerClassInfo superContainerInfo = innerClassData.get(superContainerType);
+                if (superContainerInfo == null) {
+                    redirectSetExceptions.addException(new SuperTypeInInvalidRedirectSet(innerClassInfo.container.type.getClassName(), superContainerType.getClassName()));
+                    return;
+                }
+                if (innerClassInfo.container.superContainer != null) {
+                    redirectSetExceptions.addException(new MultipleContainerInheritanceNotImplemented(innerClassInfo.container));
+                    return;
+                }
+                innerClassInfo.container.superContainer = superContainerInfo.container();
+            });
         });
 
-        return Optional.of(new RedirectSetImpl(superRedirectSets, innerClassData.values().stream().map(Pair::second).collect(Collectors.toList())));
+        return Optional.of(new RedirectSetImpl(superRedirectSets, innerClassData.values().stream().map(InnerClassInfo::container).collect(Collectors.toList())));
     }
 
-    /**
-     * @return A pair of the SUPER CONTAINER's name and the container.
-     * This is very confusing and should be changed.
-     */
-    private static Optional<Pair<String, Container>> parseInnerClass(ClassNode innerClassNode, DasmClassExceptions innerClassExceptions) {
+    @Data
+    private static class InnerClassInfo {
+        private final Container container;
+        private final List<String> superNames;
+    }
+
+    private static Optional<InnerClassInfo> parseInnerClass(ClassNode innerClassNode, DasmClassExceptions innerClassExceptions) {
         Container data = new Container();
 
         Optional<TypeRedirectImpl> typeRedirect = TypeRedirectImpl.parse(innerClassNode, innerClassExceptions);
@@ -205,7 +213,8 @@ public class RedirectSetImpl {
                 innerClassExceptions
         );
 
-        return Optional.of(new Pair<>(innerClassNode.superName, data));
+        List<String> list = Stream.concat(innerClassNode.interfaces.stream(), Stream.of(innerClassNode.superName)).collect(Collectors.toList());
+        return Optional.of(new InnerClassInfo(data, list));
     }
 
     private static void parseFields(ClassNode innerClassNode, Type srcType, Type dstType, Set<FieldRedirectImpl> fieldRedirects,
@@ -335,6 +344,12 @@ public class RedirectSetImpl {
     public static class NonInterfaceIsUsedAsRedirectSetException extends DasmException {
         public NonInterfaceIsUsedAsRedirectSetException(Type redirectSetType) {
             super("Non-interface " + simpleClassNameOf(redirectSetType) + " is used as a redirect set");
+        }
+    }
+
+    public static class MultipleContainerInheritanceNotImplemented extends DasmException {
+        public MultipleContainerInheritanceNotImplemented(Container container) {
+            super("Multiple inheritance is not implemented yet. Occurs on: " + container.type.getClassName());
         }
     }
 }
