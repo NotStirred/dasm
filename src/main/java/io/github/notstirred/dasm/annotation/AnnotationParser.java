@@ -48,6 +48,11 @@ public class AnnotationParser {
         this.provider = provider;
     }
 
+    @Deprecated
+    public DasmContext buildContext() {
+        return new DasmContext(this.redirectSetsByType, this.containers);
+    }
+
     public DasmContext parseDasmClasses(Collection<Class<?>> dasmClasses) throws DasmException {
         List<ClassNode> collect = new ArrayList<>();
         for (Class<?> clazz : dasmClasses) {
@@ -73,7 +78,8 @@ public class AnnotationParser {
         });
     }
 
-    private void findDasmAnnotations(ClassNode targetClass) throws DasmException {
+    @Deprecated
+    public void findDasmAnnotations(ClassNode targetClass) throws DasmException {
         Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         boolean isTargetInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
 
