@@ -93,18 +93,24 @@ public class AnnotationParser {
             findOuterRedirectSetsForAnnotation(fieldNode.invisibleAnnotations, AddFieldToSets.class, "containers", fieldExceptions);
 
             try {
-                AddFieldToSetsImpl.parse(targetClassType, fieldNode).ifPresent(addToSets -> {
+                Optional<AddFieldToSetsImpl> optAddToSets = AddFieldToSetsImpl.parse(targetClassType, fieldNode);
+                if (optAddToSets.isPresent()) {
+                    AddFieldToSetsImpl addToSets = optAddToSets.get();
                     // All containers for this method must already exist, so we can just use the map
-                    addToSets.containers().forEach(containerType -> {
+                    for (Type containerType : addToSets.containers()) {
                         RedirectSetImpl.Container container = this.containers.get(containerType);
+                        if (container == null) {
+                            fieldExceptions.addException(new ContainerNotWithinRedirectSet(containerType));
+                            continue;
+                        }
                         FieldRedirectImpl fieldRedirect = new FieldRedirectImpl(
                                 new ClassField(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcField().type(), addToSets.srcField().name()),
                                 addToSets.dstOwner(),
                                 addToSets.dstMethodName()
                         );
                         container.fieldRedirects().add(fieldRedirect);
-                    });
-                });
+                    }
+                }
             } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
                      MethodSigImpl.EmptySrcName e) {
                 fieldExceptions.addException(e);
@@ -118,10 +124,17 @@ public class AnnotationParser {
             findOuterRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddMethodToSets.class, "containers", methodExceptions);
 
             try {
-                AddMethodToSetsImpl.parse(targetClassType, isTargetInterface, methodNode).ifPresent(addToSets -> {
+                Optional<AddMethodToSetsImpl> optAddToSets = AddMethodToSetsImpl.parse(targetClassType, isTargetInterface, methodNode);
+                if (optAddToSets.isPresent()) {
+                    AddMethodToSetsImpl addToSets = optAddToSets.get();
                     // All containers for this method must already exist, so we can just use the map
-                    addToSets.containers().forEach(containerType -> {
+                    for (Type containerType : addToSets.containers()) {
                         RedirectSetImpl.Container container = this.containers.get(containerType);
+                        if (container == null) {
+                            methodExceptions.addException(new ContainerNotWithinRedirectSet(containerType));
+                            continue;
+                        }
+
                         MethodRedirectImpl methodRedirect = new MethodRedirectImpl(
                                 new ClassMethod(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcMethod()),
                                 addToSets.dstOwner(),
@@ -130,8 +143,8 @@ public class AnnotationParser {
                                 addToSets.isDstInterface()
                         );
                         container.methodRedirects().add(methodRedirect);
-                    });
-                });
+                    }
+                }
             } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
                      MethodSigImpl.EmptySrcName e) {
                 methodExceptions.addException(e);
