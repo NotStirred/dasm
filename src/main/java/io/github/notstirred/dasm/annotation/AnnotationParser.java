@@ -11,6 +11,9 @@ import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddFieldToSets;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddMethodToSets;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddTransformToSets;
+import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
+import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
+import io.github.notstirred.dasm.api.annotations.redirect.sets.IntraOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromClass;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
@@ -222,7 +225,7 @@ public class AnnotationParser {
                 exceptions.addException(new NoValidRedirectSetExists(containerType));
                 return;
             }
-        } catch (NoSuchTypeExists | ContainerNotWithinRedirectSet e) {
+        } catch (NoSuchTypeExists | ContainerNotWithinRedirectSet | TypeIsNotAContainer e) {
             exceptions.addException(e);
             return;
         }
@@ -235,24 +238,26 @@ public class AnnotationParser {
     /**
      * Walk up the outer classes until we find a ClassNode with a {@link RedirectSet} annotation
      */
-    private ClassNode getContainingRedirectSetClassNode(Type containerType) throws NoSuchTypeExists, ContainerNotWithinRedirectSet {
+    private ClassNode getContainingRedirectSetClassNode(Type containerType) throws NoSuchTypeExists, ContainerNotWithinRedirectSet, TypeIsNotAContainer {
         Type type = containerType;
         ClassNode clazz = this.provider.classNode(type);
 
-        if (clazz.outerClass == null) {
-            throw new ContainerNotWithinRedirectSet(containerType);
+        if (!(isAnnotationPresent(clazz.invisibleAnnotations, TypeRedirect.class)
+                || isAnnotationPresent(clazz.invisibleAnnotations, InterOwnerContainer.class)
+                || isAnnotationPresent(clazz.invisibleAnnotations, IntraOwnerContainer.class))) {
+            throw new TypeIsNotAContainer(type);
         }
 
         while (true) {
-            type = Type.getObjectType(clazz.outerClass);
+            String outerClass = clazz.outerClass;
+            if (outerClass == null) {
+                throw new ContainerNotWithinRedirectSet(containerType);
+            }
+            type = Type.getObjectType(outerClass);
             clazz = this.provider.classNode(type);
 
             if (isAnnotationPresent(clazz.invisibleAnnotations, RedirectSet.class)) {
                 return clazz;
-            }
-
-            if (clazz.outerClass == null) {
-                throw new ContainerNotWithinRedirectSet(containerType);
             }
         }
     }
@@ -260,6 +265,12 @@ public class AnnotationParser {
     public static class ContainerNotWithinRedirectSet extends DasmException {
         public ContainerNotWithinRedirectSet(Type containerType) {
             super(String.format("Container `" + containerType.getClassName() + "` must be within a @RedirectSet interface"));
+        }
+    }
+
+    public static class TypeIsNotAContainer extends DasmException {
+        public TypeIsNotAContainer(Type type) {
+            super(String.format("Type `" + type.getClassName() + "` is not a container but is used as one"));
         }
     }
 
