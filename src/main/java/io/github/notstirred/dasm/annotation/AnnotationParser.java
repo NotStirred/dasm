@@ -27,6 +27,7 @@ import io.github.notstirred.dasm.exception.wrapped.DasmExceptionData;
 import io.github.notstirred.dasm.exception.wrapped.DasmFieldExceptions;
 import io.github.notstirred.dasm.exception.wrapped.DasmMethodExceptions;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
+import io.github.notstirred.dasm.util.ClassNodeUtil;
 import io.github.notstirred.dasm.util.TypeUtil;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -249,7 +250,7 @@ public class AnnotationParser {
         }
 
         while (true) {
-            String outerClass = clazz.outerClass;
+            String outerClass = ClassNodeUtil.outerClass(clazz);
             if (outerClass == null) {
                 throw new ContainerNotWithinRedirectSet(containerType);
             }
