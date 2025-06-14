@@ -5,6 +5,7 @@ import io.github.notstirred.dasm.annotation.AnnotationParser;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
 import io.github.notstirred.dasm.data.DasmContext;
 import io.github.notstirred.dasm.exception.DasmException;
+import io.github.notstirred.dasm.notify.Notification;
 import io.github.notstirred.dasm.test.targets.*;
 import io.github.notstirred.dasm.test.targets.inherited_transforms.Bar;
 import io.github.notstirred.dasm.test.targets.inherited_transforms.Foo;
@@ -13,6 +14,7 @@ import io.github.notstirred.dasm.transformer.Transformer;
 import io.github.notstirred.dasm.transformer.data.ClassTransform;
 import io.github.notstirred.dasm.transformer.data.MethodTransform;
 import io.github.notstirred.dasm.util.CachingClassProvider;
+import io.github.notstirred.dasm.util.Pair;
 import org.assertj.core.api.RecursiveComparisonAssert;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -50,8 +52,8 @@ public class TestHarness {
         AnnotationParser annotationParser = new AnnotationParser(classProvider);
 
         try {
-            Collection<MethodTransform> methodTransforms = annotationParser.parseDasmClassNodes(Lists.newArrayList(dasm, actual))
-                    .buildMethodTargets(dasm, "").get();
+            Collection<MethodTransform> methodTransforms = annotationParser.parseDasmClassNodes(Lists.newArrayList(dasm, actual)).first()
+                    .buildMethodTargets(dasm, "").first().get();
 
             transformer.transform(actual, methodTransforms);
         } catch (DasmException e) {
@@ -95,9 +97,9 @@ public class TestHarness {
         AnnotationParser annotationParser = new AnnotationParser(classProvider);
 
         try {
-            DasmContext context = annotationParser.parseDasmClassNodes(Lists.newArrayList(dasm, actual));
+            DasmContext context = annotationParser.parseDasmClassNodes(Lists.newArrayList(dasm, actual)).first();
             dasm.name = actual.name;
-            ClassTransform methodTransforms = context.buildClassTarget(dasm).get();
+            ClassTransform methodTransforms = context.buildClassTarget(dasm).first().get();
 
             transformer.transform(actual, methodTransforms);
         } catch (DasmException e) {
@@ -132,7 +134,7 @@ public class TestHarness {
         }
     }
 
-    public static Optional<Collection<MethodTransform>> getRedirectsFor(Class<?> dasmClass, Class<?>... extraDasmClasses) throws DasmException {
+    public static Pair<Optional<Collection<MethodTransform>>, List<Notification>> getRedirectsFor(Class<?> dasmClass, Class<?>... extraDasmClasses) {
         CachingClassProvider classProvider = new CachingClassProvider(TestHarness::getBytesForClassName);
         AnnotationParser annotationParser = new AnnotationParser(classProvider);
         ClassNode dasm = classNodeFromClass(dasmClass);
@@ -143,7 +145,11 @@ public class TestHarness {
             dasmClasses.add(classNodeFromClass(clazz));
         }
 
-        return annotationParser.parseDasmClassNodes(dasmClasses).buildMethodTargets(dasm, "");
+        Pair<DasmContext, List<Notification>> dasmContextListPair = annotationParser.parseDasmClassNodes(dasmClasses);
+        if (dasmContextListPair.first() == null) {
+            return new Pair<>(Optional.empty(), dasmContextListPair.second());
+        }
+        return dasmContextListPair.first().buildMethodTargets(dasm, "");
     }
 
     private static byte[] classNodeToBytes(ClassNode actual) {

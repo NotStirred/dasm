@@ -7,7 +7,6 @@ import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
 import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
-import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.test.TestHarness;
 import io.github.notstirred.dasm.test.targets.inherited_transforms.Bar;
 import io.github.notstirred.dasm.test.targets.inherited_transforms.BarBaz;
@@ -16,8 +15,9 @@ import io.github.notstirred.dasm.test.targets.inherited_transforms.FooBaz;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 /**
  * Remove this once redirects are allowed to extend redirects from super redirectsets
@@ -27,8 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 public class TestUnitInheritedTransformsInvaildInheritanceExtends {
     @Test
     public void testInheritedTransformsArePresent() {
-        var exception = assertThrowsExactly(DasmException.class, () -> TestHarness.getRedirectsFor(TestUnitInheritedTransformsInvaildInheritanceExtends.class));
-        assertEquals(RedirectSetImpl.SuperTypeInInvalidRedirectSet.class, exception.getSuppressed()[0].getClass());
+        var redirects = TestHarness.getRedirectsFor(TestUnitInheritedTransformsInvaildInheritanceExtends.class);
+        assertEquals(Optional.empty(), redirects.first());
+        assertEquals(RedirectSetImpl.SuperTypeInInvalidRedirectSet.class, redirects.second().get(0).sourceClass);
     }
 
     @TransformFromMethod(@MethodSig("dummy()V"))

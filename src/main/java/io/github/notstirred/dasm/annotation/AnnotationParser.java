@@ -22,13 +22,8 @@ import io.github.notstirred.dasm.data.ClassMethod;
 import io.github.notstirred.dasm.data.DasmContext;
 import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
-import io.github.notstirred.dasm.exception.wrapped.DasmClassExceptions;
-import io.github.notstirred.dasm.exception.wrapped.DasmExceptionData;
-import io.github.notstirred.dasm.exception.wrapped.DasmFieldExceptions;
-import io.github.notstirred.dasm.exception.wrapped.DasmMethodExceptions;
-import io.github.notstirred.dasm.util.ClassNodeProvider;
-import io.github.notstirred.dasm.util.ClassNodeUtil;
-import io.github.notstirred.dasm.util.TypeUtil;
+import io.github.notstirred.dasm.notify.Notification;
+import io.github.notstirred.dasm.util.*;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -57,7 +52,7 @@ public class AnnotationParser {
         return new DasmContext(this.redirectSetsByType, this.containers);
     }
 
-    public DasmContext parseDasmClasses(Collection<Class<?>> dasmClasses) throws DasmException {
+    public Pair<DasmContext, List<Notification>> parseDasmClasses(Collection<Class<?>> dasmClasses) throws DasmException {
         List<ClassNode> collect = new ArrayList<>();
         for (Class<?> clazz : dasmClasses) {
             ClassNode classNode = provider.classNode(Type.getType(clazz));
@@ -66,100 +61,102 @@ public class AnnotationParser {
         return parseDasmClassNodes(collect);
     }
 
-    public DasmContext parseDasmClassNodes(Collection<ClassNode> dasmClasses) throws DasmException {
-        for (ClassNode dasmClass : dasmClasses) {
-            findDasmAnnotations(dasmClass);
-        }
+    public Pair<DasmContext, List<Notification>> parseDasmClassNodes(Collection<ClassNode> dasmClasses) {
+        NotifyStack combinedNotifications = dasmClasses.stream().map(this::findDasmAnnotations)
+                .collect(NotifyStack.joining());
 
-        return new DasmContext(redirectSetsByType, containers);
+        if (combinedNotifications.hasError()) {
+            return new Pair<>(null, combinedNotifications.notifications());
+        }
+        return new Pair<>(new DasmContext(redirectSetsByType, containers), combinedNotifications.notifications());
     }
 
     private void addRedirectSet(Type redirectSetType, RedirectSetImpl redirectSet) {
         this.redirectSetsByType.put(redirectSetType, redirectSet);
 
-        redirectSet.containers().forEach(container -> {
-            this.containers.put(container.type(), container);
-        });
+        redirectSet.containers().forEach(container -> this.containers.put(container.type(), container));
     }
 
     @Deprecated
-    public void findDasmAnnotations(ClassNode targetClass) throws DasmException {
+    public NotifyStack findDasmAnnotations(ClassNode targetClass) {
         Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         boolean isTargetInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
 
-        DasmClassExceptions classExceptions = new DasmClassExceptions("An exception occurred when finding used redirect sets in", targetClass);
+        try (NotifyStack classExceptions = NotifyStack.of(targetClass)) {
 
-        findRedirectSetsForAnnotation(targetClass.invisibleAnnotations, Dasm.class, "value", classExceptions);
-        findRedirectSetsForAnnotation(targetClass.invisibleAnnotations, TransformFromClass.class, "sets", classExceptions);
+            findRedirectSetsForAnnotation(targetClass.invisibleAnnotations, Dasm.class, "value", classExceptions);
+            findRedirectSetsForAnnotation(targetClass.invisibleAnnotations, TransformFromClass.class, "sets", classExceptions);
 
-        for (FieldNode fieldNode : targetClass.fields) {
-            DasmFieldExceptions fieldExceptions = classExceptions.addNested(new DasmFieldExceptions(fieldNode));
-            findOuterRedirectSetsForAnnotation(fieldNode.invisibleAnnotations, AddFieldToSets.class, "containers", fieldExceptions);
+            for (FieldNode fieldNode : targetClass.fields) {
+                try (NotifyStack fieldExceptions = classExceptions.push(fieldNode)) {
+                    findOuterRedirectSetsForAnnotation(fieldNode.invisibleAnnotations, AddFieldToSets.class, "containers", fieldExceptions);
 
-            try {
-                Optional<AddFieldToSetsImpl> optAddToSets = AddFieldToSetsImpl.parse(targetClassType, fieldNode);
-                if (optAddToSets.isPresent()) {
-                    AddFieldToSetsImpl addToSets = optAddToSets.get();
-                    // All containers for this method must already exist, so we can just use the map
-                    for (Type containerType : addToSets.containers()) {
-                        RedirectSetImpl.Container container = this.containers.get(containerType);
-                        if (container == null) {
-                            fieldExceptions.addException(new ContainerNotWithinRedirectSet(containerType));
-                            continue;
+                    try {
+                        Optional<AddFieldToSetsImpl> optAddToSets = AddFieldToSetsImpl.parse(targetClassType, fieldNode);
+                        if (optAddToSets.isPresent()) {
+                            AddFieldToSetsImpl addToSets = optAddToSets.get();
+                            // All containers for this method must already exist, so we can just use the map
+                            for (Type containerType : addToSets.containers()) {
+                                RedirectSetImpl.Container container = this.containers.get(containerType);
+                                if (container == null) {
+                                    fieldExceptions.notifyFromException(new ContainerNotWithinRedirectSet(containerType));
+                                    continue;
+                                }
+                                FieldRedirectImpl fieldRedirect = new FieldRedirectImpl(
+                                        new ClassField(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcField().type(), addToSets.srcField().name()),
+                                        addToSets.dstOwner(),
+                                        addToSets.dstMethodName()
+                                );
+                                container.fieldRedirects().add(fieldRedirect);
+                            }
                         }
-                        FieldRedirectImpl fieldRedirect = new FieldRedirectImpl(
-                                new ClassField(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcField().type(), addToSets.srcField().name()),
-                                addToSets.dstOwner(),
-                                addToSets.dstMethodName()
-                        );
-                        container.fieldRedirects().add(fieldRedirect);
+                    } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
+                             MethodSigImpl.EmptySrcName e) {
+                        fieldExceptions.notifyFromException(e);
                     }
                 }
-            } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
-                     MethodSigImpl.EmptySrcName e) {
-                fieldExceptions.addException(e);
             }
-        }
 
-        for (MethodNode methodNode : targetClass.methods) {
-            DasmMethodExceptions methodExceptions = classExceptions.addNested(new DasmMethodExceptions(methodNode));
-            findRedirectSetsForAnnotation(methodNode.invisibleAnnotations, TransformFromMethod.class, "useRedirectSets", methodExceptions);
-            findOuterRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddTransformToSets.class, "value", methodExceptions);
-            findOuterRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddMethodToSets.class, "containers", methodExceptions);
+            for (MethodNode methodNode : targetClass.methods) {
+                try (NotifyStack methodExceptions = classExceptions.push(methodNode)) {
+                    findRedirectSetsForAnnotation(methodNode.invisibleAnnotations, TransformFromMethod.class, "useRedirectSets", methodExceptions);
+                    findOuterRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddTransformToSets.class, "value", methodExceptions);
+                    findOuterRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddMethodToSets.class, "containers", methodExceptions);
 
-            try {
-                Optional<AddMethodToSetsImpl> optAddToSets = AddMethodToSetsImpl.parse(targetClassType, isTargetInterface, methodNode);
-                if (optAddToSets.isPresent()) {
-                    AddMethodToSetsImpl addToSets = optAddToSets.get();
-                    // All containers for this method must already exist, so we can just use the map
-                    for (Type containerType : addToSets.containers()) {
-                        RedirectSetImpl.Container container = this.containers.get(containerType);
-                        if (container == null) {
-                            methodExceptions.addException(new ContainerNotWithinRedirectSet(containerType));
-                            continue;
+                    try {
+                        Optional<AddMethodToSetsImpl> optAddToSets = AddMethodToSetsImpl.parse(targetClassType, isTargetInterface, methodNode);
+                        if (optAddToSets.isPresent()) {
+                            AddMethodToSetsImpl addToSets = optAddToSets.get();
+                            // All containers for this method must already exist, so we can just use the map
+                            for (Type containerType : addToSets.containers()) {
+                                RedirectSetImpl.Container container = this.containers.get(containerType);
+                                if (container == null) {
+                                    methodExceptions.notifyFromException(new ContainerNotWithinRedirectSet(containerType));
+                                    continue;
+                                }
+
+                                MethodRedirectImpl methodRedirect = new MethodRedirectImpl(
+                                        new ClassMethod(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcMethod()),
+                                        addToSets.dstOwner(),
+                                        addToSets.dstMethodName(),
+                                        addToSets.isStatic(),
+                                        addToSets.isDstInterface()
+                                );
+                                container.methodRedirects().add(methodRedirect);
+                            }
                         }
-
-                        MethodRedirectImpl methodRedirect = new MethodRedirectImpl(
-                                new ClassMethod(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcMethod()),
-                                addToSets.dstOwner(),
-                                addToSets.dstMethodName(),
-                                addToSets.isStatic(),
-                                addToSets.isDstInterface()
-                        );
-                        container.methodRedirects().add(methodRedirect);
+                    } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
+                             MethodSigImpl.EmptySrcName e) {
+                        methodExceptions.notifyFromException(e);
                     }
                 }
-            } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
-                     MethodSigImpl.EmptySrcName e) {
-                methodExceptions.addException(e);
             }
+            return classExceptions;
         }
-
-        classExceptions.throwIfHasWrapped();
     }
 
     private void findRedirectSetsForAnnotation(List<AnnotationNode> annotations, Class<?> annotationClass, String setsAnnotationField,
-                                               DasmExceptionData exceptions) {
+                                               NotifyStack exceptions) {
         AnnotationNode annotationNode = getAnnotationIfPresent(annotations, annotationClass);
         if (annotationNode != null) {
             Map<String, Object> values = getAnnotationValues(annotationNode, annotationClass);
@@ -171,7 +168,7 @@ public class AnnotationParser {
         }
     }
 
-    private void findRedirectSetsForType(Type redirectSetType, DasmExceptionData exceptions) {
+    private void findRedirectSetsForType(Type redirectSetType, NotifyStack exceptions) {
         RedirectSetImpl existingSet = this.redirectSetsByType.get(redirectSetType);
         if (existingSet == null) {
             try {
@@ -181,11 +178,11 @@ public class AnnotationParser {
                     existingSet = parsed.get();
                     this.addRedirectSet(redirectSetType, existingSet);
                 } else {
-                    exceptions.addException(new NoValidRedirectSetExists(redirectSetType));
+                    exceptions.notify(new NoValidRedirectSetExists(redirectSetType));
                     return;
                 }
             } catch (NoSuchTypeExists e) {
-                exceptions.addException(e);
+                exceptions.notifyFromException(e);
                 return;
             }
         }
@@ -196,7 +193,7 @@ public class AnnotationParser {
     }
 
     private void findOuterRedirectSetsForAnnotation(List<AnnotationNode> annotations, Class<?> annotationClass, String containersAnnotationField,
-                                                    DasmExceptionData exceptions) {
+                                                    NotifyStack exceptions) {
         AnnotationNode annotationNode = getAnnotationIfPresent(annotations, annotationClass);
         if (annotationNode != null) {
             Map<String, Object> values = getAnnotationValues(annotationNode, annotationClass);
@@ -208,7 +205,7 @@ public class AnnotationParser {
         }
     }
 
-    private void findOuterRedirectSetsForType(Type containerType, DasmExceptionData exceptions) {
+    private void findOuterRedirectSetsForType(Type containerType, NotifyStack exceptions) {
         RedirectSetImpl.Container existingContainer = this.containers.get(containerType);
         if (existingContainer != null) {
             return; // If the container exists we must've parsed its redirect set before.
@@ -223,11 +220,11 @@ public class AnnotationParser {
                 existingSet = parsed.get();
                 this.addRedirectSet(Type.getObjectType(clazz.name), existingSet);
             } else {
-                exceptions.addException(new NoValidRedirectSetExists(containerType));
+                exceptions.notify(new NoValidRedirectSetExists(containerType));
                 return;
             }
         } catch (NoSuchTypeExists | ContainerNotWithinRedirectSet | TypeIsNotAContainer e) {
-            exceptions.addException(e);
+            exceptions.notifyFromException(e);
             return;
         }
 
@@ -275,7 +272,7 @@ public class AnnotationParser {
         }
     }
 
-    public static class NoValidRedirectSetExists extends DasmException {
+    public static class NoValidRedirectSetExists extends Notification {
         public NoValidRedirectSetExists(Type redirectSetType) {
             super(String.format("No valid redirect set exists matching `" + redirectSetType.getClassName() + "`"));
         }

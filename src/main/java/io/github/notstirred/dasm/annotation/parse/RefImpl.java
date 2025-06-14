@@ -2,7 +2,7 @@ package io.github.notstirred.dasm.annotation.parse;
 
 import io.github.notstirred.dasm.annotation.AnnotationUtil;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
-import io.github.notstirred.dasm.exception.DasmAnnotationException;
+import io.github.notstirred.dasm.exception.DasmException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.objectweb.asm.Type;
@@ -72,7 +72,7 @@ public class RefImpl {
         return Optional.of(type);
     }
 
-    public static class RefAnnotationGivenNoArguments extends DasmAnnotationException {
+    public static class RefAnnotationGivenNoArguments extends DasmException {
         public RefAnnotationGivenNoArguments(String name) {
             super("@Ref annotation `" + name + "` was given no arguments");
         }

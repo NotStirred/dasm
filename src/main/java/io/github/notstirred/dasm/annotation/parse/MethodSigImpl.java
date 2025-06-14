@@ -2,7 +2,7 @@ package io.github.notstirred.dasm.annotation.parse;
 
 import io.github.notstirred.dasm.annotation.AnnotationUtil;
 import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
-import io.github.notstirred.dasm.exception.DasmAnnotationException;
+import io.github.notstirred.dasm.exception.DasmException;
 import lombok.NoArgsConstructor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -43,13 +43,13 @@ public class MethodSigImpl {
         return new Method(name, Type.getMethodDescriptor(ret, args.toArray(new Type[0])));
     }
 
-    public static class InvalidMethodSignature extends DasmAnnotationException {
+    public static class InvalidMethodSignature extends DasmException {
         public InvalidMethodSignature(String value) {
             super("Invalid method signature: `" + value + "`");
         }
     }
 
-    public static class EmptySrcName extends DasmAnnotationException {
+    public static class EmptySrcName extends DasmException {
         public EmptySrcName() {
             super("MethodSig has empty name");
         }

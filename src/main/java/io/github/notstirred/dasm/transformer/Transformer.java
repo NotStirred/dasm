@@ -6,13 +6,11 @@ import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl;
 import io.github.notstirred.dasm.api.annotations.transform.Visibility;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
 import io.github.notstirred.dasm.data.ClassMethod;
-import io.github.notstirred.dasm.exception.DasmException;
-import io.github.notstirred.dasm.exception.DasmTransformException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
-import io.github.notstirred.dasm.exception.wrapped.DasmClassExceptions;
-import io.github.notstirred.dasm.exception.wrapped.DasmMethodExceptions;
+import io.github.notstirred.dasm.notify.Notification;
 import io.github.notstirred.dasm.transformer.data.*;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
+import io.github.notstirred.dasm.util.NotifyStack;
 import io.github.notstirred.dasm.util.TypeUtil;
 import lombok.Getter;
 import org.apache.logging.log4j.LogManager;
@@ -122,36 +120,38 @@ public class Transformer {
         oldNode.accept(cv);
     }
 
-    public void transform(ClassNode targetClass, Collection<MethodTransform> transforms) throws DasmException {
-        DasmClassExceptions dasmClassExceptions = new DasmClassExceptions("An exception occurred when transforming", targetClass);
+    public List<Notification> transform(ClassNode targetClass, Collection<MethodTransform> transforms) {
+        try (NotifyStack dasmClassExceptions = NotifyStack.of(targetClass)) {
 
-        Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
-        for (MethodTransform transform : transforms) {
-            DasmMethodExceptions methodExceptions = dasmClassExceptions.addNested(new DasmMethodExceptions(transform.originalTransformData().methodNode()));
-            Type methodSrcOwner = transform.srcMethod().owner();
+            Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
+            for (MethodTransform transform : transforms) {
+                try (NotifyStack methodExceptions = dasmClassExceptions.push(transform.originalTransformData().methodNode())) {
+                    Type methodSrcOwner = transform.srcMethod().owner();
 
-            ClassNode srcClass;
-            if (methodSrcOwner.equals(targetClassType)) {
-                srcClass = targetClass;
-            } else {
-                try {
-                    srcClass = this.classNodeProvider.classNode(methodSrcOwner);
-                } catch (NoSuchTypeExists e) {
-                    methodExceptions.addException(e);
-                    continue;
+                    ClassNode srcClass;
+                    if (methodSrcOwner.equals(targetClassType)) {
+                        srcClass = targetClass;
+                    } else {
+                        try {
+                            srcClass = this.classNodeProvider.classNode(methodSrcOwner);
+                        } catch (NoSuchTypeExists e) {
+                            methodExceptions.notifyFromException(e);
+                            continue;
+                        }
+                    }
+
+                    TransformRedirects transformRedirects = new TransformRedirects(transform.redirectSets(), this.mappingsProvider);
+                    if (transform.inPlace()) {
+                        applyRedirects(srcClass, transform.srcMethod(), transformRedirects, transform.transformChanges(), transform.originalTransformData(), methodExceptions, true);
+                    } else {
+                        // FIXME: java 8 synthetic accessor methods
+                        cloneAndApplyRedirects(srcClass, targetClass, transform.srcMethod(), transform.dstMethodName(), transformRedirects, transform.transformChanges(), transform.originalTransformData(), methodExceptions, true);
+                    }
                 }
             }
 
-            TransformRedirects transformRedirects = new TransformRedirects(transform.redirectSets(), this.mappingsProvider);
-            if (transform.inPlace()) {
-                applyRedirects(srcClass, transform.srcMethod(), transformRedirects, transform.transformChanges(), transform.originalTransformData(), methodExceptions, true);
-            } else {
-                // FIXME: java 8 synthetic accessor methods
-                cloneAndApplyRedirects(srcClass, targetClass, transform.srcMethod(), transform.dstMethodName(), transformRedirects, transform.transformChanges(), transform.originalTransformData(), methodExceptions, true);
-            }
+            return dasmClassExceptions.notifications();
         }
-
-        dasmClassExceptions.throwIfHasWrapped();
     }
 
     /**
@@ -162,7 +162,7 @@ public class Transformer {
                                                         TransformRedirects redirects,
                                                         MethodTransform.TransformChanges transformChanges,
                                                         MethodTransform.OriginalTransformData originalTransformData,
-                                                        DasmMethodExceptions methodExceptions,
+                                                        NotifyStack methodExceptions,
                                                         boolean debugLogging) {
         return redirects(srcClass, targetClass, srcMethod, dstMethodName, redirects, transformChanges, originalTransformData, methodExceptions, debugLogging,
                 (srcMethodNode, dstMethodNode, existingMethodNode) -> {
@@ -180,7 +180,7 @@ public class Transformer {
                                 TransformRedirects redirects,
                                 MethodTransform.TransformChanges transformChanges,
                                 MethodTransform.OriginalTransformData originalTransformData,
-                                DasmMethodExceptions methodExceptions,
+                                NotifyStack methodExceptions,
                                 boolean debugLogging) {
         redirects(srcClass, srcClass, srcMethod, srcMethod.method().getName(), redirects, transformChanges, originalTransformData, methodExceptions, debugLogging,
                 (srcMethodNode, dstMethodNode, existingMethodNode) -> {
@@ -208,7 +208,7 @@ public class Transformer {
                                            TransformRedirects redirects,
                                            MethodTransform.TransformChanges transformChanges,
                                            MethodTransform.OriginalTransformData originalTransformData,
-                                           DasmMethodExceptions methodExceptions,
+                                           NotifyStack methodExceptions,
                                            boolean debugLogging,
                                            RedirectsFunction f) {
         Method existingMethod = srcMethod.remap(this.mappingsProvider).method();
@@ -217,7 +217,7 @@ public class Transformer {
                 .filter(method -> existingMethod.getName().equals(method.name) && existingMethod.getDescriptor().equals(method.desc))
                 .findAny();
         if (!srcMethodNodeOptional.isPresent()) {
-            methodExceptions.addException(new SrcMethodNotFound(srcMethod, existingMethod));
+            methodExceptions.notify(new SrcMethodNotFound(srcMethod, existingMethod));
             return Optional.empty();
         }
         MethodNode srcMethodNode = srcMethodNodeOptional.get();
@@ -226,7 +226,7 @@ public class Transformer {
         MethodNode existingMethodNode = removeExistingMethod(targetClass, dstMethodName, dstMethodDescriptor);
 
         transformChanges.checkAccess(originalTransformData, Visibility.fromAccess(srcMethodNode.access), methodExceptions);
-        if (methodExceptions.hasWrapped()) {
+        if (methodExceptions.hasError()) {
             return Optional.empty();
         }
 
@@ -290,23 +290,25 @@ public class Transformer {
     }
 
     private void cloneAndApplyLambdaRedirects(ClassNode srcClass, ClassNode targetClass, MethodNode method, TransformRedirects redirects,
-                                              DasmMethodExceptions methodExceptions, boolean debugLogging) {
+                                              NotifyStack methodExceptions, boolean debugLogging) {
         Map<Handle, String> lambdaRedirects = new HashMap<>();
 
         forEachLambdaInvocation(srcClass, method, (classMethod, handle, lambdaNode) -> {
             String newName = "dasm$redirect$" + classMethod.method().getName();
             lambdaRedirects.put(handle, newName);
-            cloneAndApplyRedirects(
-                    srcClass,
-                    targetClass,
-                    classMethod,
-                    newName,
-                    redirects,
-                    new MethodTransform.TransformChanges(Collections.emptyList(), Visibility.PRIVATE, Visibility.SAME_AS_TARGET),
-                    new MethodTransform.OriginalTransformData(srcClass.name, method),
-                    methodExceptions.addNested(new DasmMethodExceptions(lambdaNode)),
-                    debugLogging
-            );
+            try (NotifyStack lambdaExceptions = methodExceptions.push(lambdaNode)) {
+                cloneAndApplyRedirects(
+                        srcClass,
+                        targetClass,
+                        classMethod,
+                        newName,
+                        redirects,
+                        new MethodTransform.TransformChanges(Collections.emptyList(), Visibility.PRIVATE, Visibility.SAME_AS_TARGET),
+                        new MethodTransform.OriginalTransformData(srcClass.name, method),
+                        lambdaExceptions,
+                        debugLogging
+                );
+            }
         });
 
         Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
@@ -323,16 +325,20 @@ public class Transformer {
     }
 
     private void applyLambdaRedirects(ClassNode srcClass, MethodNode method, TransformRedirects redirects,
-                                      DasmMethodExceptions methodExceptions, boolean debugLogging) {
-        forEachLambdaInvocation(srcClass, method, (classMethod, handle, lambdaNode) -> applyRedirects(
-                srcClass,
-                classMethod,
-                redirects,
-                new MethodTransform.TransformChanges(Collections.emptyList(), Visibility.PRIVATE, Visibility.SAME_AS_TARGET),
-                new MethodTransform.OriginalTransformData(srcClass.name, method), // Assume lambas are always private, the passed in method here is therefore irrelevant
-                methodExceptions.addNested(new DasmMethodExceptions(lambdaNode)),
-                debugLogging
-        ));
+                                      NotifyStack methodExceptions, boolean debugLogging) {
+        forEachLambdaInvocation(srcClass, method, (classMethod, handle, lambdaNode) -> {
+            try (NotifyStack lambdaExceptions = methodExceptions.push(lambdaNode)) {
+                applyRedirects(
+                        srcClass,
+                        classMethod,
+                        redirects,
+                        new MethodTransform.TransformChanges(Collections.emptyList(), Visibility.PRIVATE, Visibility.SAME_AS_TARGET),
+                        new MethodTransform.OriginalTransformData(srcClass.name, method), // Assume lambas are always private, the passed in method here is therefore irrelevant
+                        lambdaExceptions,
+                        debugLogging
+                );
+            }
+        });
     }
 
     @FunctionalInterface
@@ -381,7 +387,7 @@ public class Transformer {
     }
 
     @Getter
-    public static class SrcMethodNotFound extends DasmTransformException {
+    public static class SrcMethodNotFound extends Notification {
         public SrcMethodNotFound(ClassMethod method, Method remappedMethod) {
             super(
                     "Could not find source method: `" + method.method().getName() + method.method().getDescriptor() +

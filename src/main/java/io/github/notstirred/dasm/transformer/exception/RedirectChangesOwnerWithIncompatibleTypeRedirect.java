@@ -4,9 +4,9 @@ package io.github.notstirred.dasm.transformer.exception;
 import io.github.notstirred.dasm.annotation.parse.redirects.FieldRedirectImpl;
 import io.github.notstirred.dasm.annotation.parse.redirects.FieldToMethodRedirectImpl;
 import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl;
-import io.github.notstirred.dasm.exception.DasmTransformException;
+import io.github.notstirred.dasm.exception.DasmException;
 
-public class RedirectChangesOwnerWithIncompatibleTypeRedirect extends DasmTransformException {
+public class RedirectChangesOwnerWithIncompatibleTypeRedirect extends DasmException {
     public RedirectChangesOwnerWithIncompatibleTypeRedirect(MethodRedirectImpl methodRedirect, String typeRedirectSrc, String typeRedirectDst) {
         super("@MethodRedirect for `" + methodRedirect.srcMethod().owner().getClassName() + "#" + methodRedirect.srcMethod().method().getName() + "` -> `" +
                 methodRedirect.dstOwner().getClassName() + "#" + methodRedirect.dstName() + "`" +

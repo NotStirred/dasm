@@ -3,7 +3,7 @@ package io.github.notstirred.dasm.annotation.parse.redirects;
 import io.github.notstirred.dasm.annotation.AnnotationUtil;
 import io.github.notstirred.dasm.annotation.parse.RefImpl;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
-import io.github.notstirred.dasm.exception.wrapped.DasmClassExceptions;
+import io.github.notstirred.dasm.util.NotifyStack;
 import lombok.Data;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -21,7 +21,7 @@ public class TypeRedirectImpl {
     private final Type dstType;
     private final boolean isDstInterface;
 
-    public static Optional<TypeRedirectImpl> parse(ClassNode classNode, DasmClassExceptions methodExceptions) {
+    public static Optional<TypeRedirectImpl> parse(ClassNode classNode, NotifyStack methodExceptions) {
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(classNode.invisibleAnnotations, TypeRedirect.class);
         if (annotation == null) {
             return Optional.empty();
@@ -33,13 +33,13 @@ public class TypeRedirectImpl {
         try {
             from = parseRefAnnotation("from", values);
         } catch (RefImpl.RefAnnotationGivenNoArguments e) {
-            methodExceptions.addException(e);
+            methodExceptions.notifyFromException(e);
         }
         Type to = null;
         try {
             to = parseRefAnnotation("to", values);
         } catch (RefImpl.RefAnnotationGivenNoArguments e) {
-            methodExceptions.addException(e);
+            methodExceptions.notifyFromException(e);
         }
 
         if (to == null || from == null) {

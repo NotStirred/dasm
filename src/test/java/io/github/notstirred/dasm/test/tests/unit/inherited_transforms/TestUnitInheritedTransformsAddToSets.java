@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class TestUnitInheritedTransformsAddToSets {
     @Test
     public void testInheritedTransformsArePresent() throws DasmException {
-        Collection<MethodTransform> methodTransforms = TestHarness.getRedirectsFor(TestUnitInheritedTransformsAddToSets.class, Bar.class).get();
+        Collection<MethodTransform> methodTransforms = TestHarness.getRedirectsFor(TestUnitInheritedTransformsAddToSets.class, Bar.class).first().get();
         TransformRedirects transformRedirects = new TransformRedirects(methodTransforms.stream().findFirst().get().redirectSets(), MappingsProvider.IDENTITY);
 
         Collection<MethodRedirectImpl> methodRedirects = transformRedirects.methodRedirects().values();

@@ -2,7 +2,7 @@ package io.github.notstirred.dasm.annotation.parse;
 
 import io.github.notstirred.dasm.annotation.AnnotationUtil;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
-import io.github.notstirred.dasm.exception.wrapped.DasmClassExceptions;
+import io.github.notstirred.dasm.util.NotifyStack;
 import lombok.Data;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -19,7 +19,7 @@ public class InterOwnerContainerImpl {
     private final Type srcType;
     private final Type dstType;
 
-    public static Optional<InterOwnerContainerImpl> parse(ClassNode classNode, DasmClassExceptions classExceptions) {
+    public static Optional<InterOwnerContainerImpl> parse(ClassNode classNode, NotifyStack classExceptions) {
         if (classNode.invisibleAnnotations == null) {
             return Optional.empty();
         }
@@ -34,7 +34,7 @@ public class InterOwnerContainerImpl {
         try {
             owner = parseRefAnnotation("from", values);
         } catch (RefImpl.RefAnnotationGivenNoArguments e) {
-            classExceptions.addException(e);
+            classExceptions.notifyFromException(e);
             return Optional.empty();
         }
         Type newOwner = RefImpl.parseOptionalRefAnnotation(((AnnotationNode) values.get("to"))).orElse(owner);

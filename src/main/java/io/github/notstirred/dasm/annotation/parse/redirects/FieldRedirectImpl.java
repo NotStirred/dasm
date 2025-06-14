@@ -6,7 +6,8 @@ import io.github.notstirred.dasm.annotation.parse.RefImpl;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.FieldRedirect;
 import io.github.notstirred.dasm.data.ClassField;
 import io.github.notstirred.dasm.data.Field;
-import io.github.notstirred.dasm.exception.DasmAnnotationException;
+import io.github.notstirred.dasm.exception.DasmException;
+import io.github.notstirred.dasm.notify.Notification;
 import lombok.Data;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -49,13 +50,13 @@ public class FieldRedirectImpl {
         ));
     }
 
-    public static class FieldRedirectHasEmptySrcName extends DasmAnnotationException {
+    public static class FieldRedirectHasEmptySrcName extends DasmException {
         public FieldRedirectHasEmptySrcName(FieldNode fieldNode) {
             super("@FieldRedirect for `" + fieldNode.name + "` has an empty name.");
         }
     }
 
-    public static class FieldMissingFieldRedirectAnnotationException extends DasmAnnotationException {
+    public static class FieldMissingFieldRedirectAnnotationException extends Notification {
         public FieldMissingFieldRedirectAnnotationException(FieldNode fieldNode) {
             super("Field `" + fieldNode.name + "` is missing a @FieldRedirect annotation.");
         }
