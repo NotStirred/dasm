@@ -58,7 +58,7 @@ public class FieldRedirectImpl {
 
     public static class FieldMissingFieldRedirectAnnotationException extends Notification {
         public FieldMissingFieldRedirectAnnotationException(FieldNode fieldNode) {
-            super("Field `" + fieldNode.name + "` is missing a @FieldRedirect annotation.");
+            super("Field is missing a @FieldRedirect annotation.");
         }
     }
 }

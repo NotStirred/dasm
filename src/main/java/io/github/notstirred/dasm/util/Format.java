@@ -45,4 +45,8 @@ public class Format {
     public static String format(ClassNode classNode) {
         return formatType(Type.getObjectType(classNode.name));
     }
+
+    public static String formatObjectType(Type type) {
+        return formatType(type);
+    }
 }

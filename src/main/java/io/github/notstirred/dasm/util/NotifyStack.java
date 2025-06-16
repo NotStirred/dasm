@@ -3,6 +3,7 @@ package io.github.notstirred.dasm.util;
 import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.notify.Notification;
 import lombok.Getter;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -13,6 +14,7 @@ import java.util.StringJoiner;
 import java.util.stream.Collector;
 
 import static io.github.notstirred.dasm.util.Format.format;
+import static io.github.notstirred.dasm.util.Format.formatObjectType;
 
 public class NotifyStack {
     private final List<String> stack;
@@ -64,6 +66,13 @@ public class NotifyStack {
     public NotifyStack push(FieldNode fieldNode) {
         ArrayList<String> newStack = new ArrayList<>(this.stack);
         newStack.add(format(fieldNode));
+        return new NotifyStack(newStack, this.notifications);
+    }
+
+    public NotifyStack push(Type type) {
+        assert type.getSort() == Type.OBJECT;
+        ArrayList<String> newStack = new ArrayList<>(this.stack);
+        newStack.add(formatObjectType(type));
         return new NotifyStack(newStack, this.notifications);
     }
 

@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.github.notstirred.dasm.annotation.AnnotationUtil.getAnnotationIfPresent;
-import static io.github.notstirred.dasm.util.TypeUtil.simpleClassNameOf;
 import static io.github.notstirred.dasm.util.Util.atLeastTwoOf;
 import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
@@ -96,6 +95,7 @@ public class RedirectSetImpl {
         }
 
         innerClassData.values().forEach(innerClassInfo -> {
+            NotifyStack innerClassExceptions = redirectSetExceptions.push(innerClassInfo.container.type);
             innerClassInfo.superNames.forEach(superName -> {
                 Type superContainerType = Type.getObjectType(superName);
                 if (superContainerType.equals(Type.getType(Object.class))) { // having no super type is always OK
@@ -103,11 +103,11 @@ public class RedirectSetImpl {
                 }
                 InnerClassInfo superContainerInfo = innerClassData.get(superContainerType);
                 if (superContainerInfo == null) {
-                    redirectSetExceptions.notify(new SuperTypeInInvalidRedirectSet(innerClassInfo.container.type.getClassName(), superContainerType.getClassName()));
+                    innerClassExceptions.notify(new SuperTypeInInvalidRedirectSet(innerClassInfo.container.type.getClassName(), superContainerType.getClassName()));
                     return;
                 }
                 if (innerClassInfo.container.superContainer != null) {
-                    redirectSetExceptions.notify(new MultipleContainerInheritanceNotImplemented(innerClassInfo.container));
+                    innerClassExceptions.notify(new MultipleContainerInheritanceNotImplemented(innerClassInfo.container));
                     return;
                 }
                 innerClassInfo.container.superContainer = superContainerInfo.container();
@@ -300,44 +300,44 @@ public class RedirectSetImpl {
 
     public static class InterOwnerContainerHasNonStaticRedirects extends Notification {
         public InterOwnerContainerHasNonStaticRedirects(Type type) {
-            super("InterOwnerContainer " + simpleClassNameOf(type) + " contains non-static redirects which is invalid." +
+            super("InterOwnerContainer contains non-static redirects which is invalid." +
                     "Consider using @TypeRedirect instead.");
         }
     }
 
     public static class MoreThanOneContainerException extends Notification {
         public MoreThanOneContainerException(Type type) {
-            super(simpleClassNameOf(type) + " has more than one of  @TypeRedirect, @InterOwnerContainer, @IntraOwnerContainer");
+            super("Type has more than one of  @TypeRedirect, @InterOwnerContainer, @IntraOwnerContainer");
         }
     }
 
     public static class MissingContainerException extends Notification {
         public MissingContainerException(Type redirectSetType) {
-            super(simpleClassNameOf(redirectSetType) + " is missing one of @TypeRedirect, @InterOwnerContainer, @IntraOwnerContainer.");
+            super("Type is missing one of @TypeRedirect, @InterOwnerContainer, @IntraOwnerContainer.");
         }
     }
 
     public static class MissingMethodRedirectRedirect extends Notification {
         public MissingMethodRedirectRedirect(MethodNode methodNode) {
-            super("Method `" + methodNode.name + "` is missing a @MethodRedirect, @FieldToMethodRedirect or a @ConstructorToFactoryRedirect annotation.");
+            super("Method is missing a @MethodRedirect, @FieldToMethodRedirect or a @ConstructorToFactoryRedirect annotation.");
         }
     }
 
     public static class MoreThanOneMethodRedirect extends Notification {
         public MoreThanOneMethodRedirect(MethodNode methodNode) {
-            super("Method `" + methodNode.name + "` has more than one of @MethodRedirect, @FieldToMethodRedirect and @ConstructorToFactoryRedirect annotations.");
+            super("Method has more than one of @MethodRedirect, @FieldToMethodRedirect and @ConstructorToFactoryRedirect annotations.");
         }
     }
 
     public static class MissingRedirectSetAnnotationException extends Notification {
         public MissingRedirectSetAnnotationException(Type redirectSetType) {
-            super(simpleClassNameOf(redirectSetType) + " is missing @RedirectSet annotation");
+            super("Type is missing @RedirectSet annotation");
         }
     }
 
     public static class NonInterfaceIsUsedAsRedirectSetException extends Notification {
         public NonInterfaceIsUsedAsRedirectSetException(Type redirectSetType) {
-            super("Non-interface " + simpleClassNameOf(redirectSetType) + " is used as a redirect set");
+            super("Non-interface is used as a redirect set");
         }
     }
 
