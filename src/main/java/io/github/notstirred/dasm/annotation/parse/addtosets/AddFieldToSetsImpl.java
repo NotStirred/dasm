@@ -25,11 +25,11 @@ public class AddFieldToSetsImpl {
     private final Optional<Type> mappingsOwner;
 
     private final Type dstOwner;
-    private final String dstMethodName;
+    private final String dstFieldName;
 
-    public static Optional<AddFieldToSetsImpl> parse(Type dstOwner, FieldNode methodNode)
+    public static Optional<AddFieldToSetsImpl> parse(Type dstOwner, FieldNode fieldNode)
             throws RefImpl.RefAnnotationGivenNoArguments, MethodSigImpl.InvalidMethodSignature, MethodSigImpl.EmptySrcName {
-        AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(methodNode.invisibleAnnotations, AddFieldToSets.class);
+        AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(fieldNode.invisibleAnnotations, AddFieldToSets.class);
         if (annotation == null) {
             return Optional.empty();
         }
@@ -47,7 +47,7 @@ public class AddFieldToSetsImpl {
                 srcField,
                 mappingsOwner,
                 dstOwner,
-                methodNode.name
+                fieldNode.name
         ));
     }
 }
