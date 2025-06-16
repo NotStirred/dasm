@@ -232,13 +232,13 @@ public class DasmContext {
 
     public static class BothTransformMethodAndTransformFromMethodPresent extends Notification {
         public BothTransformMethodAndTransformFromMethodPresent(MethodNode methodNode) {
-            super(String.format("Method %s has both TransformMethod and TransformFromMethod annotations.", methodNode.name));
+            super("Method has both TransformMethod and TransformFromMethod annotations.");
         }
     }
 
     public static class TransformAndMethodVisibilityDiffer extends Notification {
         public TransformAndMethodVisibilityDiffer(MethodNode methodNode, Visibility transformVisibility, Visibility methodVisibility) {
-            super(String.format("Method %s and its transform have different visibility, %s vs %s", methodNode.name, methodVisibility, transformVisibility));
+            super(String.format("Method and its transform have different visibility, %s vs %s", methodVisibility, transformVisibility));
         }
     }
 }

@@ -34,6 +34,7 @@ import org.objectweb.asm.tree.MethodNode;
 import java.util.*;
 
 import static io.github.notstirred.dasm.annotation.AnnotationUtil.*;
+import static io.github.notstirred.dasm.util.Format.formatObjectType;
 
 public class AnnotationParser {
     private final ClassNodeProvider provider;
@@ -259,19 +260,19 @@ public class AnnotationParser {
 
     public static class ContainerNotWithinRedirectSet extends DasmException {
         public ContainerNotWithinRedirectSet(Type containerType) {
-            super(String.format("Container `" + containerType.getClassName() + "` must be within a @RedirectSet interface"));
+            super(String.format("Container `" + formatObjectType(containerType) + "` must be within a @RedirectSet interface"));
         }
     }
 
     public static class TypeIsNotAContainer extends DasmException {
         public TypeIsNotAContainer(Type type) {
-            super(String.format("Type `" + type.getClassName() + "` is not a container but is used as one"));
+            super(String.format("Type `" + formatObjectType(type) + "` is not a container but is used as one"));
         }
     }
 
     public static class NoValidRedirectSetExists extends Notification {
         public NoValidRedirectSetExists(Type redirectSetType) {
-            super(String.format("No valid redirect set exists matching `" + redirectSetType.getClassName() + "`"));
+            super(String.format("No valid redirect set exists matching `" + formatObjectType(redirectSetType) + "`"));
         }
     }
 }
