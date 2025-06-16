@@ -11,7 +11,6 @@ import io.github.notstirred.dasm.test.targets.inherited_transforms.Bar;
 import io.github.notstirred.dasm.test.targets.inherited_transforms.Foo;
 import io.github.notstirred.dasm.test.utils.ByteArrayClassLoader;
 import io.github.notstirred.dasm.transformer.Transformer;
-import io.github.notstirred.dasm.transformer.data.ClassTransform;
 import io.github.notstirred.dasm.transformer.data.MethodTransform;
 import io.github.notstirred.dasm.util.CachingClassProvider;
 import io.github.notstirred.dasm.util.Pair;
@@ -38,10 +37,42 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 public class TestHarness {
+    private static final Path DASM_OUT = Path.of(".dasm.out");
+
     /**
      * Verifies that the actualClass equals the expectedClass after transforms in dasmClass+actualClass have been applied
      */
     public static void verifyMethodTransformsValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
+        verifyTransformValid(actualClass, expectedClass, dasmClass, DASM_OUT.resolve("method_transforms"),
+                (context, classNode) -> context.buildMethodTargets(classNode, ""),
+                Transformer::transform
+        );
+    }
+
+    /**
+     * Verifies that the actualClass equals the expectedClass after transforms in dasmClass+actualClass have been applied
+     */
+    public static void verifyClassTransformValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
+        verifyTransformValid(actualClass, expectedClass, dasmClass, DASM_OUT.resolve("class_transforms"),
+                DasmContext::buildClassTarget,
+                Transformer::transform
+        );
+    }
+
+    @FunctionalInterface
+    interface BuildTargets<T> {
+        Pair<Optional<T>, List<Notification>> buildTargets(DasmContext context, ClassNode classNode) throws DasmException;
+    }
+
+    @FunctionalInterface
+    interface DoTransform<T> {
+        void doTransform(Transformer transformer, ClassNode classNode, T transforms) throws DasmException;
+    }
+
+    /**
+     * Verifies that the actualClass equals the expectedClass after transforms in dasmClass+actualClass have been applied
+     */
+    private static <T> void verifyTransformValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass, Path basePath, BuildTargets<T> buildTargets, DoTransform<T> doTransform) {
         ClassNode actual = classNodeFromClass(actualClass);
         ClassNode expected = classNodeFromClass(expectedClass);
         ClassNode dasm = classNodeFromClass(dasmClass);
@@ -52,12 +83,33 @@ public class TestHarness {
         AnnotationParser annotationParser = new AnnotationParser(classProvider);
 
         try {
-            Collection<MethodTransform> methodTransforms = annotationParser.parseDasmClassNodes(Lists.newArrayList(dasm, actual)).first()
-                    .buildMethodTargets(dasm, "").first().get();
+            Pair<DasmContext, List<Notification>> dasmContextListPair = annotationParser.parseDasmClassNodes(Lists.newArrayList(dasm, actual));
+            DasmContext context;
+            if (dasmContextListPair.first() != null) {
+                context = dasmContextListPair.first();
+            } else {
+                DasmException dasmException = new DasmException("");
+                dasmContextListPair.second().forEach(notification -> {
+                    dasmException.addSuppressed(new Exception(notification.message));
+                });
+                throw dasmException;
+            }
 
-            transformer.transform(actual, methodTransforms);
+            dasm.name = actual.name;
+            Pair<Optional<T>, List<Notification>> targetsAndNotifications = buildTargets.buildTargets(context, dasm);
+            if (targetsAndNotifications.first().isPresent()) {
+                T transforms = targetsAndNotifications.first().get();
+
+                doTransform.doTransform(transformer, actual, transforms);
+            } else {
+                DasmException dasmException = new DasmException("");
+                targetsAndNotifications.second().forEach(notification -> {
+                    dasmException.addSuppressed(new Exception(notification.message));
+                });
+                throw dasmException;
+            }
         } catch (DasmException e) {
-            throw new Error("", e);
+            throw new Error("Dasm Exception in testing", e);
         }
 
         // Write and re-read class bytes to fix issues with label nodes being wonky
@@ -65,7 +117,7 @@ public class TestHarness {
         ClassNode reparsedClassNode = classNodeFromBytes(bytecode);
 
         try {
-            Path path = Path.of(".dasm.out/method_transforms/" + reparsedClassNode.name.replace('.', '/') + ".class").toAbsolutePath();
+            Path path = basePath.resolve(reparsedClassNode.name.replace('.', '/') + ".class").toAbsolutePath();
             Path actualPath = path.getParent().resolve("ACTUAL").resolve(path.getFileName());
             createDirectoriesIfNotExists(actualPath.getParent());
             Files.write(actualPath, bytecode);
@@ -78,49 +130,6 @@ public class TestHarness {
 
         expected.methods.sort(Comparator.comparing(methodNode -> methodNode.name));
         reparsedClassNode.methods.sort(Comparator.comparing(methodNode -> methodNode.name));
-
-        assertClassNodesEqual(reparsedClassNode, expected);
-        callAllMethodsWithDummies(actualClass, expectedClass, reparsedClassNode);
-    }
-
-    /**
-     * Verifies that the actualClass equals the expectedClass after transforms in dasmClass+actualClass have been applied
-     */
-    public static void verifyClassTransformValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
-        ClassNode actual = classNodeFromClass(actualClass);
-        ClassNode expected = classNodeFromClass(expectedClass);
-        ClassNode dasm = classNodeFromClass(dasmClass);
-
-        CachingClassProvider classProvider = new CachingClassProvider(TestHarness::getBytesForClassName);
-        Transformer transformer = new Transformer(classProvider, MappingsProvider.IDENTITY);
-
-        AnnotationParser annotationParser = new AnnotationParser(classProvider);
-
-        try {
-            DasmContext context = annotationParser.parseDasmClassNodes(Lists.newArrayList(dasm, actual)).first();
-            dasm.name = actual.name;
-            ClassTransform methodTransforms = context.buildClassTarget(dasm).first().get();
-
-            transformer.transform(actual, methodTransforms);
-        } catch (DasmException e) {
-            throw new Error("foo", e);
-        }
-
-        // Write and re-read class bytes to fix issues with label nodes being wonky
-        byte[] bytecode = classNodeToBytes(actual);
-        ClassNode reparsedClassNode = classNodeFromBytes(bytecode);
-
-        try {
-            Path path = Path.of(".dasm.out/class_transforms/" + reparsedClassNode.name.replace('.', '/') + ".class").toAbsolutePath();
-            Path actualPath = path.getParent().resolve("ACTUAL").resolve(path.getFileName());
-            createDirectoriesIfNotExists(actualPath.getParent());
-            Files.write(actualPath, bytecode);
-            Path expectedPath = path.getParent().resolve("EXPECTED").resolve(expectedClass.getSimpleName());
-            createDirectoriesIfNotExists(expectedPath.getParent());
-            Files.write(expectedPath, classNodeToBytes(expected));
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
 
         assertClassNodesEqual(reparsedClassNode, expected);
         callAllMethodsWithDummies(actualClass, expectedClass, reparsedClassNode);
