@@ -14,10 +14,19 @@ import java.util.stream.Collector;
 
 import static io.github.notstirred.dasm.util.Format.format;
 
-public class NotifyStack implements AutoCloseable {
-    private final List<String> stack = new ArrayList<>();
+public class NotifyStack {
+    private final List<String> stack;
     @Getter
-    private final List<Notification> notifications = new ArrayList<>();
+    private final List<Notification> notifications;
+
+    public NotifyStack() {
+        this(new ArrayList<>(), new ArrayList<>());
+    }
+
+    private NotifyStack(List<String> stack, List<Notification> notifications) {
+        this.stack = stack;
+        this.notifications = notifications;
+    }
 
     public static NotifyStack of(ClassNode classNode) {
         NotifyStack notifyStack = new NotifyStack();
@@ -41,23 +50,21 @@ public class NotifyStack implements AutoCloseable {
     }
 
     public NotifyStack push(ClassNode classNode) {
-        this.stack.add(format(classNode));
-        return this;
+        ArrayList<String> newStack = new ArrayList<>(this.stack);
+        newStack.add(format(classNode));
+        return new NotifyStack(newStack, this.notifications);
     }
 
     public NotifyStack push(MethodNode methodNode) {
-        this.stack.add(format(methodNode));
-        return this;
+        ArrayList<String> newStack = new ArrayList<>(this.stack);
+        newStack.add(format(methodNode));
+        return new NotifyStack(newStack, this.notifications);
     }
 
     public NotifyStack push(FieldNode fieldNode) {
-        this.stack.add(format(fieldNode));
-        return this;
-    }
-
-    public NotifyStack pop() {
-        this.stack.remove(this.stack.size() - 1);
-        return this;
+        ArrayList<String> newStack = new ArrayList<>(this.stack);
+        newStack.add(format(fieldNode));
+        return new NotifyStack(newStack, this.notifications);
     }
 
     public boolean hasError() {
@@ -75,10 +82,5 @@ public class NotifyStack implements AutoCloseable {
 
     public static Collector<NotifyStack, ?, NotifyStack> joining() {
         return Collector.of(NotifyStack::new, NotifyStack::join, NotifyStack::join, Collector.Characteristics.IDENTITY_FINISH);
-    }
-
-    @Override
-    public void close() {
-        this.pop();
     }
 }
