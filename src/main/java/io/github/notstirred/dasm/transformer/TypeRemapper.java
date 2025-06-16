@@ -28,7 +28,7 @@ public class TypeRemapper extends RemapperWithPrimitives {
                     mappingsProvider.remapType(type).getInternalName(), mappingsProvider.remapType(typeRedirectsIn.get(type).type()).getInternalName());
         }
 
-        typeRedirects.forEach((old, n) -> LOGGER.info("Type mapping: " + old + " -> " + n));
+        typeRedirects.forEach((old, n) -> LOGGER.trace("Type mapping: " + old + " -> " + n));
 
     }
 
@@ -40,7 +40,7 @@ public class TypeRemapper extends RemapperWithPrimitives {
         String mapped = typeRedirects.get(key);
         if (mapped == null) {
             if (this.debugLogging) {
-                LOGGER.info("NOTE: handling CLASS redirect to self: " + key);
+                LOGGER.trace("NOTE: handling CLASS redirect to self: " + key);
             }
             typeRedirects.put(key, key);
             return key;
