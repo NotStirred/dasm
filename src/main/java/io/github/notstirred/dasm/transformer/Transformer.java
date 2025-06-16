@@ -121,37 +121,35 @@ public class Transformer {
     }
 
     public List<Notification> transform(ClassNode targetClass, Collection<MethodTransform> transforms) {
-        try (NotifyStack dasmClassExceptions = NotifyStack.of(targetClass)) {
+        NotifyStack dasmClassExceptions = NotifyStack.of(targetClass);
 
-            Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
-            for (MethodTransform transform : transforms) {
-                try (NotifyStack methodExceptions = dasmClassExceptions.push(transform.originalTransformData().methodNode())) {
-                    Type methodSrcOwner = transform.srcMethod().owner();
+        Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
+        for (MethodTransform transform : transforms) {
+            NotifyStack methodExceptions = dasmClassExceptions.push(transform.originalTransformData().methodNode());
+            Type methodSrcOwner = transform.srcMethod().owner();
 
-                    ClassNode srcClass;
-                    if (methodSrcOwner.equals(targetClassType)) {
-                        srcClass = targetClass;
-                    } else {
-                        try {
-                            srcClass = this.classNodeProvider.classNode(methodSrcOwner);
-                        } catch (NoSuchTypeExists e) {
-                            methodExceptions.notifyFromException(e);
-                            continue;
-                        }
-                    }
-
-                    TransformRedirects transformRedirects = new TransformRedirects(transform.redirectSets(), this.mappingsProvider);
-                    if (transform.inPlace()) {
-                        applyRedirects(srcClass, transform.srcMethod(), transformRedirects, transform.transformChanges(), transform.originalTransformData(), methodExceptions, true);
-                    } else {
-                        // FIXME: java 8 synthetic accessor methods
-                        cloneAndApplyRedirects(srcClass, targetClass, transform.srcMethod(), transform.dstMethodName(), transformRedirects, transform.transformChanges(), transform.originalTransformData(), methodExceptions, true);
-                    }
+            ClassNode srcClass;
+            if (methodSrcOwner.equals(targetClassType)) {
+                srcClass = targetClass;
+            } else {
+                try {
+                    srcClass = this.classNodeProvider.classNode(methodSrcOwner);
+                } catch (NoSuchTypeExists e) {
+                    methodExceptions.notifyFromException(e);
+                    continue;
                 }
             }
 
-            return dasmClassExceptions.notifications();
+            TransformRedirects transformRedirects = new TransformRedirects(transform.redirectSets(), this.mappingsProvider);
+            if (transform.inPlace()) {
+                applyRedirects(srcClass, transform.srcMethod(), transformRedirects, transform.transformChanges(), transform.originalTransformData(), methodExceptions, true);
+            } else {
+                // FIXME: java 8 synthetic accessor methods
+                cloneAndApplyRedirects(srcClass, targetClass, transform.srcMethod(), transform.dstMethodName(), transformRedirects, transform.transformChanges(), transform.originalTransformData(), methodExceptions, true);
+            }
         }
+
+        return dasmClassExceptions.notifications();
     }
 
     /**
@@ -296,19 +294,18 @@ public class Transformer {
         forEachLambdaInvocation(srcClass, method, (classMethod, handle, lambdaNode) -> {
             String newName = "dasm$redirect$" + classMethod.method().getName();
             lambdaRedirects.put(handle, newName);
-            try (NotifyStack lambdaExceptions = methodExceptions.push(lambdaNode)) {
-                cloneAndApplyRedirects(
-                        srcClass,
-                        targetClass,
-                        classMethod,
-                        newName,
-                        redirects,
-                        new MethodTransform.TransformChanges(Collections.emptyList(), Visibility.PRIVATE, Visibility.SAME_AS_TARGET),
-                        new MethodTransform.OriginalTransformData(srcClass.name, method),
-                        lambdaExceptions,
-                        debugLogging
-                );
-            }
+            NotifyStack lambdaExceptions = methodExceptions.push(lambdaNode);
+            cloneAndApplyRedirects(
+                    srcClass,
+                    targetClass,
+                    classMethod,
+                    newName,
+                    redirects,
+                    new MethodTransform.TransformChanges(Collections.emptyList(), Visibility.PRIVATE, Visibility.SAME_AS_TARGET),
+                    new MethodTransform.OriginalTransformData(srcClass.name, method),
+                    lambdaExceptions,
+                    debugLogging
+            );
         });
 
         Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
@@ -327,17 +324,16 @@ public class Transformer {
     private void applyLambdaRedirects(ClassNode srcClass, MethodNode method, TransformRedirects redirects,
                                       NotifyStack methodExceptions, boolean debugLogging) {
         forEachLambdaInvocation(srcClass, method, (classMethod, handle, lambdaNode) -> {
-            try (NotifyStack lambdaExceptions = methodExceptions.push(lambdaNode)) {
-                applyRedirects(
-                        srcClass,
-                        classMethod,
-                        redirects,
-                        new MethodTransform.TransformChanges(Collections.emptyList(), Visibility.PRIVATE, Visibility.SAME_AS_TARGET),
-                        new MethodTransform.OriginalTransformData(srcClass.name, method), // Assume lambas are always private, the passed in method here is therefore irrelevant
-                        lambdaExceptions,
-                        debugLogging
-                );
-            }
+            NotifyStack lambdaExceptions = methodExceptions.push(lambdaNode);
+            applyRedirects(
+                    srcClass,
+                    classMethod,
+                    redirects,
+                    new MethodTransform.TransformChanges(Collections.emptyList(), Visibility.PRIVATE, Visibility.SAME_AS_TARGET),
+                    new MethodTransform.OriginalTransformData(srcClass.name, method), // Assume lambas are always private, the passed in method here is therefore irrelevant
+                    lambdaExceptions,
+                    debugLogging
+            );
         });
     }
 

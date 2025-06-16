@@ -37,121 +37,118 @@ public class DasmContext {
 
     public Pair<Optional<ClassTransform>, List<Notification>> buildClassTarget(ClassNode targetClass) throws DasmException {
         Type targetType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
-        try (NotifyStack classExceptions = NotifyStack.of(targetClass)) {
+        NotifyStack classExceptions = NotifyStack.of(targetClass);
 
-            AnnotationNode transformFromClassNode = getAnnotationIfPresent(targetClass.invisibleAnnotations, TransformFromClass.class);
-            if (transformFromClassNode != null) {
-                Map<String, Object> values = getAnnotationValues(transformFromClassNode, TransformFromClass.class);
+        AnnotationNode transformFromClassNode = getAnnotationIfPresent(targetClass.invisibleAnnotations, TransformFromClass.class);
+        if (transformFromClassNode != null) {
+            Map<String, Object> values = getAnnotationValues(transformFromClassNode, TransformFromClass.class);
 
-                try {
-                    Type srcType = RefImpl.parseRefAnnotation("value", values);
-                    ApplicationStage stage = (ApplicationStage) values.get("stage");
+            try {
+                Type srcType = RefImpl.parseRefAnnotation("value", values);
+                ApplicationStage stage = (ApplicationStage) values.get("stage");
 
-                    List<RedirectSetImpl> sets = unrollSets(
-                            AnnotationUtil.<Type>annotationElementAsList(values.get("sets")).orElseGet(ArrayList::new).stream()
-                                    .map(this.redirectSetsByType::get)
-                                    .collect(Collectors.toList())
-                    );
+                List<RedirectSetImpl> sets = unrollSets(
+                        AnnotationUtil.<Type>annotationElementAsList(values.get("sets")).orElseGet(ArrayList::new).stream()
+                                .map(this.redirectSetsByType::get)
+                                .collect(Collectors.toList())
+                );
 
-                    // FIXME: this should verify that there are no method transforms inside this class,
-                    return new Pair<>(Optional.of(new ClassTransform(srcType, targetType, sets, stage)), classExceptions.notifications());
-                } catch (RefImpl.RefAnnotationGivenNoArguments e) {
-                    classExceptions.notifyFromException(e);
-                }
+                // FIXME: this should verify that there are no method transforms inside this class,
+                return new Pair<>(Optional.of(new ClassTransform(srcType, targetType, sets, stage)), classExceptions.notifications());
+            } catch (RefImpl.RefAnnotationGivenNoArguments e) {
+                classExceptions.notifyFromException(e);
             }
-
-            return new Pair<>(Optional.empty(), classExceptions.notifications());
         }
+
+        return new Pair<>(Optional.empty(), classExceptions.notifications());
     }
 
     public Pair<Optional<Collection<MethodTransform>>, List<Notification>> buildMethodTargets(ClassNode dasmClass, String methodPrefix) {
         boolean isTargetTypeInterface = (dasmClass.access & Opcodes.ACC_INTERFACE) != 0;
 
-        try (NotifyStack classExceptions = NotifyStack.of(dasmClass)) {
+        NotifyStack classExceptions = NotifyStack.of(dasmClass);
 
-            AnnotationNode dasmNode = getAnnotationIfPresent(dasmClass.invisibleAnnotations, Dasm.class);
-            if (dasmNode != null) {
-                Map<String, Object> values = getAnnotationValues(dasmNode, Dasm.class);
-                Type targetType = RefImpl.parseOptionalRefAnnotation((AnnotationNode) values.get("target"))
-                        .map(type -> type.getClassName().equals(Dasm.SELF_TARGET.class.getName()) ? null : type)
-                        .orElseGet(() -> Type.getType(TypeUtil.typeNameToDescriptor(dasmClass.name)));
+        AnnotationNode dasmNode = getAnnotationIfPresent(dasmClass.invisibleAnnotations, Dasm.class);
+        if (dasmNode != null) {
+            Map<String, Object> values = getAnnotationValues(dasmNode, Dasm.class);
+            Type targetType = RefImpl.parseOptionalRefAnnotation((AnnotationNode) values.get("target"))
+                    .map(type -> type.getClassName().equals(Dasm.SELF_TARGET.class.getName()) ? null : type)
+                    .orElseGet(() -> Type.getType(TypeUtil.typeNameToDescriptor(dasmClass.name)));
 
-                @SuppressWarnings("unchecked")
-                List<RedirectSetImpl> defaultRedirectSets = unrollSets(((List<Type>) values.get("value")).stream()
-                        .map(type -> {
-                            RedirectSetImpl redirectSet = this.redirectSetsByType.get(type);
-                            if (redirectSet == null) {
-                                classExceptions.notifyFromException(new NoSuchTypeExists(type));
-                            }
-                            return redirectSet;
-                        }).filter(Objects::nonNull)
-                        .collect(Collectors.toList())
+            @SuppressWarnings("unchecked")
+            List<RedirectSetImpl> defaultRedirectSets = unrollSets(((List<Type>) values.get("value")).stream()
+                    .map(type -> {
+                        RedirectSetImpl redirectSet = this.redirectSetsByType.get(type);
+                        if (redirectSet == null) {
+                            classExceptions.notifyFromException(new NoSuchTypeExists(type));
+                        }
+                        return redirectSet;
+                    }).filter(Objects::nonNull)
+                    .collect(Collectors.toList())
+            );
+
+            List<MethodTransform> methodTransforms = new ArrayList<>();
+
+            for (MethodNode method : dasmClass.methods) {
+                NotifyStack methodExceptions = classExceptions.push(method);
+
+                TransformMethodImpl transformMethod = parseTransformMethod(method, methodExceptions);
+                if (transformMethod == null)
+                    continue;
+
+                Type methodOwner = transformMethod.owner().orElse(targetType);
+
+                List<RedirectSetImpl> redirectSets = transformMethod.overriddenRedirectSets().map(types ->
+                                types.stream().map(this.redirectSetsByType::get).collect(Collectors.toList()))
+                        .map(this::unrollSets)
+                        .orElse(defaultRedirectSets);
+
+                // FIXME: figure out if there is a way to avoid this with mixin.
+                // Name is modified here to prevent mixin from overwriting it. We remove this prefix in postApply.
+                // We redirect to the non-prefixed name, but create the method with the prefix, for later removal.
+                String nonPrefixedMethodName = method.name;
+                String prefixedMethodName = methodPrefix + nonPrefixedMethodName;
+
+                List<AddedParameter> addedParameters = getAddedParameters(method, methodExceptions);
+
+                Pair<Visibility, Visibility> visibility = getRequestedVisibility(method, transformMethod.visibility(), methodExceptions);
+
+                MethodTransform transform = new MethodTransform(
+                        new ClassMethod(methodOwner, methodOwner, transformMethod.srcMethod()),
+                        prefixedMethodName // We have to rename constructors because we add a prefix, and mixin expects that anything with <> is either init, or clinit
+                                .replace("<init>", "__init__")
+                                .replace("<clinit>", "__clinit__"),
+                        redirectSets,
+                        transformMethod.stage(),
+                        transformMethod.inPlace(),
+                        new MethodTransform.TransformChanges(
+                                addedParameters,
+                                visibility.first,
+                                visibility.second
+                        ),
+                        new MethodTransform.OriginalTransformData(targetType.getInternalName(), method)
                 );
 
-                List<MethodTransform> methodTransforms = new ArrayList<>();
+                AnnotationNode addToSetsAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, AddTransformToSets.class);
+                if (addToSetsAnnotation != null) {
+                    Map<String, Object> addToSets = getAnnotationValues(addToSetsAnnotation, AddTransformToSets.class);
+                    List<Type> sets = (List<Type>) addToSets.get("value");
 
-                for (MethodNode method : dasmClass.methods) {
-                    try (NotifyStack methodExceptions = classExceptions.push(method)) {
-
-                        TransformMethodImpl transformMethod = parseTransformMethod(method, methodExceptions);
-                        if (transformMethod == null)
-                            continue;
-
-                        Type methodOwner = transformMethod.owner().orElse(targetType);
-
-                        List<RedirectSetImpl> redirectSets = transformMethod.overriddenRedirectSets().map(types ->
-                                        types.stream().map(this.redirectSetsByType::get).collect(Collectors.toList()))
-                                .map(this::unrollSets)
-                                .orElse(defaultRedirectSets);
-
-                        // FIXME: figure out if there is a way to avoid this with mixin.
-                        // Name is modified here to prevent mixin from overwriting it. We remove this prefix in postApply.
-                        // We redirect to the non-prefixed name, but create the method with the prefix, for later removal.
-                        String nonPrefixedMethodName = method.name;
-                        String prefixedMethodName = methodPrefix + nonPrefixedMethodName;
-
-                        List<AddedParameter> addedParameters = getAddedParameters(method, methodExceptions);
-
-                        Pair<Visibility, Visibility> visibility = getRequestedVisibility(method, transformMethod.visibility(), methodExceptions);
-
-                        MethodTransform transform = new MethodTransform(
-                                new ClassMethod(methodOwner, methodOwner, transformMethod.srcMethod()),
-                                prefixedMethodName // We have to rename constructors because we add a prefix, and mixin expects that anything with <> is either init, or clinit
-                                        .replace("<init>", "__init__")
-                                        .replace("<clinit>", "__clinit__"),
-                                redirectSets,
-                                transformMethod.stage(),
-                                transformMethod.inPlace(),
-                                new MethodTransform.TransformChanges(
-                                        addedParameters,
-                                        visibility.first,
-                                        visibility.second
-                                ),
-                                new MethodTransform.OriginalTransformData(targetType.getInternalName(), method)
-                        );
-
-                        AnnotationNode addToSetsAnnotation = getAnnotationIfPresent(method.invisibleAnnotations, AddTransformToSets.class);
-                        if (addToSetsAnnotation != null) {
-                            Map<String, Object> addToSets = getAnnotationValues(addToSetsAnnotation, AddTransformToSets.class);
-                            List<Type> sets = (List<Type>) addToSets.get("value");
-
-                            sets.forEach(set -> this.containersByType.get(set).methodRedirects().add(new MethodRedirectImpl(
-                                    transform.srcMethod(),
-                                    targetType,
-                                    nonPrefixedMethodName,
-                                    (method.access & ACC_STATIC) != 0,
-                                    isTargetTypeInterface
-                            )));
-                        }
-
-                        methodTransforms.add(transform);
-                    }
+                    sets.forEach(set -> this.containersByType.get(set).methodRedirects().add(new MethodRedirectImpl(
+                            transform.srcMethod(),
+                            targetType,
+                            nonPrefixedMethodName,
+                            (method.access & ACC_STATIC) != 0,
+                            isTargetTypeInterface
+                    )));
                 }
-                return new Pair<>(Optional.of(methodTransforms), classExceptions.notifications());
-            }
 
-            return new Pair<>(Optional.empty(), classExceptions.notifications());
+                methodTransforms.add(transform);
+            }
+            return new Pair<>(Optional.of(methodTransforms), classExceptions.notifications());
         }
+
+        return new Pair<>(Optional.empty(), classExceptions.notifications());
     }
 
     private Pair<Visibility, Visibility> getRequestedVisibility(MethodNode method, Visibility annotationVisibility, NotifyStack methodExceptions) {
