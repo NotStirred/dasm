@@ -146,7 +146,7 @@ public class RedirectVisitor extends MethodVisitor {
         if (fieldToMethodRedirect.isStatic()) {
             // Static field to method redirects are allowed to change owner
             super.visitMethodInsn(
-                    fieldToMethodRedirect.isDstOwnerInterface() ? Opcodes.INVOKEINTERFACE : Opcodes.INVOKEVIRTUAL,
+                    Opcodes.INVOKESTATIC,
                     SKIP_TYPE_REDIRECT_PREFIX + method.owner().getInternalName(),
                     method.method().getName(),
                     method.method().getDescriptor(),
