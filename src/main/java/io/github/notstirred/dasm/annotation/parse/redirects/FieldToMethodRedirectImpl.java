@@ -55,7 +55,7 @@ public class FieldToMethodRedirectImpl {
         ));
     }
 
-    private static @NotNull String setterDescriptorFor(Method getter) {
+    public static @NotNull String setterDescriptorFor(Method getter) {
         return "(" + getter.getReturnType().getDescriptor() + ")V";
     }
 }

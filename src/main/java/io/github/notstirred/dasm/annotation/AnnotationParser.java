@@ -3,9 +3,11 @@ package io.github.notstirred.dasm.annotation;
 import io.github.notstirred.dasm.annotation.parse.MethodSigImpl;
 import io.github.notstirred.dasm.annotation.parse.RedirectSetImpl;
 import io.github.notstirred.dasm.annotation.parse.RefImpl;
+import io.github.notstirred.dasm.annotation.parse.addtosets.AddFieldToMethodToSetsImpl;
 import io.github.notstirred.dasm.annotation.parse.addtosets.AddFieldToSetsImpl;
 import io.github.notstirred.dasm.annotation.parse.addtosets.AddMethodToSetsImpl;
 import io.github.notstirred.dasm.annotation.parse.redirects.FieldRedirectImpl;
+import io.github.notstirred.dasm.annotation.parse.redirects.FieldToMethodRedirectImpl;
 import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddFieldToSets;
@@ -106,7 +108,7 @@ public class AnnotationParser {
                         FieldRedirectImpl fieldRedirect = new FieldRedirectImpl(
                                 new ClassField(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcField().type(), addToSets.srcField().name()),
                                 addToSets.dstOwner(),
-                                addToSets.dstMethodName()
+                                addToSets.dstFieldName()
                         );
                         container.fieldRedirects().add(fieldRedirect);
                     }
@@ -143,6 +145,32 @@ public class AnnotationParser {
                                 addToSets.isDstInterface()
                         );
                         container.methodRedirects().add(methodRedirect);
+                    }
+                }
+            } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
+                     MethodSigImpl.EmptySrcName e) {
+                methodExceptions.notifyFromException(e);
+            }
+
+            try {
+                Optional<AddFieldToMethodToSetsImpl> optAddToSets = AddFieldToMethodToSetsImpl.parse(targetClassType, methodNode);
+                if (optAddToSets.isPresent()) {
+                    AddFieldToMethodToSetsImpl addToSets = optAddToSets.get();
+                    // All containers for this method must already exist, so we can just use the map
+                    for (Type containerType : addToSets.containers()) {
+                        RedirectSetImpl.Container container = this.containers.get(containerType);
+                        if (container == null) {
+                            methodExceptions.notifyFromException(new ContainerNotWithinRedirectSet(containerType));
+                            continue;
+                        }
+                        FieldToMethodRedirectImpl fieldToMethodRedirect = new FieldToMethodRedirectImpl(
+                                new ClassField(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcField().type(), addToSets.srcField().name()),
+                                addToSets.dstMethod(),
+                                addToSets.dstSetterMethod(),
+                                addToSets.isStatic(),
+                                (targetClass.access & Opcodes.ACC_INTERFACE) != 0
+                        );
+                        container.fieldToMethodRedirects().add(fieldToMethodRedirect);
                     }
                 }
             } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
