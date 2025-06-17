@@ -30,6 +30,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static io.github.notstirred.dasm.util.TypeUtil.classNameToInternalName;
 import static io.github.notstirred.dasm.util.TypeUtil.typeNameToDescriptor;
@@ -45,7 +46,15 @@ public class TestHarness {
     public static void verifyMethodTransformsValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
         verifyTransformValid(actualClass, expectedClass, dasmClass, DASM_OUT.resolve("method_transforms"),
                 (context, classNode) -> context.buildMethodTargets(classNode, ""),
-                Transformer::transform
+                ((transformer, classNode, inputTransforms, additionalTransforms) -> {
+                    if (inputTransforms.isEmpty() && additionalTransforms.isEmpty())
+                        throw new IllegalStateException("No method transforms found in test?!");
+
+                    var transforms = Stream.of(inputTransforms, additionalTransforms)
+                            .filter(Optional::isPresent).map(Optional::get)
+                            .flatMap(Collection::stream).toList();
+                    transformer.transform(classNode, transforms);
+                })
         );
     }
 
@@ -55,7 +64,17 @@ public class TestHarness {
     public static void verifyClassTransformValid(Class<?> actualClass, Class<?> expectedClass, Class<?> dasmClass) {
         verifyTransformValid(actualClass, expectedClass, dasmClass, DASM_OUT.resolve("class_transforms"),
                 DasmContext::buildClassTarget,
-                Transformer::transform
+                ((transformer, classNode, inputTransforms, additionalTransforms) -> {
+                    if (inputTransforms.isEmpty() && additionalTransforms.isEmpty())
+                        throw new IllegalStateException("No class transforms found in test?!");
+                    if (inputTransforms.isPresent() && additionalTransforms.isPresent())
+                        throw new IllegalStateException("Two class transforms found in test?!");
+
+                    if (inputTransforms.isPresent())
+                        transformer.transform(classNode, inputTransforms.get());
+                    if (additionalTransforms.isPresent())
+                        transformer.transform(classNode, additionalTransforms.get());
+                })
         );
     }
 
@@ -66,7 +85,7 @@ public class TestHarness {
 
     @FunctionalInterface
     interface DoTransform<T> {
-        void doTransform(Transformer transformer, ClassNode classNode, T transforms) throws DasmException;
+        void doTransform(Transformer transformer, ClassNode classNode, Optional<T> inputTransforms, Optional<T> additionalTransforms) throws DasmException;
     }
 
     /**
@@ -95,15 +114,16 @@ public class TestHarness {
                 throw dasmException;
             }
 
-            dasm.name = actual.name;
-            Pair<Optional<T>, List<Notification>> targetsAndNotifications = buildTargets.buildTargets(context, dasm);
-            if (targetsAndNotifications.first().isPresent()) {
-                T transforms = targetsAndNotifications.first().get();
+            Pair<Optional<T>, List<Notification>> dasmTransforms = buildTargets.buildTargets(context, dasm);
+            Pair<Optional<T>, List<Notification>> inputTransforms = buildTargets.buildTargets(context, actual);
+            if (dasmTransforms.first().isPresent() || inputTransforms.first().isPresent()) {
+                Optional<T> dTransforms = dasmTransforms.first();
+                Optional<T> iTransforms = inputTransforms.first();
 
-                doTransform.doTransform(transformer, actual, transforms);
+                doTransform.doTransform(transformer, actual, iTransforms, dTransforms);
             } else {
                 DasmException dasmException = new DasmException("");
-                targetsAndNotifications.second().forEach(notification -> {
+                dasmTransforms.second().forEach(notification -> {
                     dasmException.addSuppressed(new Exception(notification.message));
                 });
                 throw dasmException;
