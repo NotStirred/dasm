@@ -5,7 +5,6 @@ import io.github.notstirred.dasm.annotation.parse.FieldSigImpl;
 import io.github.notstirred.dasm.annotation.parse.MethodSigImpl;
 import io.github.notstirred.dasm.annotation.parse.RefImpl;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddFieldToMethodToSets;
-import io.github.notstirred.dasm.data.ClassMethod;
 import io.github.notstirred.dasm.data.Field;
 import lombok.Data;
 import org.objectweb.asm.Opcodes;
@@ -28,12 +27,12 @@ public class AddFieldToMethodToSetsImpl {
     private final Field srcField;
     private final Optional<Type> mappingsOwner;
 
-    private final ClassMethod dstMethod;
-    private final Optional<ClassMethod> dstSetterMethod;
+    private final Method dstMethod;
+    private final Optional<Method> dstSetterMethod;
 
     private final boolean isStatic;
 
-    public static Optional<AddFieldToMethodToSetsImpl> parse(Type dstOwner, MethodNode methodNode)
+    public static Optional<AddFieldToMethodToSetsImpl> parse(MethodNode methodNode)
             throws RefImpl.RefAnnotationGivenNoArguments, MethodSigImpl.InvalidMethodSignature, MethodSigImpl.EmptySrcName {
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(methodNode.invisibleAnnotations, AddFieldToMethodToSets.class);
         if (annotation == null) {
@@ -55,8 +54,8 @@ public class AddFieldToMethodToSetsImpl {
                 sets,
                 new Field(srcField.type(), srcField.name()),
                 mappingsOwner,
-                new ClassMethod(dstOwner, getter),
-                setter.isEmpty() ? Optional.empty() : Optional.of(new ClassMethod(dstOwner, new Method(setter, setterDescriptorFor(getter)))),
+                getter,
+                setter.isEmpty() ? Optional.empty() : Optional.of(new Method(setter, setterDescriptorFor(getter))),
                 (methodNode.access & Opcodes.ACC_STATIC) != 0
         ));
     }

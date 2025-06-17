@@ -24,13 +24,12 @@ public class AddMethodToSetsImpl {
     private final Method srcMethod;
     private final Optional<Type> mappingsOwner;
 
-    private final Type dstOwner;
     private final String dstMethodName;
     private final boolean isDstInterface;
 
     private final boolean isStatic;
 
-    public static Optional<AddMethodToSetsImpl> parse(Type dstOwner, boolean isDstInterface, MethodNode methodNode)
+    public static Optional<AddMethodToSetsImpl> parse(boolean isDstInterface, MethodNode methodNode)
             throws RefImpl.RefAnnotationGivenNoArguments, MethodSigImpl.InvalidMethodSignature, MethodSigImpl.EmptySrcName {
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(methodNode.invisibleAnnotations, AddMethodToSets.class);
         if (annotation == null) {
@@ -47,6 +46,6 @@ public class AddMethodToSetsImpl {
 
         boolean isStatic = (methodNode.access & ACC_STATIC) != 0;
 
-        return Optional.of(new AddMethodToSetsImpl(containers, srcMethod, mappingsOwner, dstOwner, methodNode.name, isDstInterface, isStatic));
+        return Optional.of(new AddMethodToSetsImpl(containers, srcMethod, mappingsOwner, methodNode.name, isDstInterface, isStatic));
     }
 }

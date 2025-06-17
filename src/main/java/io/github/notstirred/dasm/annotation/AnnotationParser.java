@@ -83,6 +83,14 @@ public class AnnotationParser {
     @Deprecated
     public NotifyStack findDasmAnnotations(ClassNode targetClass) {
         Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
+        AnnotationNode dasmNode = getAnnotationIfPresent(targetClass.invisibleAnnotations, Dasm.class);
+        if (dasmNode != null) {
+            Map<String, Object> values = getAnnotationValues(dasmNode, Dasm.class);
+            targetClassType = RefImpl.parseOptionalRefAnnotation((AnnotationNode) values.get("target"))
+                    .map(type -> type.getClassName().equals(Dasm.SELF_TARGET.class.getName()) ? null : type)
+                    .orElse(targetClassType);
+        }
+
         boolean isTargetInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
 
         NotifyStack classExceptions = NotifyStack.of(targetClass);
@@ -95,7 +103,7 @@ public class AnnotationParser {
             findOuterRedirectSetsForAnnotation(fieldNode.invisibleAnnotations, AddFieldToSets.class, "containers", fieldExceptions);
 
             try {
-                Optional<AddFieldToSetsImpl> optAddToSets = AddFieldToSetsImpl.parse(targetClassType, fieldNode);
+                Optional<AddFieldToSetsImpl> optAddToSets = AddFieldToSetsImpl.parse(fieldNode);
                 if (optAddToSets.isPresent()) {
                     AddFieldToSetsImpl addToSets = optAddToSets.get();
                     // All containers for this method must already exist, so we can just use the map
@@ -107,7 +115,7 @@ public class AnnotationParser {
                         }
                         FieldRedirectImpl fieldRedirect = new FieldRedirectImpl(
                                 new ClassField(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcField().type(), addToSets.srcField().name()),
-                                addToSets.dstOwner(),
+                                container.dstType(),
                                 addToSets.dstFieldName()
                         );
                         container.fieldRedirects().add(fieldRedirect);
@@ -126,7 +134,7 @@ public class AnnotationParser {
             findOuterRedirectSetsForAnnotation(methodNode.invisibleAnnotations, AddMethodToSets.class, "containers", methodExceptions);
 
             try {
-                Optional<AddMethodToSetsImpl> optAddToSets = AddMethodToSetsImpl.parse(targetClassType, isTargetInterface, methodNode);
+                Optional<AddMethodToSetsImpl> optAddToSets = AddMethodToSetsImpl.parse(isTargetInterface, methodNode);
                 if (optAddToSets.isPresent()) {
                     AddMethodToSetsImpl addToSets = optAddToSets.get();
                     // All containers for this method must already exist, so we can just use the map
@@ -139,7 +147,7 @@ public class AnnotationParser {
 
                         MethodRedirectImpl methodRedirect = new MethodRedirectImpl(
                                 new ClassMethod(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcMethod()),
-                                addToSets.dstOwner(),
+                                container.dstType(),
                                 addToSets.dstMethodName(),
                                 addToSets.isStatic(),
                                 addToSets.isDstInterface()
@@ -153,7 +161,7 @@ public class AnnotationParser {
             }
 
             try {
-                Optional<AddFieldToMethodToSetsImpl> optAddToSets = AddFieldToMethodToSetsImpl.parse(targetClassType, methodNode);
+                Optional<AddFieldToMethodToSetsImpl> optAddToSets = AddFieldToMethodToSetsImpl.parse(methodNode);
                 if (optAddToSets.isPresent()) {
                     AddFieldToMethodToSetsImpl addToSets = optAddToSets.get();
                     // All containers for this method must already exist, so we can just use the map
@@ -165,8 +173,8 @@ public class AnnotationParser {
                         }
                         FieldToMethodRedirectImpl fieldToMethodRedirect = new FieldToMethodRedirectImpl(
                                 new ClassField(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcField().type(), addToSets.srcField().name()),
-                                addToSets.dstMethod(),
-                                addToSets.dstSetterMethod(),
+                                new ClassMethod(container.dstType(), addToSets.dstMethod()),
+                                addToSets.dstSetterMethod().map(method -> new ClassMethod(container.dstType(), method)),
                                 addToSets.isStatic(),
                                 (targetClass.access & Opcodes.ACC_INTERFACE) != 0
                         );
