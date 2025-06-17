@@ -1,14 +1,12 @@
 package io.github.notstirred.dasm.test.tests.integration.visibility_changes;
 
 import io.github.notstirred.dasm.api.annotations.Dasm;
-import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddMethodToSets;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
 import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.api.annotations.transform.Visibility;
-import io.github.notstirred.dasm.test.targets.CubePos;
 import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
 
 import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
@@ -93,10 +91,5 @@ public class TestVisibilityChanges extends BaseMethodTest {
         @TypeRedirect(from = @Ref(Object.class), to = @Ref(String.class))
         abstract class A {
         }
-    }
-
-    @AddMethodToSets(containers = Set.A.class, method = @MethodSig(name = "from", ret = @Ref(CubePos.class), args = {@Ref(long.class)}))
-    public static CubePos testFoo(long l) {
-        return null;
     }
 }

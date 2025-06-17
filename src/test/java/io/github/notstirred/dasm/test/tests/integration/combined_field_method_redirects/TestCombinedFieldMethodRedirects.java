@@ -6,11 +6,11 @@ import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddMethodToS
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.ConstructorToFactoryRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.MethodRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
+import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
 import io.github.notstirred.dasm.api.annotations.selector.ConstructorMethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
-import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.targets.CubePos;
 import io.github.notstirred.dasm.test.targets.Vec3i;
 import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
@@ -20,17 +20,11 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
 /**
  * A trivial test for a static {@link AddMethodToSets}
  */
-@Dasm(value = TestCombinedFieldMethodRedirects.Set.class, target = @Ref(CombinedFieldMethodRedirectsInput.class))
+@Dasm(value = TestCombinedFieldMethodRedirects.Set.class)
 public class TestCombinedFieldMethodRedirects extends BaseMethodTest {
     public TestCombinedFieldMethodRedirects() {
         super(single(CombinedFieldMethodRedirectsInput.class, CombinedFieldMethodRedirectsOutput.class, TestCombinedFieldMethodRedirects.class));
     }
-
-    @TransformFromMethod(value = @MethodSig("method1()V"))
-    native String method1out();
-
-    @TransformFromMethod(value = @MethodSig("method2()V"))
-    native String method2out();
 
     @RedirectSet
     public interface Set {
@@ -48,10 +42,14 @@ public class TestCombinedFieldMethodRedirects extends BaseMethodTest {
             @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = {@Ref(long.class)}))
             native CubePos from();
         }
+
+        @InterOwnerContainer(from = @Ref(Vec3i.class), to = @Ref(TestCombinedFieldMethodRedirects.class))
+        abstract class B {
+        }
     }
 
-    @AddMethodToSets(containers = Set.A.class, method = @MethodSig(name = "fromLong", ret = @Ref(CubePos.class), args = {@Ref(long.class)}))
-    public static CubePos testFoo(long l) {
-        return null;
+    @AddMethodToSets(containers = Set.B.class, method = @MethodSig(name = "from", ret = @Ref(Vec3i.class), args = {@Ref(long.class)}))
+    public static CubePos from(long l) {
+        return CubePos.from(l);
     }
 }

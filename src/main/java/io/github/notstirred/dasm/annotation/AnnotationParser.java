@@ -112,7 +112,11 @@ public class AnnotationParser {
                         if (container == null) {
                             fieldExceptions.notifyFromException(new ContainerNotWithinRedirectSet(containerType));
                             continue;
+                        } else if (!container.dstType().equals(targetClassType)) {
+                            fieldExceptions.notify(new AddToSetsContainerInvalidDstType(containerType, container.dstType(), targetClassType));
+                            continue;
                         }
+
                         FieldRedirectImpl fieldRedirect = new FieldRedirectImpl(
                                 new ClassField(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcField().type(), addToSets.srcField().name()),
                                 container.dstType(),
@@ -143,6 +147,9 @@ public class AnnotationParser {
                         if (container == null) {
                             methodExceptions.notifyFromException(new ContainerNotWithinRedirectSet(containerType));
                             continue;
+                        } else if (!container.dstType().equals(targetClassType)) {
+                            methodExceptions.notify(new AddToSetsContainerInvalidDstType(containerType, container.dstType(), targetClassType));
+                            continue;
                         }
 
                         MethodRedirectImpl methodRedirect = new MethodRedirectImpl(
@@ -170,7 +177,11 @@ public class AnnotationParser {
                         if (container == null) {
                             methodExceptions.notifyFromException(new ContainerNotWithinRedirectSet(containerType));
                             continue;
+                        } else if (!container.dstType().equals(targetClassType)) {
+                            methodExceptions.notify(new AddToSetsContainerInvalidDstType(containerType, container.dstType(), targetClassType));
+                            continue;
                         }
+
                         FieldToMethodRedirectImpl fieldToMethodRedirect = new FieldToMethodRedirectImpl(
                                 new ClassField(container.srcType(), addToSets.mappingsOwner().orElse(container.srcType()), addToSets.srcField().type(), addToSets.srcField().name()),
                                 new ClassMethod(container.dstType(), addToSets.dstMethod()),
@@ -303,6 +314,12 @@ public class AnnotationParser {
     public static class TypeIsNotAContainer extends DasmException {
         public TypeIsNotAContainer(Type type) {
             super(String.format("Type `" + formatObjectType(type) + "` is not a container but is used as one"));
+        }
+    }
+
+    public static class AddToSetsContainerInvalidDstType extends Notification {
+        public AddToSetsContainerInvalidDstType(Type containerType, Type containerDstType, Type dasmTargetType) {
+            super(String.format("addToSet attempts to add to a Container `" + formatObjectType(containerType) + "` with a `to` type of " + formatObjectType(containerDstType) + " but its dasm target is " + formatObjectType(dasmTargetType)));
         }
     }
 
