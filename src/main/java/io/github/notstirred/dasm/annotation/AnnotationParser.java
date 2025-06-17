@@ -93,7 +93,7 @@ public class AnnotationParser {
 
         boolean isTargetInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
 
-        NotifyStack classExceptions = NotifyStack.of(targetClass);
+        NotifyStack classExceptions = NotifyStack.of(targetClass); // We report errors on the actual class, not the @Dasm#target
 
         findRedirectSetsForAnnotation(targetClass.invisibleAnnotations, Dasm.class, "value", classExceptions);
         findRedirectSetsForAnnotation(targetClass.invisibleAnnotations, TransformFromClass.class, "sets", classExceptions);

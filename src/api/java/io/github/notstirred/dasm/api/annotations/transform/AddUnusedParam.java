@@ -12,8 +12,8 @@ import java.lang.annotation.Target;
  * signature, with their order unchanged.
  * <br/><br/>
  * <h2>Examples:</h2>
- * <pre>{@code
  * Here a string is inserted between the two original integers in the method signature.
+ * <pre>{@code
  * @TransformFromMethod(value = @MethodSig("method1(II)V"))
  * public native float[] method1out1(int a, @AddUnusedParam String c, int b);
  * }</pre>
