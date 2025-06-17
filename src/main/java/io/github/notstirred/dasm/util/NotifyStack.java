@@ -32,8 +32,7 @@ public class NotifyStack {
 
     public static NotifyStack of(ClassNode classNode) {
         NotifyStack notifyStack = new NotifyStack();
-        notifyStack.push(classNode);
-        return notifyStack;
+        return notifyStack.push(classNode);
     }
 
     /**
