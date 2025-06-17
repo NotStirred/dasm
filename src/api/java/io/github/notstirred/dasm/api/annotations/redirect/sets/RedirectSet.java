@@ -8,17 +8,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks that an {@code interface} should be used as a redirect set.
- * <br/><br/>
- * By convention the marked type's name should end with `RedirectSet`, or `Set`
- * <br/><br/>
- * A {@link RedirectSet} may contain any number of {@code interface}s, and/or {@code abstract class}es. These <b><i>must</i></b> be annotated with one of: {@link TypeRedirect}, {@link InterOwnerContainer}, or {@link IntraOwnerContainer}<br/>
- * <ul>
- *     <li>An inner type must be an {@code interface} if its destination type is an {@code interface}</li>
- *     <li>An inner type must be an {@code abstract class} if its destination type is an {@code abstract class}</li>
- * </ul>
+ * <p>Marks that an {@code interface} should be used as a redirect set.</p>
+ * <p>By convention the marked type's name should end with `Set`</p>
+ *
+ * <h2>Containers</h2>
+ * <p>A {@link RedirectSet} may contain any number of {@code interface}s, and/or {@code abstract class}es. These <b><u>must</u></b> be annotated with one of: {@link TypeRedirect}, {@link InterOwnerContainer}, or {@link IntraOwnerContainer}</p>
+ *
  * <h2>Destination Type</h2>
- * A destination type is defined as a type <i>after</i> dasm redirects are applied eg:
+ * A destination type is defined as "a type <i>after</i> dasm redirects are applied" eg:
  * <ul>
  *     <li>A {@link TypeRedirect}'s dst type is {@link TypeRedirect#to()}</li>
  *     <li>A {@link InterOwnerContainer}'s dst type is {@link InterOwnerContainer#to()}</li>
@@ -38,7 +35,7 @@ import java.lang.annotation.Target;
  * <h2>Redirect Chaining</h2>
  * All redirects within a {@link RedirectSet} (including all inheritance) apply as a single atomic step. For example if
  * {@code A} is redirected to {@code B}, and {@code B} to {@code A} the result will <b>always</b> be A and B swapping
- * and will never result in all As or all Bs
+ * and will <b>never</b> result in all As or all Bs
  *
  * <h2>Example</h2>
  * <pre>{@code
