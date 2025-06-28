@@ -3,6 +3,7 @@ package io.github.notstirred.dasm.annotation.parse;
 import io.github.notstirred.dasm.annotation.AnnotationUtil;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.exception.DasmException;
+import io.github.notstirred.dasm.util.TypeUtil;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.objectweb.asm.Type;
@@ -62,7 +63,7 @@ public class RefImpl {
         if (values.containsKey("string")) {
             String string = (String) values.get("string");
             if (!string.isEmpty()) {
-                type = Type.getObjectType(string);
+                type = Type.getObjectType(TypeUtil.classNameToInternalName(string));
             }
         }
         if (type == null || type.getClassName().equals(Ref.EmptyRef.class.getName())) {

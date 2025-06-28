@@ -14,7 +14,7 @@ import static io.github.notstirred.dasm.test.tests.integration.TestData.single;
  * Verify that constructors are properly redirected.
  * new Object() -> new String()
  */
-@Dasm(value = TestTrivialConstructorRedirect.Set.class, target = @Ref(TrivialConstructorRedirectInput.class))
+@Dasm(value = TestTrivialConstructorRedirect.Set.class, target = @Ref(string = "io.github.notstirred.dasm.test.tests.integration.constructor_redirect.TrivialConstructorRedirectInput"))
 public class TestTrivialConstructorRedirect extends BaseMethodTest {
     public TestTrivialConstructorRedirect() {
         super(single(TrivialConstructorRedirectInput.class, TrivialConstructorRedirectOutput.class, TestTrivialConstructorRedirect.class));
