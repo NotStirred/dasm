@@ -82,14 +82,9 @@ public class AnnotationParser {
 
     @Deprecated
     public NotifyStack findDasmAnnotations(ClassNode targetClass) {
-        Type targetClassType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         AnnotationNode dasmNode = getAnnotationIfPresent(targetClass.invisibleAnnotations, Dasm.class);
-        if (dasmNode != null) {
-            Map<String, Object> values = getAnnotationValues(dasmNode, Dasm.class);
-            targetClassType = RefImpl.parseOptionalRefAnnotation((AnnotationNode) values.get("target"))
-                    .map(type -> type.getClassName().equals(Dasm.SELF_TARGET.class.getName()) ? null : type)
-                    .orElse(targetClassType);
-        }
+        Type targetClassType = DasmImpl.parse(dasmNode).target()
+                .orElseGet(() -> Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name)));
 
         boolean isTargetInterface = (targetClass.access & Opcodes.ACC_INTERFACE) != 0;
 

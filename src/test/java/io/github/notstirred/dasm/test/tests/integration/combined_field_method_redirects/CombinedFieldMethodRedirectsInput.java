@@ -1,7 +1,6 @@
 package io.github.notstirred.dasm.test.tests.integration.combined_field_method_redirects;
 
 import io.github.notstirred.dasm.api.annotations.Dasm;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.targets.Vec3i;
 
@@ -22,10 +21,10 @@ public class CombinedFieldMethodRedirectsInput {
         System.out.println(pos2);
     }
 
-    @TransformFromMethod(value = @MethodSig("method1()V"))
+    @TransformFromMethod("method1()V")
     native void method1out();
 
-    @TransformFromMethod(value = @MethodSig("method2()V"))
+    @TransformFromMethod("method2()V")
     native void method2out();
 
 }

@@ -70,11 +70,10 @@ public class DasmContext {
 
         AnnotationNode dasmNode = getAnnotationIfPresent(dasmClass.invisibleAnnotations, Dasm.class);
         if (dasmNode != null) {
-            Map<String, Object> values = getAnnotationValues(dasmNode, Dasm.class);
-            Type targetType = RefImpl.parseOptionalRefAnnotation((AnnotationNode) values.get("target"))
-                    .map(type -> type.getClassName().equals(Dasm.SELF_TARGET.class.getName()) ? null : type)
+            Type targetType = DasmImpl.parse(dasmNode).target()
                     .orElseGet(() -> Type.getType(TypeUtil.typeNameToDescriptor(dasmClass.name)));
 
+            Map<String, Object> values = getAnnotationValues(dasmNode, Dasm.class);
             @SuppressWarnings("unchecked")
             List<RedirectSetImpl> defaultRedirectSets = unrollSets(((List<Type>) values.get("value")).stream()
                     .map(type -> {
