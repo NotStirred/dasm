@@ -1,10 +1,8 @@
-package io.github.notstirred.dasm.test.tests.unit.inherited_transforms;
+package io.github.notstirred.dasm.test.tests.unit;
 
 import io.github.notstirred.dasm.annotation.AnnotationParser;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddMethodToSets;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
-import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.test.TestHarness;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -23,7 +21,7 @@ public class TestThrowsTypeIsNotContainer {
         assertEquals(AnnotationParser.TypeIsNotAContainer.class, redirects.second().get(0).sourceClass);
     }
 
-    @AddMethodToSets(containers = B.class, method = @MethodSig(ret = @Ref(void.class), name = "foo", args = {}))
+    @AddMethodToSets(containers = B.class, method = "foo()V")
     private void bar() {
     }
 

@@ -7,6 +7,7 @@ import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.notify.Notification;
 import io.github.notstirred.dasm.util.ClassNodeProvider;
 import io.github.notstirred.dasm.util.NotifyStack;
+import io.github.notstirred.dasm.util.ReferenceUtil;
 import lombok.Data;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
@@ -222,7 +223,7 @@ public class RedirectSetImpl {
                 } else {
                     fieldExceptions.notify(new FieldMissingFieldRedirectAnnotationException(fieldNode));
                 }
-            } catch (RefImpl.RefAnnotationGivenNoArguments | FieldRedirectImpl.FieldRedirectHasEmptySrcName e) {
+            } catch (RefImpl.RefAnnotationGivenNoArguments | ReferenceUtil.InvalidReference e) {
                 fieldExceptions.notifyFromException(e);
             }
         }
@@ -248,8 +249,7 @@ public class RedirectSetImpl {
                         methodNode,
                         dstType
                 );
-            } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
-                     MethodSigImpl.EmptySrcName e) {
+            } catch (RefImpl.RefAnnotationGivenNoArguments | ReferenceUtil.InvalidReference e) {
                 methodExceptions.notifyFromException(e);
             }
             try {
@@ -259,8 +259,7 @@ public class RedirectSetImpl {
                         methodNode,
                         dstType
                 );
-            } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
-                     MethodSigImpl.EmptySrcName e) {
+            } catch (RefImpl.RefAnnotationGivenNoArguments | ReferenceUtil.InvalidReference e) {
                 methodExceptions.notifyFromException(e);
             }
             try {
@@ -270,8 +269,7 @@ public class RedirectSetImpl {
                         methodNode,
                         dstType
                 );
-            } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
-                     MethodSigImpl.EmptySrcName e) {
+            } catch (RefImpl.RefAnnotationGivenNoArguments | ReferenceUtil.InvalidReference e) {
                 methodExceptions.notifyFromException(e);
             }
 

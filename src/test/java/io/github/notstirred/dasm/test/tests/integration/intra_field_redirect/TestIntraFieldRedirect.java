@@ -4,8 +4,6 @@ import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.FieldRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.IntraOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.targets.Soup;
@@ -20,23 +18,23 @@ public class TestIntraFieldRedirect extends BaseMethodTest {
         super(single(IntraFieldRedirectInput.class, IntraFieldRedirectOutput.class, TestIntraFieldRedirect.class));
     }
 
-    @TransformFromMethod(value = @MethodSig("method1(Lio/github/notstirred/dasm/test/targets/Vec3i;)V"))
+    @TransformFromMethod("method1(Lio/github/notstirred/dasm/test/targets/Vec3i;)V")
     public native void method1out(Vec3i param);
 
-    @TransformFromMethod(value = @MethodSig("method2(I)V"))
+    @TransformFromMethod("method2(I)V")
     public native void method2out(int val);
 
     @RedirectSet
     public interface Set {
         @IntraOwnerContainer(@Ref(Vec3i.class))
         abstract class Vec3i_NONSTATIC {
-            @FieldRedirect(@FieldSig(type = @Ref(int.class), name = "x"))
+            @FieldRedirect("x:I")
             public int y;
         }
 
         @IntraOwnerContainer(@Ref(Soup.class))
         abstract class Soup_STATIC {
-            @FieldRedirect(@FieldSig(type = @Ref(int.class), name = "A"))
+            @FieldRedirect("A:I")
             public static int B;
         }
     }

@@ -3,7 +3,6 @@ package io.github.notstirred.dasm.test.tests.integration.copy_from_transform;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
@@ -20,10 +19,10 @@ public class TestCopyFromTransform extends BaseMethodTest {
         super(single(CopyFromTransformInput.class, CopyFromTransformOutput.class, TestCopyFromTransform.class));
     }
 
-    @TransformFromMethod(value = @MethodSig("method1(Ljava/lang/Object;)Ljava/lang/Object;"))
+    @TransformFromMethod("method1(Ljava/lang/Object;)Ljava/lang/Object;")
     public native String method2(String param);
 
-    @TransformFromMethod(value = @MethodSig("methodOnAnotherClass(Ljava/lang/Object;)Ljava/lang/Object;"), owner = @Ref(TestCopyFromTransform.class))
+    @TransformFromMethod(value = "methodOnAnotherClass(Ljava/lang/Object;)Ljava/lang/Object;", owner = @Ref(TestCopyFromTransform.class))
     public native String methodOnAnotherClassTransformed(String param);
 
     @RedirectSet

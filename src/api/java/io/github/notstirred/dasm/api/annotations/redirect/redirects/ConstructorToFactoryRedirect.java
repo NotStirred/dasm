@@ -2,7 +2,6 @@ package io.github.notstirred.dasm.api.annotations.redirect.redirects;
 
 import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.ConstructorMethodSig;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -28,7 +27,7 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
  * <pre>{@code
  * @IntraOwnerContainer(owner = @Ref(Vec3i.class))
  * abstract class Vec3i_redirects {
- *     @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = { @Ref(long.class) }))
+ *     @ConstructorToFactoryRedirect("<init>(J)V)
  *     static native Vec3i fromLong(long packed);
  * }
  * }</pre>
@@ -41,9 +40,7 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
  * <pre>{@code
  * @InterOwnerContainer(owner = @Ref(Vec3i.class), newOwner = @Ref(Util.class))
  * abstract class Vec3i_redirects {
- *     @ConstructorToFactoryRedirect(
- *         @ConstructorMethodSig(args = { @Ref(int.class), @Ref(int.class), @Ref(int.class) })
- *     )
+ *     @ConstructorToFactoryRedirect("<init>(III)V")
  *     static native Vec3i newVec3i(int x, int y, int z);
  * }
  * }</pre>
@@ -56,9 +53,7 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
  * <pre>{@code
  * @TypeRedirect(from = @Ref(Vec3i.class), to = @Ref(Vec3d.class))
  * abstract class Vec3i_redirects {
- *     @ConstructorToFactoryRedirect(
- *         @ConstructorMethodSig(args = { @Ref(int.class), @Ref(int.class), @Ref(int.class) })
- *     )
+ *     @ConstructorToFactoryRedirect("<init>(III)V")
  *     static native Vec3d of(double x, double y, double z);
  * }
  *
@@ -81,9 +76,7 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
  *
  * @InterOwnerContainer(owner = @Ref(Vec3i.class), newOwner = @Ref(VecUtils.class))
  * abstract class Vec3i_to_VecUtils {
- *     @ConstructorToFactoryRedirect(
- *         @ConstructorMethodSig(args = { @Ref(int.class), @Ref(int.class), @Ref(int.class) })
- *     )
+ *     @ConstructorToFactoryRedirect("<init>(III)V")
  *     static native Vec3d vec3dOf(double x, double y, double z);
  * }
  * }</pre>
@@ -91,5 +84,5 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
 @Target(METHOD)
 @Retention(CLASS)
 public @interface ConstructorToFactoryRedirect {
-    ConstructorMethodSig value();
+    String value();
 }

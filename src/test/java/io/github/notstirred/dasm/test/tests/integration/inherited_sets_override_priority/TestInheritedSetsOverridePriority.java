@@ -4,7 +4,6 @@ import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.MethodRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.targets.inherited_transforms.Bar;
@@ -25,17 +24,17 @@ public class TestInheritedSetsOverridePriority extends BaseMethodTest {
         super(single(InheritedSetsOverridePriorityInput.class, InheritedSetsOverridePriorityOutput.class, TestInheritedSetsOverridePriority.class));
     }
 
-    @TransformFromMethod(value = @MethodSig("method1()V"), useRedirectSets = HasOverride.class)
+    @TransformFromMethod(value = "method1()V", useRedirectSets = HasOverride.class)
     public native void method1out1();
 
-    @TransformFromMethod(value = @MethodSig("method1()V"), useRedirectSets = NoOverride.class)
+    @TransformFromMethod(value = "method1()V", useRedirectSets = NoOverride.class)
     public native void method1out2();
 
     @RedirectSet
     public interface HasOverride extends B, C {
         @TypeRedirect(from = @Ref(Foo.class), to = @Ref(BarBaz.class))
         abstract class Foo_to_BarBaz_redirects {
-            @MethodRedirect(@MethodSig("foo()V"))
+            @MethodRedirect("foo()V")
             public native void barbaz();
         }
     }
@@ -48,7 +47,7 @@ public class TestInheritedSetsOverridePriority extends BaseMethodTest {
     public interface B {
         @TypeRedirect(from = @Ref(Foo.class), to = @Ref(Bar.class))
         abstract class Foo_to_Bar_redirects {
-            @MethodRedirect(@MethodSig("foo()V"))
+            @MethodRedirect("foo()V")
             public native void bar();
         }
     }
@@ -57,7 +56,7 @@ public class TestInheritedSetsOverridePriority extends BaseMethodTest {
     public interface C {
         @TypeRedirect(from = @Ref(Foo.class), to = @Ref(FooBaz.class))
         abstract class Foo_to_FooBaz_redirects {
-            @MethodRedirect(@MethodSig("foo()V"))
+            @MethodRedirect("foo()V")
             public native void foobaz();
         }
     }

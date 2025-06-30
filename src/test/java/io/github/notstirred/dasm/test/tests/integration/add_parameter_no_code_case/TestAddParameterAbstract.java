@@ -3,7 +3,6 @@ package io.github.notstirred.dasm.test.tests.integration.add_parameter_no_code_c
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.AddUnusedParam;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
@@ -22,10 +21,10 @@ public class TestAddParameterAbstract extends BaseMethodTest {
 
     // Error case for https://discord.com/channels/316679487955927050/317206370359443458/1343090582087532544
     // An abstract method without an added parameter.
-    @TransformFromMethod(value = @MethodSig("method1()V"))
+    @TransformFromMethod("method1()V")
     public native void method1out1();
 
-    @TransformFromMethod(value = @MethodSig("method2(Lio/github/notstirred/dasm/test/targets/A;)V"))
+    @TransformFromMethod("method2(Lio/github/notstirred/dasm/test/targets/A;)V")
     public native void method2out(B foo, @AddUnusedParam C foo2);
 
     @RedirectSet

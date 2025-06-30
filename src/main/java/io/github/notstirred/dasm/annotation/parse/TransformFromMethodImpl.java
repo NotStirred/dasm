@@ -4,6 +4,7 @@ import io.github.notstirred.dasm.annotation.AnnotationUtil;
 import io.github.notstirred.dasm.api.annotations.transform.ApplicationStage;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.api.annotations.transform.Visibility;
+import io.github.notstirred.dasm.util.ReferenceUtil;
 import lombok.Data;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -16,10 +17,10 @@ import java.util.Optional;
 @Data
 public class TransformFromMethodImpl {
     public static TransformMethodImpl parse(AnnotationNode annotation)
-            throws MethodSigImpl.InvalidMethodSignature, RefImpl.RefAnnotationGivenNoArguments, MethodSigImpl.EmptySrcName {
+            throws RefImpl.RefAnnotationGivenNoArguments, ReferenceUtil.InvalidReference {
         Map<String, Object> values = AnnotationUtil.getAnnotationValues(annotation, TransformFromMethod.class);
 
-        Method srcMethod = MethodSigImpl.parse((AnnotationNode) values.get("value"));
+        Method srcMethod = ReferenceUtil.parseMethodReference((String) values.get("value"));
         ApplicationStage stage = (ApplicationStage) values.get("stage");
 
         Visibility visibility;

@@ -6,8 +6,6 @@ import io.github.notstirred.dasm.api.annotations.redirect.redirects.MethodRedire
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.ConstructorMethodSig;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.targets.A;
@@ -29,20 +27,20 @@ public class TestTypeAndInterRedirectConstructorToFactory extends BaseMethodTest
         super(single(TypeAndInterRedirectConstructorToFactoryInput.class, TypeAndInterRedirectConstructorToFactoryOutput.class, TestTypeAndInterRedirectConstructorToFactory.class));
     }
 
-    @TransformFromMethod(value = @MethodSig("method1()Lio/github/notstirred/dasm/test/targets/A;"))
+    @TransformFromMethod("method1()Lio/github/notstirred/dasm/test/targets/A;")
     public native String method1out(String param);
 
     @RedirectSet
     public interface Set {
         @TypeRedirect(from = @Ref(A.class), to = @Ref(B.class))
         abstract class A_to_B_redirects {
-            @MethodRedirect(@MethodSig("doAThings()V"))
+            @MethodRedirect("doAThings()V")
             native void doBThings();
         }
 
         @InterOwnerContainer(from = @Ref(A.class), to = @Ref(BFactory.class))
         abstract class A_to_BFactory_redirects {
-            @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = {}))
+            @ConstructorToFactoryRedirect("<init>()V")
             public static native B createB();
         }
     }

@@ -6,9 +6,6 @@ import io.github.notstirred.dasm.api.annotations.redirect.redirects.MethodRedire
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.IntraOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.ConstructorMethodSig;
-import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromClass;
 import io.github.notstirred.dasm.test.targets.CubePos;
@@ -31,31 +28,31 @@ public class TestIntraWholeClass extends BaseClassTest {
     interface Set {
         @IntraOwnerContainer(@Ref(IntraWholeClassInput.class))
         abstract class InputRedirects {
-            @FieldRedirect(@FieldSig(type = @Ref(Vec3i.class), name = "field"))
+            @FieldRedirect("field:Lio/github/notstirred/dasm/test/targets/Vec3i;")
             float field1;
 
-            @MethodRedirect(@MethodSig(name = "method2", args = {}, ret = @Ref(int.class)))
+            @MethodRedirect("method2()I")
             native Soup method3();
         }
 
         @IntraOwnerContainer(@Ref(Soup.class))
         abstract class SoupToStringRedirects {
-            @FieldRedirect(@FieldSig(type = @Ref(int.class), name = "a"))
+            @FieldRedirect("a:I")
             float b;
 
-            @FieldRedirect(@FieldSig(type = @Ref(int.class), name = "A"))
+            @FieldRedirect("A:I")
             static int B;
 
-            @FieldRedirect(@FieldSig(type = @Ref(int.class), name = "B"))
+            @FieldRedirect("B:I")
             static int A;
 
-            @MethodRedirect(@MethodSig(name = "foo1", ret = @Ref(void.class), args = {}))
+            @MethodRedirect("foo1()V")
             native void foo2();
 
-            @MethodRedirect(@MethodSig(name = "static_foo1", ret = @Ref(void.class), args = {}))
+            @MethodRedirect("static_foo1()V")
             native static void static_foo2();
 
-            @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = {}))
+            @ConstructorToFactoryRedirect("<init>()V")
             native static Soup create();
         }
 

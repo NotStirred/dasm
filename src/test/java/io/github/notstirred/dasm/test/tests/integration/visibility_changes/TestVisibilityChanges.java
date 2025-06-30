@@ -3,7 +3,6 @@ package io.github.notstirred.dasm.test.tests.integration.visibility_changes;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.api.annotations.transform.Visibility;
@@ -20,67 +19,67 @@ public class TestVisibilityChanges extends BaseMethodTest {
         super(single(VisibilityChangesInput.class, VisibilityChangesOutput.class, TestVisibilityChanges.class));
     }
 
-    @TransformFromMethod(value = @MethodSig("pri()V"))
+    @TransformFromMethod("pri()V")
     private void pri2() {
     }
 
-    @TransformFromMethod(value = @MethodSig("pri()V"), visibility = Visibility.PUBLIC)
+    @TransformFromMethod(value = "pri()V", visibility = Visibility.PUBLIC)
     public void pri_pub() {
     }
 
-    @TransformFromMethod(value = @MethodSig("pri()V"), visibility = Visibility.PROTECTED)
+    @TransformFromMethod(value = "pri()V", visibility = Visibility.PROTECTED)
     protected void pri_pro() {
     }
 
-    @TransformFromMethod(value = @MethodSig("pri()V"), visibility = Visibility.PACKAGE_PROTECTED)
+    @TransformFromMethod(value = "pri()V", visibility = Visibility.PACKAGE_PROTECTED)
     void pri_pp() {
     }
 
-    @TransformFromMethod(value = @MethodSig("pro()V"))
+    @TransformFromMethod("pro()V")
     protected void pro2() {
     }
 
-    @TransformFromMethod(value = @MethodSig("pro()V"), visibility = Visibility.PRIVATE)
+    @TransformFromMethod(value = "pro()V", visibility = Visibility.PRIVATE)
     private void pro_pri() {
     }
 
-    @TransformFromMethod(value = @MethodSig("pro()V"), visibility = Visibility.PUBLIC)
+    @TransformFromMethod(value = "pro()V", visibility = Visibility.PUBLIC)
     public void pro_pub() {
     }
 
-    @TransformFromMethod(value = @MethodSig("pro()V"), visibility = Visibility.PACKAGE_PROTECTED)
+    @TransformFromMethod(value = "pro()V", visibility = Visibility.PACKAGE_PROTECTED)
     void pro_pp() {
     }
 
-    @TransformFromMethod(value = @MethodSig("pub()V"))
+    @TransformFromMethod("pub()V")
     public void pub2() {
     }
 
-    @TransformFromMethod(value = @MethodSig("pub()V"), visibility = Visibility.PRIVATE)
+    @TransformFromMethod(value = "pub()V", visibility = Visibility.PRIVATE)
     private void pub_pri() {
     }
 
-    @TransformFromMethod(value = @MethodSig("pub()V"), visibility = Visibility.PROTECTED)
+    @TransformFromMethod(value = "pub()V", visibility = Visibility.PROTECTED)
     protected void pub_pro() {
     }
 
-    @TransformFromMethod(value = @MethodSig("pub()V"), visibility = Visibility.PACKAGE_PROTECTED)
+    @TransformFromMethod(value = "pub()V", visibility = Visibility.PACKAGE_PROTECTED)
     void pub_pp() {
     }
 
-    @TransformFromMethod(value = @MethodSig("package_pro()V"))
+    @TransformFromMethod("package_pro()V")
     void package_pro2() {
     }
 
-    @TransformFromMethod(value = @MethodSig("package_pro()V"), visibility = Visibility.PRIVATE)
+    @TransformFromMethod(value = "package_pro()V", visibility = Visibility.PRIVATE)
     private void package_pro_pri() {
     }
 
-    @TransformFromMethod(value = @MethodSig("package_pro()V"), visibility = Visibility.PUBLIC)
+    @TransformFromMethod(value = "package_pro()V", visibility = Visibility.PUBLIC)
     public void package_pro_pub() {
     }
 
-    @TransformFromMethod(value = @MethodSig("package_pro()V"), visibility = Visibility.PROTECTED)
+    @TransformFromMethod(value = "package_pro()V", visibility = Visibility.PROTECTED)
     protected void package_pro_pro() {
     }
 

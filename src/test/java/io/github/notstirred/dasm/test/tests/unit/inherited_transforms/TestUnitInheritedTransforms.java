@@ -7,8 +7,6 @@ import io.github.notstirred.dasm.api.annotations.redirect.redirects.FieldRedirec
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.MethodRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
@@ -61,17 +59,17 @@ public class TestUnitInheritedTransforms {
                         && redirect.dstOwner().equals(Type.getType(BarBaz.class))));
     }
 
-    @TransformFromMethod(@MethodSig("dummy()V"))
+    @TransformFromMethod("dummy()V")
     private native void dummy();
 
     @RedirectSet
     interface A {
         @TypeRedirect(from = @Ref(Foo.class), to = @Ref(Bar.class))
         abstract class Foo_to_Bar_redirects {
-            @MethodRedirect(@MethodSig("foo()V"))
+            @MethodRedirect("foo()V")
             abstract void bar();
 
-            @FieldRedirect(@FieldSig(type = @Ref(int.class), name = "a"))
+            @FieldRedirect("a:I")
             public int b;
         }
 

@@ -3,7 +3,6 @@ package io.github.notstirred.dasm.test.tests.integration.trivial_primitive_redir
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
@@ -20,7 +19,7 @@ public class TestTrivialPrimitiveRedirect extends BaseMethodTest {
         super(single(TrivialPrimitiveRedirectInput.class, TrivialPrimitiveRedirectOutput.class, TestTrivialPrimitiveRedirect.class));
     }
 
-    @TransformFromMethod(value = @MethodSig("method1([I)[I"))
+    @TransformFromMethod("method1([I)[I")
     public native float[] method2(float[] a);
 
     @RedirectSet

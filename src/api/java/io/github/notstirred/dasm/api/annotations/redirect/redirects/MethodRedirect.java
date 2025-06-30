@@ -2,7 +2,6 @@ package io.github.notstirred.dasm.api.annotations.redirect.redirects;
 
 import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.IntraOwnerContainer;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 
 import java.lang.annotation.Retention;
@@ -27,14 +26,14 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
  * <h3>E1:</h3>
  * Specifies a {@code private String} method with the name {@code existingMethodName}, and the new name {@code newMethodName}
  * <pre>{@code
- *     @MethodRedirect(@MethodSig(name = "existingMethodName", args = { }, ret = @Ref(String.class)))
+ *     @MethodRedirect("existingMethodName()Ljava/lang/String;")
  *     private native String newMethodName();
  * }</pre><br/>
  * <h3>E2:</h3>
  * Specifies a {@code private String} method with the name {@code existingMethodName}, and the new name {@code newMethodName}.<br/>
  * Additionally an optional mappings owner is specified, see: {@link MethodRedirect#mappingsOwner()}.
  * <pre>{@code
- *     @MethodRedirect(name = "existingMethodName", mappingsOwner = @Ref(OtherClass.class))
+ *     @MethodRedirect(value = "existingMethodName()Ljava/lang/String;", mappingsOwner = @Ref(OtherClass.class))
  *     private native String newMethodName();
  * }</pre>
  */
@@ -44,7 +43,7 @@ public @interface MethodRedirect {
     /**
      * The method to replace
      */
-    MethodSig value();
+    String value();
 
     /**
      * The source method's mapping owner.

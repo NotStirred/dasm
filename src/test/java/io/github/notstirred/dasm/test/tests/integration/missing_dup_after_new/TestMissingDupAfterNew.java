@@ -3,7 +3,6 @@ package io.github.notstirred.dasm.test.tests.integration.missing_dup_after_new;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.targets.CubePos;
@@ -23,7 +22,7 @@ public class TestMissingDupAfterNew extends BaseMethodTest {
         super(single(MissingDupAfterNewInput.class, MissingDupAfterNewOutput.class, TestMissingDupAfterNew.class));
     }
 
-    @TransformFromMethod(value = @MethodSig("method1()V"))
+    @TransformFromMethod("method1()V")
     public native void method1out();
 
     @RedirectSet

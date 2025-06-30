@@ -1,11 +1,10 @@
-package io.github.notstirred.dasm.test.tests.unit.inherited_transforms;
+package io.github.notstirred.dasm.test.tests.unit;
 
 import io.github.notstirred.dasm.annotation.AnnotationParser;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddMethodToSets;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.notify.Notification;
 import io.github.notstirred.dasm.test.TestHarness;
@@ -19,7 +18,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Dasm(TestThrowsCorrectExceptionWhenContainerNotWithinRedirectSet.A.class)
+@Dasm({})
 public class TestThrowsCorrectExceptionWhenContainerNotWithinRedirectSet {
     @Test
     public void testInheritedTransformsArePresent() {
@@ -29,7 +28,7 @@ public class TestThrowsCorrectExceptionWhenContainerNotWithinRedirectSet {
         assertEquals(AnnotationParser.ContainerNotWithinRedirectSet.class, notification.sourceClass);
     }
 
-    @AddMethodToSets(containers = Foo_to_Bar_redirects.class, method = @MethodSig(ret = @Ref(void.class), name = "foo", args = {}))
+    @AddMethodToSets(containers = Foo_to_Bar_redirects.class, method = "foo()V")
     private void bar() {
     }
 

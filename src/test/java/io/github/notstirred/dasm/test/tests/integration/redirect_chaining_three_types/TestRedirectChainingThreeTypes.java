@@ -3,7 +3,6 @@ package io.github.notstirred.dasm.test.tests.integration.redirect_chaining_three
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.targets.A;
@@ -19,7 +18,7 @@ public class TestRedirectChainingThreeTypes extends BaseMethodTest {
         super(single(RedirectChainingThreeTypesInput.class, RedirectChainingThreeTypesOutput.class, TestRedirectChainingThreeTypes.class));
     }
 
-    @TransformFromMethod(value = @MethodSig("method1(Lio/github/notstirred/dasm/test/targets/A;)V"))
+    @TransformFromMethod("method1(Lio/github/notstirred/dasm/test/targets/A;)V")
     public native void method1out(A a);
 
     @RedirectSet

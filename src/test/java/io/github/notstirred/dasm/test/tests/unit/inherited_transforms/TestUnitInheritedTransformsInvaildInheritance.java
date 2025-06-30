@@ -4,7 +4,6 @@ import io.github.notstirred.dasm.annotation.parse.RedirectSetImpl;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.TestHarness;
@@ -29,7 +28,7 @@ public class TestUnitInheritedTransformsInvaildInheritance {
         assertEquals(RedirectSetImpl.SuperTypeInInvalidRedirectSet.class, redirects.second().get(0).sourceClass);
     }
 
-    @TransformFromMethod(@MethodSig("dummy()V"))
+    @TransformFromMethod("dummy()V")
     private native void dummy();
 
     @RedirectSet

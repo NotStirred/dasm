@@ -3,7 +3,6 @@ package io.github.notstirred.dasm.test.tests.integration.implicit_method_redirec
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
@@ -23,7 +22,7 @@ public class TestTrivialImplicitMethodRedirectsDueToTypeRedirects extends BaseMe
         ));
     }
 
-    @TransformFromMethod(value = @MethodSig("method1(Ljava/lang/Float;)V"))
+    @TransformFromMethod("method1(Ljava/lang/Float;)V")
     public native String method1(String param);
 
     @RedirectSet

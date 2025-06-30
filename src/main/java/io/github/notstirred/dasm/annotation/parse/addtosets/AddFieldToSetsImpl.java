@@ -1,11 +1,10 @@
 package io.github.notstirred.dasm.annotation.parse.addtosets;
 
 import io.github.notstirred.dasm.annotation.AnnotationUtil;
-import io.github.notstirred.dasm.annotation.parse.FieldSigImpl;
-import io.github.notstirred.dasm.annotation.parse.MethodSigImpl;
 import io.github.notstirred.dasm.annotation.parse.RefImpl;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddFieldToSets;
 import io.github.notstirred.dasm.data.Field;
+import io.github.notstirred.dasm.util.ReferenceUtil;
 import lombok.Data;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -27,7 +26,7 @@ public class AddFieldToSetsImpl {
     private final String dstFieldName;
 
     public static Optional<AddFieldToSetsImpl> parse(FieldNode fieldNode)
-            throws RefImpl.RefAnnotationGivenNoArguments, MethodSigImpl.InvalidMethodSignature, MethodSigImpl.EmptySrcName {
+            throws RefImpl.RefAnnotationGivenNoArguments, ReferenceUtil.InvalidReference {
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(fieldNode.invisibleAnnotations, AddFieldToSets.class);
         if (annotation == null) {
             return Optional.empty();
@@ -35,7 +34,7 @@ public class AddFieldToSetsImpl {
 
         Map<String, Object> values = AnnotationUtil.getAnnotationValues(annotation, AddFieldToSets.class);
 
-        Field srcField = FieldSigImpl.parse((AnnotationNode) values.get("field"));
+        Field srcField = ReferenceUtil.parseFieldReference((String) values.get("field"));
 
         Optional<Type> mappingsOwner = parseOptionalRefAnnotation((AnnotationNode) values.get("mappingsOwner"));
 

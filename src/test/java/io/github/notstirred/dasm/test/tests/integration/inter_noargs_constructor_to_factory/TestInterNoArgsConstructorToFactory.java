@@ -4,8 +4,6 @@ import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.ConstructorToFactoryRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.ConstructorMethodSig;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.targets.NewSoup;
@@ -23,14 +21,14 @@ public class TestInterNoArgsConstructorToFactory extends BaseMethodTest {
         super(single(InterNoArgsConstructorToFactoryInput.class, InterNoArgsConstructorToFactoryOutput.class, TestInterNoArgsConstructorToFactory.class));
     }
 
-    @TransformFromMethod(value = @MethodSig("method1()Lio/github/notstirred/dasm/test/targets/Soup;"))
+    @TransformFromMethod("method1()Lio/github/notstirred/dasm/test/targets/Soup;")
     public native String method1out(String param);
 
     @RedirectSet
     public interface Set {
         @TypeRedirect(from = @Ref(Soup.class), to = @Ref(NewSoup.class))
         abstract class Soup_redirects {
-            @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = {}))
+            @ConstructorToFactoryRedirect("<init>()V")
             static native NewSoup create();
         }
     }

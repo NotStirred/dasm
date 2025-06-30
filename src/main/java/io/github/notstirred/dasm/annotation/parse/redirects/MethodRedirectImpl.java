@@ -1,10 +1,10 @@
 package io.github.notstirred.dasm.annotation.parse.redirects;
 
 import io.github.notstirred.dasm.annotation.AnnotationUtil;
-import io.github.notstirred.dasm.annotation.parse.MethodSigImpl;
 import io.github.notstirred.dasm.annotation.parse.RefImpl;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.MethodRedirect;
 import io.github.notstirred.dasm.data.ClassMethod;
+import io.github.notstirred.dasm.util.ReferenceUtil;
 import lombok.Data;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -25,9 +25,8 @@ public class MethodRedirectImpl {
     private final boolean isStatic;
     private final boolean isDstOwnerInterface;
 
-    public static Optional<MethodRedirectImpl> parseMethodRedirect(Type methodOwner, boolean methodOwnerIsInterface, MethodNode methodNode,
-                                                                   Type dstOwner)
-            throws RefImpl.RefAnnotationGivenNoArguments, MethodSigImpl.InvalidMethodSignature, MethodSigImpl.EmptySrcName {
+    public static Optional<MethodRedirectImpl> parseMethodRedirect(Type methodOwner, boolean methodOwnerIsInterface, MethodNode methodNode, Type dstOwner)
+            throws RefImpl.RefAnnotationGivenNoArguments, ReferenceUtil.InvalidReference {
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(methodNode.invisibleAnnotations, MethodRedirect.class);
         if (annotation == null) {
             return Optional.empty();
@@ -35,7 +34,7 @@ public class MethodRedirectImpl {
 
         Map<String, Object> values = AnnotationUtil.getAnnotationValues(annotation, MethodRedirect.class);
 
-        Method srcMethod = MethodSigImpl.parse((AnnotationNode) values.get("value"));
+        Method srcMethod = ReferenceUtil.parseMethodReference((String) values.get("value"));
 
         Type mappingsOwner = parseOptionalRefAnnotation((AnnotationNode) values.get("mappingsOwner")).orElse(methodOwner);
 

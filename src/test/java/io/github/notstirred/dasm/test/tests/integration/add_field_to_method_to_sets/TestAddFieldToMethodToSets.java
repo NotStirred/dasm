@@ -4,7 +4,6 @@ import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddFieldToMethodToSets;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.test.targets.CubePos;
 import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
@@ -29,7 +28,7 @@ public class TestAddFieldToMethodToSets extends BaseMethodTest {
 
     static int mask = 123;
 
-    @AddFieldToMethodToSets(containers = Set.CubePos_to_TestAddToSets_redirects.class, setter = "setMask", field = @FieldSig(type = @Ref(int.class), name = "MASK"))
+    @AddFieldToMethodToSets(containers = Set.CubePos_to_TestAddToSets_redirects.class, setter = "setMask", field = "MASK:I")
     public static int getMask() {
         return mask;
     }

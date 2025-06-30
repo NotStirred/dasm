@@ -1,9 +1,9 @@
 package io.github.notstirred.dasm.annotation.parse.addtosets;
 
 import io.github.notstirred.dasm.annotation.AnnotationUtil;
-import io.github.notstirred.dasm.annotation.parse.MethodSigImpl;
 import io.github.notstirred.dasm.annotation.parse.RefImpl;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddMethodToSets;
+import io.github.notstirred.dasm.util.ReferenceUtil;
 import lombok.Data;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -30,7 +30,7 @@ public class AddMethodToSetsImpl {
     private final boolean isStatic;
 
     public static Optional<AddMethodToSetsImpl> parse(boolean isDstInterface, MethodNode methodNode)
-            throws RefImpl.RefAnnotationGivenNoArguments, MethodSigImpl.InvalidMethodSignature, MethodSigImpl.EmptySrcName {
+            throws RefImpl.RefAnnotationGivenNoArguments, ReferenceUtil.InvalidReference {
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(methodNode.invisibleAnnotations, AddMethodToSets.class);
         if (annotation == null) {
             return Optional.empty();
@@ -38,7 +38,7 @@ public class AddMethodToSetsImpl {
 
         Map<String, Object> values = AnnotationUtil.getAnnotationValues(annotation, AddMethodToSets.class);
 
-        Method srcMethod = MethodSigImpl.parse((AnnotationNode) values.get("method"));
+        Method srcMethod = ReferenceUtil.parseMethodReference((String) values.get("method"));
 
         Optional<Type> mappingsOwner = parseOptionalRefAnnotation((AnnotationNode) values.get("mappingsOwner"));
 

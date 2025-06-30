@@ -4,7 +4,6 @@ import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.MethodRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.IntraOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
@@ -21,14 +20,14 @@ public class TestIntraMethodRedirect extends BaseMethodTest {
         super(single(IntraMethodRedirectInput.class, IntraMethodRedirectOutput.class, TestIntraMethodRedirect.class));
     }
 
-    @TransformFromMethod(value = @MethodSig("method1(Ljava/lang/String;)V"))
+    @TransformFromMethod("method1(Ljava/lang/String;)V")
     public native void method1out(String param);
 
     @RedirectSet
     public interface Set {
         @IntraOwnerContainer(@Ref(String.class))
         abstract class A {
-            @MethodRedirect(@MethodSig(ret = @Ref(int.class), name = "hashCode", args = {}))
+            @MethodRedirect("hashCode()I")
             public native int length();
         }
     }

@@ -1,13 +1,12 @@
 package io.github.notstirred.dasm.annotation.parse.redirects;
 
 import io.github.notstirred.dasm.annotation.AnnotationUtil;
-import io.github.notstirred.dasm.annotation.parse.FieldSigImpl;
-import io.github.notstirred.dasm.annotation.parse.MethodSigImpl;
 import io.github.notstirred.dasm.annotation.parse.RefImpl;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.FieldToMethodRedirect;
 import io.github.notstirred.dasm.data.ClassField;
 import io.github.notstirred.dasm.data.ClassMethod;
 import io.github.notstirred.dasm.data.Field;
+import io.github.notstirred.dasm.util.ReferenceUtil;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Type;
@@ -31,7 +30,7 @@ public class FieldToMethodRedirectImpl {
 
     public static Optional<FieldToMethodRedirectImpl> parse(Type fieldOwner, boolean dstOwnerIsInterface, MethodNode methodNode,
                                                             Type dstOwner)
-            throws RefImpl.RefAnnotationGivenNoArguments, MethodSigImpl.InvalidMethodSignature, MethodSigImpl.EmptySrcName {
+            throws RefImpl.RefAnnotationGivenNoArguments, ReferenceUtil.InvalidReference {
         AnnotationNode annotation = AnnotationUtil.getAnnotationIfPresent(methodNode.invisibleAnnotations, FieldToMethodRedirect.class);
         if (annotation == null) {
             return Optional.empty();
@@ -39,7 +38,7 @@ public class FieldToMethodRedirectImpl {
 
         Map<String, Object> values = AnnotationUtil.getAnnotationValues(annotation, FieldToMethodRedirect.class);
 
-        Field srcField = FieldSigImpl.parse((AnnotationNode) values.get("value"));
+        Field srcField = ReferenceUtil.parseFieldReference((String) values.get("value"));
 
         String setter = (String) values.get("setter");
 

@@ -3,7 +3,6 @@ package io.github.notstirred.dasm.test.tests.integration.redirect_chaining_swap;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.targets.CubePos;
@@ -18,7 +17,7 @@ public class TestRedirectChainingSwap extends BaseMethodTest {
         super(single(RedirectChainingSwapInput.class, RedirectChainingSwapOutput.class, TestRedirectChainingSwap.class));
     }
 
-    @TransformFromMethod(value = @MethodSig("method1(Lio/github/notstirred/dasm/test/targets/Vec3i;)V"))
+    @TransformFromMethod("method1(Lio/github/notstirred/dasm/test/targets/Vec3i;)V")
     public native void method1out(Vec3i param);
 
     @RedirectSet

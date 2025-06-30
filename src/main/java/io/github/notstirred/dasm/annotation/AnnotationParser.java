@@ -1,6 +1,6 @@
 package io.github.notstirred.dasm.annotation;
 
-import io.github.notstirred.dasm.annotation.parse.MethodSigImpl;
+import io.github.notstirred.dasm.annotation.parse.DasmImpl;
 import io.github.notstirred.dasm.annotation.parse.RedirectSetImpl;
 import io.github.notstirred.dasm.annotation.parse.RefImpl;
 import io.github.notstirred.dasm.annotation.parse.addtosets.AddFieldToMethodToSetsImpl;
@@ -120,8 +120,7 @@ public class AnnotationParser {
                         container.fieldRedirects().add(fieldRedirect);
                     }
                 }
-            } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
-                     MethodSigImpl.EmptySrcName e) {
+            } catch (RefImpl.RefAnnotationGivenNoArguments | ReferenceUtil.InvalidReference e) {
                 fieldExceptions.notifyFromException(e);
             }
         }
@@ -157,8 +156,7 @@ public class AnnotationParser {
                         container.methodRedirects().add(methodRedirect);
                     }
                 }
-            } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
-                     MethodSigImpl.EmptySrcName e) {
+            } catch (RefImpl.RefAnnotationGivenNoArguments | ReferenceUtil.InvalidReference e) {
                 methodExceptions.notifyFromException(e);
             }
 
@@ -187,8 +185,7 @@ public class AnnotationParser {
                         container.fieldToMethodRedirects().add(fieldToMethodRedirect);
                     }
                 }
-            } catch (RefImpl.RefAnnotationGivenNoArguments | MethodSigImpl.InvalidMethodSignature |
-                     MethodSigImpl.EmptySrcName e) {
+            } catch (RefImpl.RefAnnotationGivenNoArguments | ReferenceUtil.InvalidReference e) {
                 methodExceptions.notifyFromException(e);
             }
         }

@@ -13,6 +13,7 @@ import io.github.notstirred.dasm.transformer.data.ClassTransform;
 import io.github.notstirred.dasm.transformer.data.MethodTransform;
 import io.github.notstirred.dasm.util.NotifyStack;
 import io.github.notstirred.dasm.util.Pair;
+import io.github.notstirred.dasm.util.ReferenceUtil;
 import io.github.notstirred.dasm.util.TypeUtil;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -207,8 +208,7 @@ public class DasmContext {
             } else {
                 transformMethod = TransformMethodImpl.parse(transformMethodAnnotation);
             }
-        } catch (MethodSigImpl.InvalidMethodSignature | RefImpl.RefAnnotationGivenNoArguments |
-                 MethodSigImpl.EmptySrcName e) {
+        } catch (RefImpl.RefAnnotationGivenNoArguments | ReferenceUtil.InvalidReference e) {
             methodExceptions.notifyFromException(e);
             return null;
         }

@@ -3,7 +3,6 @@ package io.github.notstirred.dasm.api.annotations.redirect.redirects;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.IntraOwnerContainer;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 
 import java.lang.annotation.ElementType;
@@ -25,8 +24,8 @@ import java.lang.annotation.Target;
  * @Dasm
  * public class Foo {
  *     @AddMethodToSets(
- *         containers = Bar_to_Foo_redirects
- *         method = @MethodSig(name = "getBarX", ret = int.class, args = { }),
+ *         containers = Bar_to_Foo_redirects.class,
+ *         method = "getBarX()I"
  *     )
  *     private int getX();
  * }
@@ -44,7 +43,7 @@ public @interface AddMethodToSets {
     /**
      * The method to replace
      */
-    MethodSig method();
+    String method();
 
     /**
      * The source method's mapping owner.

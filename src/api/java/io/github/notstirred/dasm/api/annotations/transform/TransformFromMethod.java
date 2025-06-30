@@ -1,6 +1,5 @@
 package io.github.notstirred.dasm.api.annotations.transform;
 
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 
 import java.lang.annotation.ElementType;
@@ -11,7 +10,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
 @Retention(RetentionPolicy.CLASS)
 public @interface TransformFromMethod {
-    MethodSig value();
+    String value();
 
     Ref owner() default @Ref();
 
@@ -22,5 +21,5 @@ public @interface TransformFromMethod {
     // FIXME: add synthetic accessors
 //    boolean makeSyntheticAccessor() default false;
 
-    Class<?>[] useRedirectSets() default { };
+    Class<?>[] useRedirectSets() default {};
 }

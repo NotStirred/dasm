@@ -2,7 +2,6 @@ package io.github.notstirred.dasm.api.annotations.redirect.redirects;
 
 import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.IntraOwnerContainer;
-import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 
 import java.lang.annotation.ElementType;
@@ -23,7 +22,7 @@ import java.lang.annotation.Target;
  * <h2>Example:</h2>
  * The following field redirect specifies a redirect from {@code int existingFieldName} to {@code int newFieldName}
  * <pre>{@code
- *     @FieldRedirect(type = @Ref(int.class), name = "existingFieldName")
+ *     @FieldRedirect("existingFieldName:I")
  *     private int newFieldName;
  * }</pre>
  */
@@ -33,7 +32,7 @@ public @interface FieldRedirect {
     /**
      * The field to replace
      */
-    FieldSig value();
+    String value();
 
     /**
      * The source field's mapping owner.

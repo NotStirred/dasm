@@ -1,7 +1,5 @@
 package io.github.notstirred.dasm.api.annotations.transform;
 
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -12,7 +10,7 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
 @Target({METHOD, CONSTRUCTOR})
 @Retention(CLASS)
 public @interface TransformMethod {
-    MethodSig value();
+    String value();
 
     ApplicationStage stage() default ApplicationStage.PRE_APPLY;
 

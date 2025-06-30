@@ -5,8 +5,6 @@ import io.github.notstirred.dasm.api.annotations.redirect.redirects.ConstructorT
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.ConstructorMethodSig;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
@@ -24,16 +22,16 @@ public class TestConstructorToFactory extends BaseMethodTest {
         super(single(ConstructorToFactoryInput.class, ConstructorToFactoryOutput.class, TestConstructorToFactory.class));
     }
 
-    @TransformFromMethod(value = @MethodSig("method1()Ljava/lang/Object;"))
+    @TransformFromMethod("method1()Ljava/lang/Object;")
     public native String method1out(String param);
 
-    @TransformFromMethod(value = @MethodSig("method2()V"), useRedirectSets = InnerConstructorSet.class)
+    @TransformFromMethod(value = "method2()V", useRedirectSets = InnerConstructorSet.class)
     public native void method2out1();
 
-    @TransformFromMethod(value = @MethodSig("method2()V"), useRedirectSets = OuterConstructorSet.class)
+    @TransformFromMethod(value = "method2()V", useRedirectSets = OuterConstructorSet.class)
     public native void method2out2();
 
-    @TransformFromMethod(value = @MethodSig("method3()V"), useRedirectSets = A.class)
+    @TransformFromMethod(value = "method3()V", useRedirectSets = A.class)
     public native void method3out();
 
     @RedirectSet
@@ -48,7 +46,7 @@ public class TestConstructorToFactory extends BaseMethodTest {
 
         @InterOwnerContainer(from = @Ref(Object.class), to = @Ref(TestConstructorToFactory.class))
         abstract class B {
-            @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = {}))
+            @ConstructorToFactoryRedirect("<init>()V")
             static native String createString();
         }
     }
@@ -57,7 +55,7 @@ public class TestConstructorToFactory extends BaseMethodTest {
     public interface InnerConstructorSet {
         @InterOwnerContainer(from = @Ref(File.class), to = @Ref(TestConstructorToFactory.class))
         abstract class B {
-            @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = @Ref(String.class)))
+            @ConstructorToFactoryRedirect("<init>(Ljava/lang/String;)V")
             static native File fromString(String s);
         }
     }
@@ -66,7 +64,7 @@ public class TestConstructorToFactory extends BaseMethodTest {
     public interface OuterConstructorSet {
         @InterOwnerContainer(from = @Ref(File.class), to = @Ref(TestConstructorToFactory.class))
         abstract class B {
-            @ConstructorToFactoryRedirect(@ConstructorMethodSig(args = {@Ref(File.class), @Ref(String.class)}))
+            @ConstructorToFactoryRedirect("<init>(Ljava/io/File;Ljava/lang/String;)V")
             static native File fromParentWithChild(File parent, String s);
         }
     }

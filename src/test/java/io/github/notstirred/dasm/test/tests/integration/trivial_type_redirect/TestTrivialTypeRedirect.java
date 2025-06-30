@@ -3,7 +3,6 @@ package io.github.notstirred.dasm.test.tests.integration.trivial_type_redirect;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
@@ -20,7 +19,7 @@ public class TestTrivialTypeRedirect extends BaseMethodTest {
         super(single(TrivialTypeRedirectInput.class, TrivialTypeRedirectOutput.class, TestTrivialTypeRedirect.class));
     }
 
-    @TransformFromMethod(value = @MethodSig("method1(Ljava/lang/Object;)Ljava/lang/Object;"))
+    @TransformFromMethod("method1(Ljava/lang/Object;)Ljava/lang/Object;")
     public native String method2(String param);
 
     @RedirectSet

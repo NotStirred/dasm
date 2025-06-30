@@ -4,7 +4,6 @@ import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.MethodRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformMethod;
 import io.github.notstirred.dasm.test.targets.functional_interface.IBar;
@@ -24,14 +23,14 @@ public class TestImplicitLambdaFunctionalInterfaceMethodNameRedirect extends Bas
         super(single(ImplicitLambdaFunctionalInterfaceMethodRedirectNameInput.class, ImplicitLambdaFunctionalInterfaceMethodRedirectNameOutput.class, TestImplicitLambdaFunctionalInterfaceMethodNameRedirect.class));
     }
 
-    @TransformMethod(@MethodSig(name = "method1", args = {}, ret = @Ref(void.class)))
+    @TransformMethod("method1()V")
     public native void method1();
 
     @RedirectSet
     interface Set {
         @TypeRedirect(from = @Ref(IFoo.class), to = @Ref(IBar.class))
         interface IFoo_to_IBar_redirects {
-            @MethodRedirect(@MethodSig(name = "foo", args = {@Ref(Foo.class)}, ret = @Ref(void.class)))
+            @MethodRedirect("foo(Lio/github/notstirred/dasm/test/targets/inherited_transforms/Foo;)V")
             void bar(Bar bar);
         }
 

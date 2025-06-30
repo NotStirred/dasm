@@ -2,7 +2,6 @@ package io.github.notstirred.dasm.api.annotations.redirect.redirects;
 
 import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.IntraOwnerContainer;
-import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 
 import java.lang.annotation.Retention;
@@ -35,10 +34,10 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
  * <pre>{@code
  * @TypeRedirect(from = @Ref(Vec3i.class), to = @Ref(Vec3.class))
  * abstract class Vec3i_to_Vec3 {
- *     @FieldToMethodRedirect(@FieldSig(type = @Ref(int.class), name = "x"), setter = "setX")
+ *     @FieldToMethodRedirect(value = "x:I"), setter = "setX")
  *     native double getX();
  *
- *     @FieldToMethodRedirect(@FieldSig(type = @Ref(int.class), name = "z"), setter = "setZ")
+ *     @FieldToMethodRedirect(value = "z:I", setter = "setZ")
  *     native double getZ();
  * }
  * @TypeRedirect(from = @Ref(int.class), to = @Ref(double.class))
@@ -56,10 +55,10 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
  * <pre>{@code
  * @IntraOwnerContainer(owner = @Ref(Vec3i.class))
  * abstract class Vec3i_redirects {
- *     @FieldToMethodRedirect(@FieldSig(type = @Ref(int.class), name = "x"))
+ *     @FieldToMethodRedirect("x:I")
  *     native int getX();
  *
- *     @FieldToMethodRedirect(@FieldSig(type = @Ref(int.class), name = "z"))
+ *     @FieldToMethodRedirect("z:I")
  *     native int getZ();
  * }
  * }</pre>
@@ -67,8 +66,10 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
 @Target(METHOD)
 @Retention(CLASS)
 public @interface FieldToMethodRedirect {
-    /** The field to replace access to. */
-    FieldSig value();
+    /**
+     * The field to replace access to.
+     */
+    String value();
 
     /**
      * The <b>name</b> of the setter method, must have the same owner (be in the same class) as the getter method

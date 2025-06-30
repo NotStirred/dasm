@@ -3,7 +3,6 @@ package io.github.notstirred.dasm.api.annotations.redirect.redirects;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.IntraOwnerContainer;
-import io.github.notstirred.dasm.api.annotations.selector.FieldSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 
 import java.lang.annotation.Retention;
@@ -29,7 +28,7 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
  *
  *     @AddFieldToMethodToSets(
  *         containers = Bar_redirects.class,
- *         field = @FieldSig(type = int.class, name = "barX"),
+ *         field = "barX:I",
  *         setter = "setBarX"
  *     )
  *     public int getBarX() {
@@ -53,7 +52,7 @@ public @interface AddFieldToMethodToSets {
     /**
      * The field to replace
      */
-    FieldSig field();
+    String field();
 
     /**
      * The <b>name</b> of the setter method, must have the same owner (be in the same class) as the getter method

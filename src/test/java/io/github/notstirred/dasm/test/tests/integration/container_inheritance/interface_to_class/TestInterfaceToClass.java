@@ -4,7 +4,6 @@ import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.MethodRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.test.targets.*;
@@ -21,17 +20,17 @@ public class TestInterfaceToClass extends BaseMethodTest {
         super(single(InterfaceToClassInput.class, InterfaceToClassOutput.class, TestInterfaceToClass.class));
     }
 
-    @TransformFromMethod(value = @MethodSig("method1()V"))
+    @TransformFromMethod("method1()V")
     native void method1out();
 
-    @TransformFromMethod(value = @MethodSig("method2()V"))
+    @TransformFromMethod("method2()V")
     native void method2out();
 
     @RedirectSet
     public interface Set {
         @TypeRedirect(from = @Ref(BFactory.class), to = @Ref(AFactory.class))
         interface BFactory_to_AFactory_redirects {
-            @MethodRedirect(@MethodSig(ret = @Ref(B.class), name = "createB", args = {}))
+            @MethodRedirect("createB()Lio/github/notstirred/dasm/test/targets/B;")
             static A createA() {
                 throw new IllegalStateException("DASM FAILED TO APPLY");
             }

@@ -3,7 +3,6 @@ package io.github.notstirred.dasm.test.tests.integration.inplace_method_transfor
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformMethod;
 import io.github.notstirred.dasm.test.tests.integration.BaseMethodTest;
@@ -19,7 +18,7 @@ public class TestInplaceMethodTransformTest extends BaseMethodTest {
         super(single(InplaceMethodTransformTestInput.class, InplaceMethodTransformTestOutput.class, TestInplaceMethodTransformTest.class));
     }
 
-    @TransformMethod(@MethodSig(name = "method1", args = {@Ref(Float.class)}, ret = @Ref(void.class)))
+    @TransformMethod("method1(Ljava/lang/Float;)V")
     public native void method1(String a);
 
     @RedirectSet

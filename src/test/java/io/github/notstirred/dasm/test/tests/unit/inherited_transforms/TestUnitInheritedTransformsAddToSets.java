@@ -5,7 +5,6 @@ import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
-import io.github.notstirred.dasm.api.annotations.selector.MethodSig;
 import io.github.notstirred.dasm.api.annotations.selector.Ref;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
@@ -61,7 +60,7 @@ public class TestUnitInheritedTransformsAddToSets {
                         && redirect.dstOwner().equals(Type.getType(BarBaz.class))));
     }
 
-    @TransformFromMethod(@MethodSig("dummy()V"))
+    @TransformFromMethod("dummy()V")
     private native void dummy();
 
     @RedirectSet
