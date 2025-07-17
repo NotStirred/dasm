@@ -3,6 +3,7 @@ package io.github.notstirred.dasm.transformer;
 import io.github.notstirred.dasm.annotation.parse.AddedParameter;
 import io.github.notstirred.dasm.annotation.parse.redirects.FieldRedirectImpl;
 import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl;
+import io.github.notstirred.dasm.api.annotations.transform.TransformClass;
 import io.github.notstirred.dasm.api.annotations.transform.Visibility;
 import io.github.notstirred.dasm.api.provider.MappingsProvider;
 import io.github.notstirred.dasm.data.ClassMethod;
@@ -45,6 +46,10 @@ public class Transformer {
         if (transform.srcType().equals(transform.dstType())) { // inplace transform
             sourceClass = new ClassNode();
             targetClass.accept(sourceClass);
+            if (sourceClass.invisibleAnnotations != null) {
+                // Removed or a duplicate would be added
+                sourceClass.invisibleAnnotations.removeIf(annotation -> annotation.desc.equals(TypeUtil.classToDescriptor(TransformClass.class)));
+            }
         } else {
             sourceClass = classNodeProvider.classNode(transform.srcType());
         }
