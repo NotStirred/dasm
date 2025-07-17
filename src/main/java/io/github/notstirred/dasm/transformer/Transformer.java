@@ -41,7 +41,13 @@ public class Transformer {
     }
 
     public void transform(ClassNode targetClass, ClassTransform transform) throws NoSuchTypeExists {
-        ClassNode sourceClass = classNodeProvider.classNode(transform.srcType());
+        ClassNode sourceClass;
+        if (transform.srcType().equals(transform.dstType())) { // inplace transform
+            sourceClass = new ClassNode();
+            targetClass.accept(sourceClass);
+        } else {
+            sourceClass = classNodeProvider.classNode(transform.srcType());
+        }
 
         LOGGER.info("Transforming (" + sourceClass.name + "->" + targetClass.name + "): Transforming whole class");
 

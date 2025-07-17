@@ -6,7 +6,6 @@ import io.github.notstirred.dasm.annotation.parse.redirects.MethodRedirectImpl;
 import io.github.notstirred.dasm.api.annotations.Dasm;
 import io.github.notstirred.dasm.api.annotations.redirect.redirects.AddTransformToSets;
 import io.github.notstirred.dasm.api.annotations.transform.*;
-import io.github.notstirred.dasm.exception.DasmException;
 import io.github.notstirred.dasm.exception.NoSuchTypeExists;
 import io.github.notstirred.dasm.notify.Notification;
 import io.github.notstirred.dasm.transformer.data.ClassTransform;
@@ -36,7 +35,7 @@ public class DasmContext {
     private final Map<Type, RedirectSetImpl> redirectSetsByType;
     private final Map<Type, RedirectSetImpl.Container> containersByType;
 
-    public Pair<Optional<ClassTransform>, List<Notification>> buildClassTarget(ClassNode targetClass) throws DasmException {
+    public Pair<Optional<ClassTransform>, List<Notification>> buildClassTarget(ClassNode targetClass) {
         Type targetType = Type.getType(TypeUtil.typeNameToDescriptor(targetClass.name));
         NotifyStack classExceptions = NotifyStack.of(targetClass);
 
@@ -59,6 +58,21 @@ public class DasmContext {
             } catch (RefImpl.RefAnnotationGivenNoArguments e) {
                 classExceptions.notifyFromException(e);
             }
+        }
+        AnnotationNode transformClassNode = getAnnotationIfPresent(targetClass.invisibleAnnotations, TransformClass.class);
+        if (transformClassNode != null) {
+            Map<String, Object> values = getAnnotationValues(transformClassNode, TransformClass.class);
+
+            ApplicationStage stage = (ApplicationStage) values.get("stage");
+
+            List<RedirectSetImpl> sets = unrollSets(
+                    AnnotationUtil.<Type>annotationElementAsList(values.get("sets")).orElseGet(ArrayList::new).stream()
+                            .map(this.redirectSetsByType::get)
+                            .collect(Collectors.toList())
+            );
+
+            // FIXME: this should verify that there are no method transforms inside this class,
+            return new Pair<>(Optional.of(new ClassTransform(targetType, targetType, sets, stage)), classExceptions.notifications());
         }
 
         return new Pair<>(Optional.empty(), classExceptions.notifications());

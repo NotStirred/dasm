@@ -17,6 +17,7 @@ import io.github.notstirred.dasm.api.annotations.redirect.redirects.TypeRedirect
 import io.github.notstirred.dasm.api.annotations.redirect.sets.InterOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.IntraOwnerContainer;
 import io.github.notstirred.dasm.api.annotations.redirect.sets.RedirectSet;
+import io.github.notstirred.dasm.api.annotations.transform.TransformClass;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromClass;
 import io.github.notstirred.dasm.api.annotations.transform.TransformFromMethod;
 import io.github.notstirred.dasm.data.ClassField;
@@ -92,6 +93,7 @@ public class AnnotationParser {
 
         findRedirectSetsForAnnotation(targetClass.invisibleAnnotations, Dasm.class, "value", classExceptions);
         findRedirectSetsForAnnotation(targetClass.invisibleAnnotations, TransformFromClass.class, "sets", classExceptions);
+        findRedirectSetsForAnnotation(targetClass.invisibleAnnotations, TransformClass.class, "sets", classExceptions);
 
         for (FieldNode fieldNode : targetClass.fields) {
             NotifyStack fieldExceptions = classExceptions.push(fieldNode);
