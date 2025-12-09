@@ -17,6 +17,10 @@ public class ReferenceUtil {
     }
 
     public static Method parseMethodReference(String reference) throws InvalidReference {
+        if (reference.equals("<clinit>")) {
+            return new Method("<clinit>", "()V");
+        }
+
         int separator = reference.indexOf('(');
 
         if (separator == -1) {
