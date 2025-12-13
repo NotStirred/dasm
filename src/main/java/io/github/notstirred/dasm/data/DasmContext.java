@@ -129,9 +129,7 @@ public class DasmContext {
 
                 MethodTransform transform = new MethodTransform(
                         new ClassMethod(methodOwner, methodOwner, transformMethod.srcMethod()),
-                        prefixedMethodName // We have to rename constructors because we add a prefix, and mixin expects that anything with <> is either init, or clinit
-                                .replace("<init>", "__init__")
-                                .replace("<clinit>", "__clinit__"),
+                        prefixedMethodName,
                         redirectSets,
                         transformMethod.stage(),
                         transformMethod.inPlace(),
